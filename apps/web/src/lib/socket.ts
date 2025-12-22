@@ -9,6 +9,7 @@ export interface ServerToClientEvents {
   'lobby-joined': (data: LobbyJoinedData) => void;
   'player-joined': (data: { user: User }) => void;
   'player-left': (data: { playerId: string; kicked?: boolean }) => void;
+  'player-updated': (data: { playerId: string; user: User }) => void;
   'lobby-timer-started': (data: { duration: number; startsAt: number }) => void;
   'phase-changed': (data: PhaseChangedData) => void;
   'submission-received': (data: { success: boolean; submissionCount: number }) => void;

@@ -204,6 +204,19 @@ function setupEventHandlers(socket: AppSocket): void {
     }));
   });
 
+  socket.on('player-updated', (data: { playerId: string; user: User }) => {
+    lobby.update((l) => ({
+      ...l,
+      players: l.players.map((p) => {
+        // Match by discriminator since that's immutable
+        if (p.discriminator === data.user.discriminator) {
+          return data.user;
+        }
+        return p;
+      }),
+    }));
+  });
+
   socket.on('lobby-timer-started', (data: { duration: number; startsAt: number }) => {
     startTimer(data.duration, data.startsAt);
   });

@@ -3,14 +3,17 @@
   import { game, currentUser } from '$lib/stores';
   import { Lobby, Drawing, Voting, Finale, Results } from '$lib/components/features';
   import { Timer } from '$lib/components/utility';
-  import { PromptDisplay } from '$lib/components/molecules';
+  import { PromptDisplay, UsernameEditor } from '$lib/components/molecules';
 </script>
 
 <main>
   <header>
     <h1>SpriteBox</h1>
     {#if $currentUser}
-      <span class="user">{$currentUser.fullName}</span>
+      <UsernameEditor
+        displayName={$currentUser.displayName}
+        discriminator={$currentUser.discriminator}
+      />
     {/if}
   </header>
 
@@ -55,11 +58,6 @@
     margin: 0;
     font-size: var(--font-size-xl);
     color: var(--color-text-primary);
-  }
-
-  .user {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
   }
 
   .game-container {
