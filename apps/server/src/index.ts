@@ -3,6 +3,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { setupSocketHandlers } from './socket.js';
+import { getInstanceStats } from './instance.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './types.js';
 
 const app = express();
@@ -24,11 +25,18 @@ const PORT = process.env.PORT || 3000;
 
 // Health Check
 app.get('/health', (_req, res) => {
+  const instanceStats = getInstanceStats();
+
   res.json({
     status: 'healthy',
     connections: io.engine.clientsCount,
+    instances: instanceStats,
     uptime: process.uptime(),
-    timestamp: Date.now()
+    memory: {
+      heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+    },
+    timestamp: Date.now(),
   });
 });
 

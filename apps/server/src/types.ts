@@ -79,11 +79,23 @@ export interface PlayerStats {
 
 // === Socket Events ===
 export interface ServerToClientEvents {
-  connected: (data: { socketId: string; serverTime: number }) => void;
+  connected: (data: { socketId: string; serverTime: number; user: User }) => void;
   error: (data: { code: string; message?: string }) => void;
-  'lobby-joined': (data: { instanceId: string; players: User[] }) => void;
+  'lobby-joined': (data: {
+    instanceId: string;
+    type: InstanceType;
+    code?: string;
+    isHost?: boolean;
+    players: User[];
+    spectator: boolean;
+  }) => void;
+  'room-created': (data: { code: string; instanceId: string }) => void;
   'player-joined': (data: { user: User }) => void;
-  'player-left': (data: { oderId: string }) => void;
+  'player-left': (data: { playerId: string; kicked?: boolean }) => void;
+  'player-updated': (data: { playerId: string; user: User }) => void;
+  'name-changed': (data: { user: User }) => void;
+  'left-lobby': () => void;
+  'kicked': (data: { reason: string }) => void;
   'lobby-timer-started': (data: { duration: number; startsAt: number }) => void;
   'phase-changed': (data: { phase: GamePhase; prompt?: string }) => void;
   'voting-round': (data: { round: number; imageA: ImageData; imageB: ImageData; timeLimit: number }) => void;
@@ -93,8 +105,11 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   ping: (callback: (time: number) => void) => void;
   'join-public': () => void;
-  'create-room': (data?: { password?: string }) => void;
-  'join-room': (data: { code: string; password?: string }) => void;
+  'create-room': () => void;
+  'join-room': (data: { code: string }) => void;
+  'leave-lobby': () => void;
+  'host-start-game': () => void;
+  'host-kick-player': (data: { playerId: string }) => void;
   'submit-drawing': (data: { pixels: string }) => void;
   'vote': (data: { chosenId: string }) => void;
   'sync-stats': (data: PlayerStats) => void;
