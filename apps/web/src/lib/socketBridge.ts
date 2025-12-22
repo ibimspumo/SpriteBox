@@ -33,9 +33,10 @@ import {
 import { recordGameResult, syncStatsWithServer } from './stats';
 
 const SESSION_STORAGE_KEY = 'spritebox-session';
+const USER_STORAGE_KEY = 'spritebox-user';
 let initialized = false;
 
-// Session management
+// Session management (for reconnects during grace period)
 function saveSession(sessionId: string): void {
   if (!browser) return;
   try {
@@ -71,6 +72,32 @@ function clearSession(): void {
   }
 }
 
+// User persistence (survives page reloads)
+function saveUser(user: User): void {
+  if (!browser) return;
+  try {
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify({
+      displayName: user.displayName,
+      discriminator: user.discriminator,
+    }));
+  } catch (e) {
+    console.error('Failed to save user:', e);
+  }
+}
+
+function loadUser(): { displayName: string; discriminator: string } | null {
+  if (!browser) return null;
+  try {
+    const stored = localStorage.getItem(USER_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Failed to load user:', e);
+  }
+  return null;
+}
+
 /**
  * Initialisiert Socket und verbindet mit Stores
  */
@@ -90,11 +117,21 @@ function setupEventHandlers(socket: AppSocket): void {
     connectionStatus.set('connected');
     socketId.set(socket.id ?? null);
 
-    // Try to restore session on reconnect
+    // Try to restore session on reconnect (within grace period)
     const savedSession = loadSession();
     if (savedSession) {
       console.log('[Socket] Attempting to restore session...');
       socket.emit('restore-session', { sessionId: savedSession.sessionId });
+    } else {
+      // No active session, but try to restore saved username
+      const savedUser = loadUser();
+      if (savedUser) {
+        console.log('[Socket] Restoring saved username:', savedUser.displayName);
+        socket.emit('restore-user', {
+          displayName: savedUser.displayName,
+          discriminator: savedUser.discriminator,
+        });
+      }
     }
   });
 
@@ -116,6 +153,9 @@ function setupEventHandlers(socket: AppSocket): void {
   socket.on('connected', (data: { socketId: string; serverTime: number; user: User; sessionId: string }) => {
     currentUser.set(data.user);
     currentSessionId = data.sessionId;
+
+    // Save user for persistence across reloads
+    saveUser(data.user);
 
     // Sync stats with server on connect
     syncStatsWithServer(socket);
@@ -146,10 +186,17 @@ function setupEventHandlers(socket: AppSocket): void {
     }));
   });
 
-  socket.on('player-left', (data: { playerId: string; kicked?: boolean }) => {
+  socket.on('player-left', (data: { playerId: string; user?: User; kicked?: boolean }) => {
     lobby.update((l) => ({
       ...l,
-      players: l.players.filter((p) => p.fullName !== data.playerId),
+      // Filter by user.fullName if provided, otherwise try playerId as fullName fallback
+      players: l.players.filter((p) => {
+        if (data.user) {
+          return p.fullName !== data.user.fullName;
+        }
+        // Fallback: playerId might be the fullName in some cases
+        return p.fullName !== data.playerId;
+      }),
     }));
   });
 
@@ -266,6 +313,7 @@ function setupEventHandlers(socket: AppSocket): void {
   // === User Events ===
   socket.on('name-changed', (data: { user: User }) => {
     currentUser.set(data.user);
+    saveUser(data.user);
   });
 
   socket.on('kicked', (data: { reason: string }) => {

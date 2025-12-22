@@ -10,60 +10,60 @@
 
 <div class="lobby">
   {#if !$lobby.instanceId}
-    <!-- Nicht in einer Lobby -->
+    <!-- Not in a lobby -->
     <div class="menu">
-      <h2>Spielen</h2>
+      <h2>Play</h2>
 
       <button class="btn primary" onclick={joinPublicGame}>
-        Offentliches Spiel
+        Public Game
       </button>
 
       <button class="btn secondary" onclick={createPrivateRoom}>
-        Privaten Raum erstellen
+        Create Private Room
       </button>
 
-      <div class="divider">oder</div>
+      <div class="divider">or</div>
 
       {#if showJoinInput}
         <div class="join-input">
           <input
             type="text"
             bind:value={roomCode}
-            placeholder="Code eingeben"
+            placeholder="Enter code"
             maxlength={4}
           />
           <button class="btn" onclick={() => joinPrivateRoom(roomCode.toUpperCase())}>
-            Beitreten
+            Join
           </button>
         </div>
       {:else}
         <button class="btn text" onclick={() => showJoinInput = true}>
-          Raum-Code eingeben
+          Enter Room Code
         </button>
       {/if}
     </div>
   {:else}
-    <!-- In einer Lobby -->
+    <!-- In a lobby -->
     <div class="in-lobby">
       <div class="lobby-header">
         <h2>
           {#if $lobby.type === 'private'}
-            Raum: {$lobby.code}
+            Room: {$lobby.code}
           {:else}
-            Offentliche Lobby
+            Public Lobby
           {/if}
         </h2>
         <Timer />
       </div>
 
       <div class="players">
-        <h3>{$lobby.players.length} Spieler</h3>
+        <h3>{$lobby.players.length} Players</h3>
         <ul>
           {#each $lobby.players as player}
             <li class:you={player.fullName === $currentUser?.fullName}>
               {player.fullName}
               {#if player.fullName === $currentUser?.fullName}
-                <span class="tag">Du</span>
+                <span class="tag">You</span>
               {/if}
             </li>
           {/each}
@@ -71,7 +71,7 @@
       </div>
 
       {#if $lobby.isSpectator}
-        <p class="spectator-notice">Du bist Zuschauer fur diese Runde</p>
+        <p class="spectator-notice">You are a spectator for this round</p>
       {/if}
 
       <div class="actions">
@@ -81,14 +81,18 @@
             onclick={hostStartGame}
             disabled={$lobby.players.length < 5}
           >
-            Spiel starten
+            Start Game
           </button>
         {:else if $lobby.type === 'public'}
-          <p class="info">Warte auf {5 - $lobby.players.length} weitere Spieler...</p>
+          {#if $lobby.players.length < 5}
+            <p class="info">Waiting for {5 - $lobby.players.length} more players...</p>
+          {:else}
+            <p class="info ready">Game starting soon...</p>
+          {/if}
         {/if}
 
         <button class="btn text" onclick={leaveLobby}>
-          Lobby verlassen
+          Leave Lobby
         </button>
       </div>
     </div>
@@ -218,6 +222,11 @@
   .info {
     text-align: center;
     color: #aaa;
+  }
+
+  .info.ready {
+    color: #4ade80;
+    font-weight: bold;
   }
 
   .actions {

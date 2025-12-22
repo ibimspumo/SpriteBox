@@ -19,21 +19,21 @@ export const PALETTE = [
 ] as const;
 
 /**
- * Konvertiert Hex-Zeichen zu Farbindex
+ * Converts hex character to color index
  */
 export function hexCharToIndex(char: string): number {
   return parseInt(char, 16);
 }
 
 /**
- * Konvertiert Farbindex zu Hex-Zeichen
+ * Converts color index to hex character
  */
 export function indexToHexChar(index: number): string {
   return index.toString(16).toUpperCase();
 }
 
 /**
- * Gibt die Hex-Farbe für einen Index zurück
+ * Returns the hex color for an index
  */
 export function getColorByIndex(index: number): string {
   return PALETTE[index]?.hex ?? PALETTE[0].hex;

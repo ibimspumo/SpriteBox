@@ -2,7 +2,7 @@
 import { io, type Socket } from 'socket.io-client';
 import { browser } from '$app/environment';
 
-// Typen für Events (sollten mit Server übereinstimmen)
+// Types for events (should match server)
 export interface ServerToClientEvents {
   connected: (data: { socketId: string; serverTime: number; user: User; sessionId: string }) => void;
   error: (data: { code: string; message?: string }) => void;
@@ -38,6 +38,7 @@ export interface ClientToServerEvents {
   'finale-vote': (data: { playerId: string }) => void;
   'sync-stats': (data: { gamesPlayed: number; placements: { 1: number; 2: number; 3: number } }) => void;
   'restore-session': (data: { sessionId: string }) => void;
+  'restore-user': (data: { displayName: string; discriminator: string }) => void;
 }
 
 export interface SessionRestoredData {
@@ -112,11 +113,11 @@ export interface GameResultsData {
 // Socket type export
 export type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
-// Socket-Instanz
+// Socket instance
 let socket: AppSocket | null = null;
 
 /**
- * Initialisiert die Socket-Verbindung
+ * Initializes the socket connection
  */
 export function initSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
   if (!browser) {
@@ -151,14 +152,14 @@ export function initSocket(): Socket<ServerToClientEvents, ClientToServerEvents>
 }
 
 /**
- * Gibt die aktuelle Socket-Instanz zurück
+ * Returns the current socket instance
  */
 export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> | null {
   return socket;
 }
 
 /**
- * Trennt die Verbindung
+ * Disconnects the socket
  */
 export function disconnectSocket(): void {
   if (socket) {
@@ -168,14 +169,14 @@ export function disconnectSocket(): void {
 }
 
 /**
- * Prüft ob verbunden
+ * Checks if connected
  */
 export function isConnected(): boolean {
   return socket?.connected ?? false;
 }
 
 /**
- * Wartet auf Verbindung
+ * Waits for connection
  */
 export function waitForConnection(): Promise<void> {
   return new Promise((resolve, reject) => {

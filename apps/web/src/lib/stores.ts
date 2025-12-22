@@ -48,8 +48,8 @@ export const game = writable<GameState>({
 });
 
 // === Drawing State ===
-export const pixels = writable<string>('1'.repeat(64)); // Weiß als Standard
-export const selectedColor = writable<number>(0); // Schwarz
+export const pixels = writable<string>('1'.repeat(64)); // White as default
+export const selectedColor = writable<number>(0); // Black
 export const hasSubmitted = writable<boolean>(false);
 
 // === Voting State ===

@@ -8,7 +8,7 @@
 
 <div class="results">
   {#if $results}
-    <h2>Ergebnisse</h2>
+    <h2>Results</h2>
     <p class="prompt">Prompt: "{$results.prompt}"</p>
 
     <div class="podium">
@@ -24,14 +24,14 @@
           <span class="name">{entry.user.displayName}</span>
           <span class="votes">{entry.finalVotes} Votes</span>
           {#if isOwn}
-            <span class="own-tag">Du!</span>
+            <span class="own-tag">You!</span>
           {/if}
         </div>
       {/each}
     </div>
 
     <div class="gallery">
-      <h3>Alle Bilder ({$results.totalParticipants})</h3>
+      <h3>All Images ({$results.totalParticipants})</h3>
       <div class="gallery-grid">
         {#each $results.rankings.slice(3) as entry}
           <div class="gallery-item">
@@ -42,7 +42,7 @@
       </div>
     </div>
 
-    <p class="next-round">Nachste Runde startet gleich...</p>
+    <p class="next-round">Next round starting soon...</p>
   {/if}
 </div>
 

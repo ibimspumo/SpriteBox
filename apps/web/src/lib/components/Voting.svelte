@@ -12,16 +12,16 @@
 
 <div class="voting">
   <div class="header">
-    <span>Runde {$voting.round}/{$voting.totalRounds}</span>
+    <span>Round {$voting.round}/{$voting.totalRounds}</span>
     <Timer />
   </div>
 
   {#if $voting.hasVoted}
     <div class="waiting">
-      Abgestimmt! Warte auf nachste Runde...
+      Voted! Waiting for next round...
     </div>
   {:else if $voting.imageA && $voting.imageB}
-    <p class="instruction">Welches Bild ist besser?</p>
+    <p class="instruction">Which image is better?</p>
 
     <div class="duel">
       <button
@@ -50,7 +50,7 @@
     </div>
   {:else}
     <div class="waiting">
-      Warte auf Bilder...
+      Waiting for images...
     </div>
   {/if}
 </div>

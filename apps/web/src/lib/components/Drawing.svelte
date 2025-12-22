@@ -18,7 +18,7 @@
 <div class="drawing">
   <div class="header">
     <div class="prompt">
-      <span class="label">Zeichne:</span>
+      <span class="label">Draw:</span>
       <span class="text">{$game.prompt}</span>
     </div>
     <Timer />
@@ -33,14 +33,14 @@
   <div class="actions">
     {#if $hasSubmitted}
       <div class="submitted">
-        Abgegeben! Warte auf andere...
+        Submitted! Waiting for others...
       </div>
     {:else}
       <button class="btn secondary" onclick={handleClear}>
-        Loschen
+        Clear
       </button>
       <button class="btn primary" onclick={handleSubmit}>
-        Abgeben
+        Submit
       </button>
     {/if}
   </div>

@@ -5,6 +5,7 @@
   import { initSocketBridge } from '$lib/socketBridge';
   import { connectionStatus } from '$lib/stores';
   import { initTheme, toggleTheme, theme } from '$lib/theme';
+  import DebugPanel from '$lib/components/DebugPanel.svelte';
 
   let { children } = $props();
 
@@ -28,6 +29,9 @@
   </button>
 
   {@render children()}
+
+  <!-- Debug Panel (nur in Development) -->
+  <DebugPanel />
 </div>
 
 <style>

@@ -317,7 +317,7 @@ export function handlePlayerDisconnect(instance: Instance, player: Player): void
 
       // Notify others
       if (ioInstance) {
-        ioInstance.to(instance.id).emit('player-left', { playerId: player.id });
+        ioInstance.to(instance.id).emit('player-left', { playerId: player.id, user: player.user });
       }
     }
   }, TIMERS.RECONNECT_GRACE);

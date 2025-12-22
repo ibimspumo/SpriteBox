@@ -334,6 +334,39 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
     log('User', `${player.id} changed name to ${player.user.fullName}`);
   });
 
+  // Restore user from localStorage (persisted username across page reloads)
+  socket.on('restore-user', (data) => {
+    if (!data?.displayName || typeof data.displayName !== 'string') {
+      return; // Silently ignore invalid data
+    }
+
+    // Validate display name
+    const validation = validate(UsernameSchema, { name: data.displayName });
+    if (!validation.success) {
+      return; // Silently ignore invalid names
+    }
+
+    // Validate discriminator format (4 digits)
+    if (!data.discriminator || !/^\d{4}$/.test(data.discriminator)) {
+      return; // Silently ignore invalid discriminator
+    }
+
+    // Restore the user's name and discriminator
+    player.user.displayName = validation.data.name;
+    player.user.discriminator = data.discriminator;
+    player.user.fullName = createFullName(validation.data.name, data.discriminator);
+
+    // Send updated user back to client
+    socket.emit('connected', {
+      socketId: socket.id,
+      serverTime: Date.now(),
+      user: player.user,
+      sessionId: player.sessionId,
+    });
+
+    log('User', `${player.id} restored user: ${player.user.fullName}`);
+  });
+
   // Lobby verlassen
   socket.on('leave-lobby', () => {
     const instanceId = socket.data.instanceId;
@@ -342,7 +375,7 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
     const instance = findInstance(instanceId);
     if (instance) {
       removePlayerFromInstance(instance, player.id);
-      socket.to(instance.id).emit('player-left', { playerId: player.id });
+      socket.to(instance.id).emit('player-left', { playerId: player.id, user: player.user });
     }
 
     socket.leave(instanceId);
@@ -442,7 +475,7 @@ function registerHostHandlers(socket: TypedSocket, io: TypedServer, player: Play
     }
 
     // Alle informieren
-    io.to(instance.id).emit('player-left', { playerId: data.playerId, kicked: true });
+    io.to(instance.id).emit('player-left', { playerId: data.playerId, user: targetPlayer.user, kicked: true });
 
     log('Host', `${player.user.fullName} kicked ${targetPlayer.user.fullName}`);
   });
@@ -722,7 +755,7 @@ function handleDisconnect(socket: TypedSocket, player: Player, reason: string): 
       // For lobby phase: remove immediately
       if (instance.phase === 'lobby') {
         removePlayerFromInstance(instance, player.id);
-        socket.to(instance.id).emit('player-left', { playerId: player.id });
+        socket.to(instance.id).emit('player-left', { playerId: player.id, user: player.user });
       } else {
         // For active games: use grace period
         handlePlayerDisconnect(instance, player);

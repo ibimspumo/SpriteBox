@@ -14,7 +14,7 @@
   const GRID_SIZE = 8;
   let cellSize = $derived(size / GRID_SIZE);
 
-  // Verwende entweder übergebene Daten oder Store
+  // Use either passed data or store
   let displayPixels = $derived(pixelData ?? $pixels);
 
   let isDrawing = $state(false);

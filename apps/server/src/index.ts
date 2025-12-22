@@ -8,6 +8,7 @@ import { setupSocketHandlers } from './socket.js';
 import { getInstanceStats, startCleanupInterval } from './instance.js';
 import { setPhaseIo } from './phases.js';
 import { startMonitoring } from './monitoring.js';
+import { setupDebugEndpoints } from './debug.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -29,6 +30,9 @@ const PORT = process.env.PORT || 3000;
 
 // Phase-Manager mit IO-Instanz verbinden
 setPhaseIo(io);
+
+// Debug-Endpoints (nur in Development)
+setupDebugEndpoints(app, io);
 
 // Health Check (muss vor SPA Fallback kommen)
 app.get('/health', (_req, res) => {

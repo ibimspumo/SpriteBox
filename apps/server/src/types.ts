@@ -91,7 +91,7 @@ export interface ServerToClientEvents {
   }) => void;
   'room-created': (data: { code: string; instanceId: string }) => void;
   'player-joined': (data: { user: User }) => void;
-  'player-left': (data: { playerId: string; kicked?: boolean }) => void;
+  'player-left': (data: { playerId: string; user?: User; kicked?: boolean }) => void;
   'player-updated': (data: { playerId: string; user: User }) => void;
   'name-changed': (data: { user: User }) => void;
   'left-lobby': () => void;
@@ -152,6 +152,7 @@ export interface ClientToServerEvents {
   'sync-stats': (data: PlayerStats) => void;
   'change-name': (data: { name: string }) => void;
   'restore-session': (data: { sessionId: string }) => void;
+  'restore-user': (data: { displayName: string; discriminator: string }) => void;
 }
 
 // === Hilfstypes ===
