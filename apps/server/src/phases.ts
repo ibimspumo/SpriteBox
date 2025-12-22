@@ -3,7 +3,7 @@ import type { Server } from 'socket.io';
 import type { Instance, GamePhase, RankingEntry } from './types.js';
 import { TIMERS, COMPRESSION } from './constants.js';
 import { log } from './utils.js';
-import { generatePrompt } from './prompts.js';
+import { generatePrompt, generatePromptIndices, assemblePromptFromIndices } from './prompts.js';
 import {
   initVotingState,
   prepareVotingRound,
@@ -124,9 +124,11 @@ export function startGame(instance: Instance): void {
 
   log('Phase', `Starting game for instance ${instance.id} with ${instance.players.size} players`);
 
-  // Prompt generieren
-  instance.prompt = generatePrompt();
-  log('Phase', `Prompt: "${instance.prompt}"`);
+  // Generate prompt indices for client-side localization
+  instance.promptIndices = generatePromptIndices();
+  // Also generate the English text for server logging
+  instance.prompt = assemblePromptFromIndices(instance.promptIndices);
+  log('Phase', `Prompt: "${instance.prompt.prefix} ${instance.prompt.subject} ${instance.prompt.suffix}"`);
 
   // Countdown starten
   transitionTo(instance, 'countdown');
@@ -185,6 +187,7 @@ function handleCountdown(instance: Instance): void {
   emitToInstance(instance, 'phase-changed', {
     phase: 'countdown',
     prompt: instance.prompt,
+    promptIndices: instance.promptIndices,
     duration: TIMERS.COUNTDOWN,
     startsAt: Date.now() + TIMERS.COUNTDOWN,
   });
@@ -207,6 +210,7 @@ function handleDrawing(instance: Instance): void {
   emitToInstance(instance, 'phase-changed', {
     phase: 'drawing',
     prompt: instance.prompt,
+    promptIndices: instance.promptIndices,
     duration: TIMERS.DRAWING,
     endsAt: Date.now() + TIMERS.DRAWING,
   });
@@ -433,6 +437,7 @@ function handleResultsWithRanking(instance: Instance, ranking: ReturnType<typeof
 
   emitToInstance(instance, 'game-results', {
     prompt: instance.prompt,
+    promptIndices: instance.promptIndices,
     rankings: compressedRankings.compressed ? [] : results, // Send empty if compressed
     compressedRankings: compressedRankings.compressed ? compressedRankings.data : undefined,
     totalParticipants: instance.submissions.length,
@@ -477,6 +482,7 @@ function handleResults(instance: Instance): void {
 
   emitToInstance(instance, 'game-results', {
     prompt: instance.prompt,
+    promptIndices: instance.promptIndices,
     rankings,
     totalParticipants: instance.submissions.length,
   });

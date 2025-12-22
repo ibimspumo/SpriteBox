@@ -217,6 +217,7 @@ function setupEventHandlers(socket: AppSocket): void {
         ...g,
         phase: data.phase as GamePhase,
         prompt: data.prompt ?? g.prompt,
+        promptIndices: data.promptIndices ?? g.promptIndices,
       }));
     }
 
@@ -310,6 +311,7 @@ function setupEventHandlers(socket: AppSocket): void {
       ...g,
       phase,
       prompt: data.prompt ?? g.prompt,
+      promptIndices: data.promptIndices ?? g.promptIndices,
     }));
 
     // Start timer if provided
@@ -434,6 +436,7 @@ function setupEventHandlers(socket: AppSocket): void {
       ...g,
       phase: data.phase as GamePhase,
       prompt: data.prompt ?? g.prompt,
+      promptIndices: data.promptIndices ?? g.promptIndices,
     }));
 
     // Restore phase-specific state

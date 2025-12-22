@@ -384,6 +384,7 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       ...(instance.phase !== 'lobby' && {
         phase: instance.phase,
         prompt: instance.prompt,
+        promptIndices: instance.promptIndices,
         timerEndsAt: getPhaseTimings(instance.id)?.phaseEndsAt,
       }),
       ...(instance.phase === 'voting' && {
@@ -552,6 +553,7 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       ...(instance.phase !== 'lobby' && {
         phase: instance.phase,
         prompt: instance.prompt,
+        promptIndices: instance.promptIndices,
         timerEndsAt: getPhaseTimings(instance.id)?.phaseEndsAt,
       }),
       ...(instance.phase === 'voting' && {
@@ -1110,6 +1112,7 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
       user: player.user,
       phase: instance.phase,
       prompt: instance.prompt,
+      promptIndices: instance.promptIndices,
       players: getInstancePlayers(instance).map(p => p.user),
       isSpectator: instance.spectators.has(player.id),
       phaseState,

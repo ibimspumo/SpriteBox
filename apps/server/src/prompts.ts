@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { randomItem } from './utils.js';
-import type { Prompt } from './types.js';
+import type { Prompt, PromptIndices } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -50,21 +50,60 @@ function loadPromptData(): PromptData {
 }
 
 /**
- * Generiert einen zufälligen Prompt
+ * Helper to get random index from array length
  */
-export function generatePrompt(): Prompt {
+function randomIndex(length: number): number {
+  return Math.floor(Math.random() * length);
+}
+
+/**
+ * Generates random prompt indices for client-side localization
+ */
+export function generatePromptIndices(): PromptIndices {
   const data = loadPromptData();
 
   // Guard against empty arrays
   if (data.prefixes.length === 0 || data.subjects.length === 0 || data.suffixes.length === 0) {
-    return { prefix: 'mysterious', subject: 'thing', suffix: 'in a place' };
+    return { prefixIdx: 0, subjectIdx: 0, suffixIdx: 0 };
   }
 
-  const prefix = randomItem(data.prefixes);
-  const subject = randomItem(data.subjects);
-  const suffix = randomItem(data.suffixes);
+  // Same random logic as before: sometimes skip prefix/suffix
+  const hasPrefix = Math.random() > 0.3;
+  const hasSuffix = Math.random() > 0.5;
+
+  return {
+    prefixIdx: hasPrefix ? randomIndex(data.prefixes.length) : null,
+    subjectIdx: randomIndex(data.subjects.length),
+    suffixIdx: hasSuffix ? randomIndex(data.suffixes.length) : null,
+  };
+}
+
+/**
+ * Converts prompt indices to assembled prompt text (for backwards compatibility)
+ */
+export function assemblePromptFromIndices(indices: PromptIndices): Prompt {
+  const data = loadPromptData();
+
+  // Guard against out of bounds indices
+  const prefix = indices.prefixIdx !== null && indices.prefixIdx < data.prefixes.length
+    ? data.prefixes[indices.prefixIdx]
+    : '';
+  const subject = indices.subjectIdx < data.subjects.length
+    ? data.subjects[indices.subjectIdx]
+    : 'thing';
+  const suffix = indices.suffixIdx !== null && indices.suffixIdx < data.suffixes.length
+    ? data.suffixes[indices.suffixIdx]
+    : '';
 
   return { prefix, subject, suffix };
+}
+
+/**
+ * Generiert einen zufälligen Prompt (uses new indices system internally)
+ */
+export function generatePrompt(): Prompt {
+  const indices = generatePromptIndices();
+  return assemblePromptFromIndices(indices);
 }
 
 /**

@@ -1,6 +1,7 @@
 <!-- PasswordInput Molecule -->
 <script lang="ts">
   import { Input, Button } from '../atoms';
+  import { t } from '$lib/i18n';
 
   interface Props {
     value?: string;
@@ -16,15 +17,20 @@
 
   let {
     value = $bindable(''),
-    placeholder = 'Enter password',
-    submitLabel = 'Submit',
-    cancelLabel = 'Cancel',
+    placeholder,
+    submitLabel,
+    cancelLabel,
     minLength = 4,
     maxLength = 64,
     error = null,
     onsubmit,
     oncancel
   }: Props = $props();
+
+  // Use reactive assignments for default values that need translations
+  let actualPlaceholder = $derived(placeholder || $t.passwordInput.enterPassword);
+  let actualSubmitLabel = $derived(submitLabel || $t.common.submit);
+  let actualCancelLabel = $derived(cancelLabel || $t.common.cancel);
 
   let isValid = $derived(value.length >= minLength);
 
@@ -39,7 +45,7 @@
   <Input
     type="password"
     bind:value
-    {placeholder}
+    placeholder={actualPlaceholder}
     minlength={minLength}
     maxlength={maxLength}
     fullWidth
@@ -57,7 +63,7 @@
       onclick={onsubmit}
       fullWidth
     >
-      {submitLabel}
+      {actualSubmitLabel}
     </Button>
 
     {#if oncancel}
@@ -65,7 +71,7 @@
         variant="ghost"
         onclick={oncancel}
       >
-        {cancelLabel}
+        {actualCancelLabel}
       </Button>
     {/if}
   </div>

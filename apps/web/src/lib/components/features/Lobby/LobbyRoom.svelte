@@ -5,6 +5,7 @@
   import { Button, Input } from '../../atoms';
   import { PlayerList } from '../../organisms';
   import { Timer } from '../../utility';
+  import { t } from '$lib/i18n';
 
   let showPasswordSettings = $state(false);
   let newPassword = $state('');
@@ -60,7 +61,7 @@
 <div class="lobby-wrapper">
   <!-- Copied Toast -->
   {#if showCopiedToast}
-    <div class="copied-toast">Link copied!</div>
+    <div class="copied-toast">{$t.common.linkCopied}</div>
   {/if}
 
   <!-- Logo -->
@@ -74,20 +75,20 @@
     <div class="room-info">
       {#if $lobby.type === 'private'}
         <div class="room-code-display">
-          <span class="room-label">Room</span>
+          <span class="room-label">{$t.lobbyRoom.room}</span>
           <span class="room-code">{$lobby.code}</span>
           {#if $lobby.hasPassword}
-            <span class="lock-badge" title="Password protected">
+            <span class="lock-badge" title={$t.lobbyRoom.passwordProtected}>
               <img src="/icons/lock.svg" alt="Locked" class="lock-icon" />
             </span>
           {/if}
         </div>
-        <button class="share-room-btn" onclick={handleShareRoom} title="Invite friends">
+        <button class="share-room-btn" onclick={handleShareRoom} title={$t.lobbyRoom.inviteFriends}>
           <img src="/icons/link.svg" alt="Share" class="share-room-icon" />
         </button>
       {:else}
         <div class="room-code-display">
-          <span class="room-label">Public Lobby</span>
+          <span class="room-label">{$t.lobbyRoom.publicLobby}</span>
         </div>
       {/if}
     </div>
@@ -106,7 +107,7 @@
   {#if $lobby.isSpectator}
     <div class="spectator-notice">
       <span class="spectator-icon">👁</span>
-      <span>You are spectating this round</span>
+      <span>{$t.lobbyRoom.spectatorNotice}</span>
     </div>
   {/if}
 
@@ -121,12 +122,15 @@
         onclick={hostStartGame}
         disabled={$lobby.players.length < 5}
       >
-        Start Game
+        {$t.lobbyRoom.startGame}
       </Button>
 
       {#if $lobby.players.length < 5}
         <p class="waiting-info">
-          Need {5 - $lobby.players.length} more player{5 - $lobby.players.length !== 1 ? 's' : ''}
+          {5 - $lobby.players.length === 1
+            ? $t.lobbyRoom.needMorePlayer.replace('{{count}}', String(5 - $lobby.players.length))
+            : $t.lobbyRoom.needMorePlayers.replace('{{count}}', String(5 - $lobby.players.length))
+          }
         </p>
       {/if}
 
@@ -136,7 +140,7 @@
           <Input
             type="password"
             bind:value={newPassword}
-            placeholder="New password (min 4 chars)"
+            placeholder={$t.lobbyRoom.newPasswordPlaceholder}
             size="sm"
             minlength={4}
             maxlength={64}
@@ -144,21 +148,21 @@
           />
           <div class="password-actions">
             <Button size="sm" variant="action" onclick={handleSetPassword} disabled={newPassword.length < 4}>
-              {$lobby.hasPassword ? 'Change' : 'Set'}
+              {$lobby.hasPassword ? $t.common.change : $t.common.set}
             </Button>
             {#if $lobby.hasPassword}
               <Button size="sm" variant="danger" onclick={handleRemovePassword}>
-                Remove
+                {$t.common.remove}
               </Button>
             {/if}
             <Button variant="ghost" size="sm" onclick={() => { showPasswordSettings = false; newPassword = ''; }}>
-              Cancel
+              {$t.common.cancel}
             </Button>
           </div>
         </div>
       {:else}
         <Button variant="ghost" size="sm" fullWidth onclick={() => showPasswordSettings = true}>
-          {$lobby.hasPassword ? 'Change Password' : 'Set Password'}
+          {$lobby.hasPassword ? $t.lobbyRoom.changePassword : $t.lobbyRoom.setPassword}
         </Button>
       {/if}
 
@@ -167,19 +171,22 @@
       {#if $lobby.players.length < 5}
         <div class="status-message waiting">
           <span class="status-dot"></span>
-          Waiting for {5 - $lobby.players.length} more player{5 - $lobby.players.length !== 1 ? 's' : ''}...
+          {5 - $lobby.players.length === 1
+            ? $t.lobbyRoom.waitingForPlayer.replace('{{count}}', String(5 - $lobby.players.length))
+            : $t.lobbyRoom.waitingForPlayers.replace('{{count}}', String(5 - $lobby.players.length))
+          }
         </div>
       {:else}
         <div class="status-message ready">
           <span class="status-dot"></span>
-          Game starting soon...
+          {$t.lobbyRoom.gameStartingSoon}
         </div>
       {/if}
     {/if}
 
     <!-- Leave Button -->
     <Button variant="ghost" fullWidth onclick={leaveLobby}>
-      Leave Lobby
+      {$t.lobbyRoom.leaveLobby}
     </Button>
   </div>
   </div>

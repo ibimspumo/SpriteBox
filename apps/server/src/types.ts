@@ -39,6 +39,7 @@ export interface Instance {
   submissions: Submission[];
   votes: Vote[];
   prompt?: Prompt;
+  promptIndices?: PromptIndices;  // For client-side localization
   createdAt: number;
   lastActivity: number;
   lobbyTimer?: NodeJS.Timeout;
@@ -76,6 +77,13 @@ export interface Prompt {
   suffix: string;
 }
 
+// === Prompt Indices (for localization) ===
+export interface PromptIndices {
+  prefixIdx: number | null;  // null if no prefix
+  subjectIdx: number;
+  suffixIdx: number | null;  // null if no suffix
+}
+
 // === Stats ===
 export interface PlayerStats {
   gamesPlayed: number;
@@ -101,6 +109,7 @@ export interface ServerToClientEvents {
     // Mid-game state (for joining in-progress games)
     phase?: GamePhase;
     prompt?: Prompt;
+    promptIndices?: PromptIndices;
     timerEndsAt?: number;
     votingRound?: number;
     votingTotalRounds?: number;
@@ -116,6 +125,7 @@ export interface ServerToClientEvents {
   'phase-changed': (data: {
     phase: GamePhase;
     prompt?: Prompt;
+    promptIndices?: PromptIndices;
     duration?: number;
     startsAt?: number;
     endsAt?: number;
@@ -140,7 +150,7 @@ export interface ServerToClientEvents {
     endsAt: number;
   }) => void;
   'finale-vote-received': (data: { success: boolean }) => void;
-  'game-results': (data: { prompt?: Prompt; rankings: RankingEntry[]; compressedRankings?: string; totalParticipants: number }) => void;
+  'game-results': (data: { prompt?: Prompt; promptIndices?: PromptIndices; rankings: RankingEntry[]; compressedRankings?: string; totalParticipants: number }) => void;
   'idle-warning': (data: { timeLeft: number }) => void;
   'idle-disconnect': (data: { reason: string }) => void;
   'session-restored': (data: {
@@ -148,6 +158,7 @@ export interface ServerToClientEvents {
     user: User;
     phase: GamePhase;
     prompt?: Prompt;
+    promptIndices?: PromptIndices;
     players: User[];
     isSpectator: boolean;
     phaseState?: any;

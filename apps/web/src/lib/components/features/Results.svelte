@@ -1,28 +1,29 @@
 <!-- Results Feature Component -->
 <script lang="ts">
-  import { results, currentUser } from '$lib/stores';
+  import { results, currentUser, localizedResultsPrompt } from '$lib/stores';
   import { returnToLobby } from '$lib/socketBridge';
+  import { t } from '$lib/i18n';
   import { Badge, Button } from '../atoms';
   import { PromptDisplay } from '../molecules';
   import { GalleryGrid } from '../organisms';
   import { PixelCanvas } from '../utility';
 
   const medals = ['🥇', '🥈', '🥉'];
-  const medalLabels = ['1st', '2nd', '3rd'];
+  let medalLabels = $derived([$t.results.firstPlace, $t.results.secondPlace, $t.results.thirdPlace]);
 </script>
 
 <div class="results">
   {#if $results}
     <header class="results-header">
-      <h2 class="title">Game Results</h2>
-      <PromptDisplay prompt={$results.prompt} label="Prompt:" size="md" centered />
+      <h2 class="title">{$t.results.title}</h2>
+      <PromptDisplay prompt={$localizedResultsPrompt} label={$t.results.prompt} size="md" centered />
     </header>
 
     <!-- Next Round Notice (moved higher) -->
     <div class="next-round-section">
-      <p class="next-round-text">Next round starting soon...</p>
+      <p class="next-round-text">{$t.results.nextRoundStarting}</p>
       <Button variant="primary" onclick={returnToLobby}>
-        Return to Lobby
+        {$t.results.returnToLobby}
       </Button>
     </div>
 
@@ -46,10 +47,10 @@
                 <span class="player-name">{entry.user.fullName}</span>
                 <div class="vote-display">
                   <span class="vote-count">{entry.finalVotes}</span>
-                  <span class="vote-label">votes</span>
+                  <span class="vote-label">{$t.results.votes}</span>
                 </div>
                 {#if isOwn}
-                  <Badge variant="success" text="You!" />
+                  <Badge variant="success" text={`${$t.common.you}!`} />
                 {/if}
               </div>
             </div>
@@ -60,7 +61,7 @@
 
     {#if $results.rankings.length > 3}
       <div class="gallery-section">
-        <h3 class="gallery-title">All Submissions ({$results.totalParticipants})</h3>
+        <h3 class="gallery-title">{$t.results.allSubmissions} ({$results.totalParticipants})</h3>
         <div class="gallery-container">
           <GalleryGrid gap="sm">
             {#each $results.rankings.slice(3) as entry}
@@ -72,7 +73,7 @@
                 <span class="rank-badge">#{entry.place}</span>
                 <span class="gallery-name">{entry.user.fullName}</span>
                 {#if isOwn}
-                  <Badge variant="success" text="You" />
+                  <Badge variant="success" text={$t.common.you} />
                 {/if}
               </div>
             {/each}

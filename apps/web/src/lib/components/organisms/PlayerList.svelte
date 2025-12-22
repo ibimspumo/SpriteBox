@@ -1,6 +1,7 @@
 <!-- PlayerList Organism - Pixel Art Style -->
 <script lang="ts">
   import { Badge } from '../atoms';
+  import { t } from '$lib/i18n';
 
   interface Player {
     fullName: string;
@@ -24,7 +25,7 @@
 
 <div class="player-list">
   {#if showCount}
-    <h3 class="count">{players.length} Player{players.length !== 1 ? 's' : ''}</h3>
+    <h3 class="count">{players.length} {players.length === 1 ? $t.playerList.player : $t.playerList.players}</h3>
   {/if}
 
   <ul class="list" style={maxHeight ? `max-height: ${maxHeight}; overflow-y: auto;` : undefined}>
@@ -33,7 +34,7 @@
       <li class="player" class:current={isCurrentPlayer}>
         <span class="name">{player.fullName}</span>
         {#if isCurrentPlayer}
-          <Badge variant="accent" text="You" />
+          <Badge variant="accent" text={$t.common.you} />
         {/if}
       </li>
     {/each}

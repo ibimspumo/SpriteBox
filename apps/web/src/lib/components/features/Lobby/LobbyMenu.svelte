@@ -4,6 +4,7 @@
   import { UsernameEditor } from '../../molecules';
   import { joinPublicGame, createPrivateRoom, joinPrivateRoom } from '$lib/socketBridge';
   import { globalOnlineCount, currentUser } from '$lib/stores';
+  import { t } from '$lib/i18n';
 
   let roomCode = $state('');
   let showJoinInput = $state(false);
@@ -47,57 +48,57 @@
     {#if $globalOnlineCount > 0}
       <div class="online-badge">
         <span class="online-dot"></span>
-        <span class="online-text">{$globalOnlineCount} Players Online</span>
+        <span class="online-text">{$globalOnlineCount} {$t.lobbyMenu.playersOnline}</span>
       </div>
     {/if}
 
     <!-- Main CTA -->
     <Button variant="primary" size="lg" fullWidth onclick={joinPublicGame}>
-      Play Now
+      {$t.lobbyMenu.playNow}
     </Button>
 
     <!-- Divider -->
     <div class="divider">
       <span class="divider-line"></span>
-      <span class="divider-text">or</span>
+      <span class="divider-text">{$t.common.or}</span>
       <span class="divider-line"></span>
     </div>
 
     <!-- Private Room Options -->
     {#if showCreateOptions}
       <div class="option-panel">
-        <h3>Create Private Room</h3>
+        <h3>{$t.lobbyMenu.createPrivateRoom}</h3>
         <Input
           type="password"
           bind:value={createPassword}
-          placeholder="Password (optional)"
+          placeholder={$t.lobbyMenu.passwordOptional}
           minlength={4}
           maxlength={64}
           fullWidth
         />
         <div class="option-actions">
           <Button variant="action" onclick={handleCreateRoom}>
-            Create
+            {$t.common.create}
           </Button>
           <Button variant="ghost" onclick={() => { showCreateOptions = false; createPassword = ''; }}>
-            Cancel
+            {$t.common.cancel}
           </Button>
         </div>
       </div>
     {:else}
       <Button variant="secondary" fullWidth onclick={() => showCreateOptions = true}>
-        Private Room
+        {$t.lobbyMenu.privateRoom}
       </Button>
     {/if}
 
     <!-- Join Room -->
     {#if showJoinInput}
       <div class="option-panel">
-        <h3>Join Room</h3>
+        <h3>{$t.lobbyMenu.joinRoom}</h3>
         <div class="join-input-row">
           <Input
             bind:value={roomCode}
-            placeholder="CODE"
+            placeholder={$t.lobbyMenu.codePlaceholder}
             maxlength={4}
             uppercase
             centered
@@ -107,16 +108,16 @@
         </div>
         <div class="option-actions">
           <Button variant="action" onclick={handleJoinRoom} disabled={roomCode.length !== 4}>
-            Join
+            {$t.common.join}
           </Button>
           <Button variant="ghost" onclick={() => { showJoinInput = false; roomCode = ''; }}>
-            Cancel
+            {$t.common.cancel}
           </Button>
         </div>
       </div>
     {:else if !showCreateOptions}
       <Button variant="ghost" fullWidth onclick={() => showJoinInput = true}>
-        Enter Room Code
+        {$t.lobbyMenu.enterRoomCode}
       </Button>
     {/if}
   </div>

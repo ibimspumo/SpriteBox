@@ -55,6 +55,7 @@ export interface SessionRestoredData {
   user: User;
   phase: string;
   prompt?: Prompt;
+  promptIndices?: PromptIndices;
   players: User[];
   isSpectator: boolean;
   phaseState?: {
@@ -87,6 +88,12 @@ export interface Prompt {
   suffix: string;
 }
 
+export interface PromptIndices {
+  prefixIdx: number | null;
+  subjectIdx: number;
+  suffixIdx: number | null;
+}
+
 export interface User {
   displayName: string;
   discriminator: string;
@@ -103,6 +110,7 @@ export interface LobbyJoinedData {
   spectator: boolean;
   phase?: string;
   prompt?: Prompt;
+  promptIndices?: PromptIndices;
   timerEndsAt?: number;
   votingRound?: number;
   votingTotalRounds?: number;
@@ -111,6 +119,7 @@ export interface LobbyJoinedData {
 export interface PhaseChangedData {
   phase: string;
   prompt?: Prompt;
+  promptIndices?: PromptIndices;
   duration?: number;
   startsAt?: number;
   endsAt?: number;
@@ -140,6 +149,7 @@ export interface FinaleData {
 
 export interface GameResultsData {
   prompt?: Prompt;
+  promptIndices?: PromptIndices;
   rankings: Array<{
     place: number;
     playerId: string;

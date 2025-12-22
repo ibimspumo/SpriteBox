@@ -1,7 +1,8 @@
 <!-- Drawing Feature Component -->
 <script lang="ts">
-  import { game, pixels, hasSubmitted } from '$lib/stores';
+  import { game, pixels, hasSubmitted, localizedPrompt } from '$lib/stores';
   import { submitDrawing } from '$lib/socketBridge';
+  import { t } from '$lib/i18n';
   import { Button } from '../atoms';
   import { PromptDisplay } from '../molecules';
   import { PixelCanvas, ColorPalette, Timer } from '../utility';
@@ -17,7 +18,7 @@
 
 <div class="drawing">
   <div class="header">
-    <PromptDisplay prompt={$game.prompt} label="Draw:" size="md" />
+    <PromptDisplay prompt={$localizedPrompt} label={$t.drawing.draw} size="md" />
     <Timer />
   </div>
 
@@ -30,15 +31,15 @@
   <div class="actions">
     {#if $hasSubmitted}
       <div class="submitted-message">
-        <span class="submitted-text">SUBMITTED!</span>
-        <span class="waiting-text">Waiting for others...</span>
+        <span class="submitted-text">{$t.drawing.submitted}</span>
+        <span class="waiting-text">{$t.drawing.waitingForOthers}</span>
       </div>
     {:else}
       <Button variant="secondary" onclick={handleClear}>
-        Clear
+        {$t.drawing.clear}
       </Button>
       <Button variant="primary" onclick={handleSubmit}>
-        Submit
+        {$t.common.submit}
       </Button>
     {/if}
   </div>

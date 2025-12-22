@@ -2,11 +2,12 @@
 <script lang="ts">
   import { selectedColor } from '$lib/stores';
   import { PALETTE } from '$lib/palette';
+  import { t } from '$lib/i18n';
 </script>
 
 <div class="palette-container">
   <div class="palette-header">
-    <span class="palette-label">COLOR PALETTE</span>
+    <span class="palette-label">{$t.colorPalette.title}</span>
   </div>
   <div class="palette">
     {#each PALETTE as color, index}

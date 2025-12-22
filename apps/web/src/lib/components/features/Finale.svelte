@@ -2,6 +2,7 @@
 <script lang="ts">
   import { finale, finaleVoted, currentUser } from '$lib/stores';
   import { finaleVote } from '$lib/socketBridge';
+  import { t } from '$lib/i18n';
   import { Badge } from '../atoms';
   import { Card, GalleryGrid } from '../organisms';
   import { PixelCanvas, Timer } from '../utility';
@@ -11,15 +12,15 @@
 
 <div class="finale">
   <div class="header">
-    <h2>Finale</h2>
+    <h2>{$t.finale.title}</h2>
     <Timer />
   </div>
 
-  <p class="instruction">Pick your favorite!</p>
+  <p class="instruction">{$t.finale.pickYourFavorite}</p>
 
   {#if $finaleVoted}
     <Card padding="lg">
-      <span class="voted-text">Voted! Results coming soon...</span>
+      <span class="voted-text">{$t.finale.votedResultsSoon}</span>
     </Card>
   {:else if $finale}
     <GalleryGrid gap="md">
@@ -37,10 +38,10 @@
             size={100}
             readonly
           />
-          <span class="name">{finalist.user?.fullName ?? 'Anonymous'}</span>
-          <span class="elo">Elo: {finalist.elo}</span>
+          <span class="name">{finalist.user?.fullName ?? $t.common.anonymous}</span>
+          <span class="elo">{$t.finale.elo} {finalist.elo}</span>
           {#if isOwn}
-            <Badge variant="default" text="Your art" />
+            <Badge variant="default" text={$t.finale.yourArt} />
           {/if}
         </Card>
       {/each}

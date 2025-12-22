@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { Button } from '$lib/components/atoms';
+  import { t } from '$lib/i18n';
 
   const STORAGE_KEY = 'cookie-notice-accepted';
 
@@ -26,12 +27,12 @@
 {#if showNotice}
   <div class="cookie-notice">
     <p>
-      This game stores your session data temporarily while you play.
-      Your IP address is used for rate limiting and security purposes only.
-      No personal data is permanently stored or shared.
+      {$t.cookieNotice.sessionData}
+      {$t.cookieNotice.ipUsage}
+      {$t.cookieNotice.noPersonalData}
     </p>
     <Button variant="primary" size="sm" onclick={acceptNotice}>
-      Got it!
+      {$t.cookieNotice.gotIt}
     </Button>
   </div>
 {/if}

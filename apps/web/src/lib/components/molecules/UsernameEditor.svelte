@@ -3,6 +3,7 @@
   import { Button, Input, Icon } from '$lib/components/atoms';
   import { changeName } from '$lib/socketBridge';
   import { lastError } from '$lib/stores';
+  import { t } from '$lib/i18n';
 
   interface Props {
     displayName: string;
@@ -59,12 +60,12 @@
 
     // Client-side validation
     if (!trimmed) {
-      error = 'Name cannot be empty';
+      error = $t.usernameEditor.nameCannotBeEmpty;
       return;
     }
 
     if (trimmed.length > 20) {
-      error = 'Max. 20 characters';
+      error = $t.usernameEditor.maxCharacters;
       return;
     }
 
@@ -98,7 +99,7 @@
       <div class="input-row">
         <Input
           bind:value={editValue}
-          placeholder="Name"
+          placeholder={$t.usernameEditor.namePlaceholder}
           size="sm"
           maxlength={20}
           disabled={isSubmitting}
@@ -114,12 +115,12 @@
           {isSubmitting ? '...' : 'OK'}
         </Button>
         <Button variant="ghost" size="sm" onclick={cancelEditing} disabled={isSubmitting}>
-          Cancel
+          {$t.common.cancel}
         </Button>
       </div>
     </div>
   {:else}
-    <button class="display-name" onclick={startEditing} title="Click to change name">
+    <button class="display-name" onclick={startEditing} title={$t.usernameEditor.clickToChangeName}>
       <span class="name">{displayName}</span><span class="disc">#{discriminator}</span>
       <span class="edit-icon">
         <Icon name="edit" size="sm" />

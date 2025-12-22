@@ -2,6 +2,7 @@
 <script lang="ts">
   import { voting } from '$lib/stores';
   import { vote } from '$lib/socketBridge';
+  import { t } from '$lib/i18n';
   import { PixelCanvas, Timer } from '../utility';
 
   function handleVote(chosenId: string): void {
@@ -11,22 +12,22 @@
 
 <div class="voting">
   <div class="header">
-    <span class="round">ROUND {$voting.round}/{$voting.totalRounds}</span>
+    <span class="round">{$t.voting.round} {$voting.round}/{$voting.totalRounds}</span>
     <Timer />
   </div>
 
   {#if $voting.hasVoted}
     <div class="waiting-container">
-      <span class="waiting-text">VOTED! WAITING FOR NEXT ROUND...</span>
+      <span class="waiting-text">{$t.voting.voted} {$t.voting.waitingForNextRound}</span>
     </div>
   {:else if $voting.imageA && $voting.imageB}
-    <p class="instruction">WHICH PIXEL ART IS BETTER?</p>
+    <p class="instruction">{$t.voting.whichIsBetter}</p>
 
     <div class="duel">
       <button
         class="vote-card"
         onclick={() => handleVote($voting.imageA!.playerId)}
-        aria-label="Vote for image A"
+        aria-label={$t.voting.voteForImageA}
       >
         <div class="canvas-wrapper">
           <PixelCanvas
@@ -35,17 +36,17 @@
             readonly
           />
         </div>
-        <span class="vote-hint">CLICK TO VOTE</span>
+        <span class="vote-hint">{$t.voting.clickToVote}</span>
       </button>
 
       <div class="vs-container">
-        <span class="vs">VS</span>
+        <span class="vs">{$t.voting.vs}</span>
       </div>
 
       <button
         class="vote-card"
         onclick={() => handleVote($voting.imageB!.playerId)}
-        aria-label="Vote for image B"
+        aria-label={$t.voting.voteForImageB}
       >
         <div class="canvas-wrapper">
           <PixelCanvas
@@ -54,12 +55,12 @@
             readonly
           />
         </div>
-        <span class="vote-hint">CLICK TO VOTE</span>
+        <span class="vote-hint">{$t.voting.clickToVote}</span>
       </button>
     </div>
   {:else}
     <div class="waiting-container">
-      <span class="waiting-text">LOADING IMAGES...</span>
+      <span class="waiting-text">{$t.voting.loadingImages}</span>
     </div>
   {/if}
 </div>

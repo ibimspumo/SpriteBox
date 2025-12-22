@@ -200,6 +200,90 @@ LZ-String compression activates automatically when gallery has 50+ players. Indi
 ### Modifying the prompt system
 Edit `apps/server/data/prompts.json` - structure is `{ prefixes, subjects, suffixes }`.
 
+## Internationalization (i18n)
+
+The app supports **English** and **German**. All user-facing text MUST be multilingual.
+
+### i18n Structure
+
+```text
+apps/web/src/lib/i18n/
+├── index.ts                    # Stores, toggleLanguage(), getLanguage()
+└── translations/
+    ├── types.ts                # TypeScript interface (all translation keys)
+    ├── en.ts                   # English translations (default)
+    └── de.ts                   # German translations (informal "du" form)
+```
+
+### Usage Pattern
+
+```svelte
+<script lang="ts">
+  import { t } from '$lib/i18n';
+</script>
+
+<button>{$t.common.submit}</button>
+<p>{$t.errors.roomNotFound}</p>
+```
+
+### i18n DO's
+
+- **ALWAYS** use `$t.section.key` for ANY user-visible text
+- Add new translation keys to `types.ts` first (for type safety)
+- Add translations to BOTH `en.ts` AND `de.ts`
+- Use informal "du" form in German (not "Sie")
+- Use `$derived` for reactive translations in component logic
+- Keep translation keys descriptive: `lobbyRoom.startGame` not `lr.sg`
+
+### i18n DON'Ts
+
+- **NEVER** hardcode user-visible strings in components
+- **NEVER** add a translation to only one language file
+- **NEVER** use template literals for full sentences (breaks translation)
+- Don't use formal "Sie" in German translations
+
+### Adding New Translations
+
+1. Add the key to `types.ts`:
+
+   ```typescript
+   mySection: {
+     myNewKey: string;
+   };
+   ```
+
+2. Add English text to `en.ts`:
+
+   ```typescript
+   mySection: {
+     myNewKey: 'My new text',
+   },
+   ```
+
+3. Add German text to `de.ts`:
+
+   ```typescript
+   mySection: {
+     myNewKey: 'Mein neuer Text',
+   },
+   ```
+
+4. Use in component:
+
+   ```svelte
+   <span>{$t.mySection.myNewKey}</span>
+   ```
+
+### Localized Prompts
+
+Drawing prompts are localized per-user. The server sends **prompt indices**, and the client assembles the localized text:
+
+- `apps/server/data/prompts.json` - English prompts
+- `apps/server/data/prompts_de.json` - German prompts (same structure)
+- `apps/web/src/lib/prompts.ts` - Client-side localization
+
+Both prompt files MUST have identical array lengths and structure.
+
 ## What NOT to Do
 
 - Don't add external database dependencies
@@ -207,7 +291,7 @@ Edit `apps/server/data/prompts.json` - structure is `{ prefixes, subjects, suffi
 - Don't break the "one command to run" experience
 - Don't add heavy client-side processing (server is authoritative)
 - Don't store persistent user data (intentionally ephemeral)
-- **Don't use non-English text** - All UI text, labels, error messages, tooltips, and user-facing strings must be in English
+- **Don't hardcode UI text** - All user-facing strings MUST use the i18n system (`$t.section.key`)
 
 ## Reference Files
 

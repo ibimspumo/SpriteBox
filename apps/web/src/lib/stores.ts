@@ -1,6 +1,8 @@
 // apps/web/src/lib/stores.ts
 import { writable, derived, type Readable } from 'svelte/store';
-import type { User, Prompt, LobbyJoinedData, VotingRoundData, FinaleData, GameResultsData } from './socket';
+import type { User, Prompt, PromptIndices, LobbyJoinedData, VotingRoundData, FinaleData, GameResultsData } from './socket';
+import { localizePrompt } from './prompts';
+import { currentLanguage } from './i18n';
 
 // === Connection State ===
 export const connectionStatus = writable<'disconnected' | 'connecting' | 'connected'>('disconnected');
@@ -54,6 +56,7 @@ export type GamePhase = 'idle' | 'lobby' | 'countdown' | 'drawing' | 'voting' | 
 export interface GameState {
   phase: GamePhase;
   prompt: Prompt | null;
+  promptIndices: PromptIndices | null;
   timer: {
     duration: number;
     endsAt: number;
@@ -64,8 +67,19 @@ export interface GameState {
 export const game = writable<GameState>({
   phase: 'idle',
   prompt: null,
+  promptIndices: null,
   timer: null,
 });
+
+// === Derived Stores ===
+// Localized prompt that updates when language or promptIndices change
+export const localizedPrompt = derived(
+  [game, currentLanguage],
+  ([$game, $lang]) => {
+    if (!$game.promptIndices) return null;
+    return localizePrompt($game.promptIndices);
+  }
+);
 
 // === Drawing State ===
 export const pixels = writable<string>('1'.repeat(64)); // White as default
@@ -96,10 +110,19 @@ export const finaleVoted = writable<boolean>(false);
 // === Results State ===
 export const results = writable<GameResultsData | null>(null);
 
+// Localized results prompt (for the results screen)
+export const localizedResultsPrompt = derived(
+  [results, currentLanguage],
+  ([$results, $lang]) => {
+    if (!$results?.promptIndices) return $results?.prompt || null;
+    return localizePrompt($results.promptIndices);
+  }
+);
+
 // === Error State ===
 export const lastError = writable<{ code: string; message?: string } | null>(null);
 
-// === Derived Stores ===
+// === Other Derived Stores ===
 export const isInGame: Readable<boolean> = derived(lobby, ($lobby) => $lobby.instanceId !== null);
 export const isHost: Readable<boolean> = derived(lobby, ($lobby) => $lobby.isHost);
 export const playerCount: Readable<number> = derived(lobby, ($lobby) => $lobby.players.length);
@@ -141,7 +164,7 @@ export function stopTimer(): void {
 // === Reset Functions ===
 export function resetGameState(): void {
   stopTimer();
-  game.set({ phase: 'idle', prompt: null, timer: null });
+  game.set({ phase: 'idle', prompt: null, promptIndices: null, timer: null });
   pixels.set('1'.repeat(64));
   hasSubmitted.set(false);
   voting.set({ round: 0, totalRounds: 0, imageA: null, imageB: null, hasVoted: false });

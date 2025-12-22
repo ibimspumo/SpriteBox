@@ -2,6 +2,7 @@
 <script lang="ts">
   import { game, sessionBlocked, idleWarning } from '$lib/stores';
   import { getSocket } from '$lib/socket';
+  import { t } from '$lib/i18n';
   import { Lobby, Drawing, Voting, Finale, Results } from '$lib/components/features';
   import { Timer } from '$lib/components/utility';
   import { PromptDisplay } from '$lib/components/molecules';
@@ -22,9 +23,9 @@
   <div class="idle-warning-overlay" role="alertdialog" aria-modal="true">
     <div class="idle-warning-modal">
       <span class="idle-icon">👋</span>
-      <h2>Are you still there?</h2>
-      <p>You'll be disconnected soon due to inactivity.</p>
-      <Button variant="action" size="lg" onclick={handleStillHere}>I'm here!</Button>
+      <h2>{$t.idleWarning.title}</h2>
+      <p>{$t.idleWarning.message}</p>
+      <Button variant="action" size="lg" onclick={handleStillHere}>{$t.idleWarning.imHere}</Button>
     </div>
   </div>
 {/if}
@@ -34,10 +35,10 @@
     <div class="blocked-overlay">
       <div class="blocked-message">
         <span class="blocked-icon">🎮</span>
-        <h2>Already Playing?</h2>
-        <p>It looks like you have SpriteBox open in another window or tab.</p>
-        <p>Close the other one first, then come back here!</p>
-        <Button variant="secondary" onclick={() => window.location.reload()}>Try Again</Button>
+        <h2>{$t.sessionBlocked.title}</h2>
+        <p>{$t.sessionBlocked.message1}</p>
+        <p>{$t.sessionBlocked.message2}</p>
+        <Button variant="secondary" onclick={() => window.location.reload()}>{$t.sessionBlocked.tryAgain}</Button>
       </div>
     </div>
   {:else}
@@ -46,8 +47,8 @@
         <Lobby />
       {:else if $game.phase === 'countdown'}
         <div class="countdown">
-          <h2>Get Ready!</h2>
-          <PromptDisplay prompt={$game.prompt} label="Draw:" size="lg" centered />
+          <h2>{$t.countdown.getReady}</h2>
+          <PromptDisplay prompt={$game.prompt} label={$t.drawing.draw} size="lg" centered />
           <Timer />
         </div>
       {:else if $game.phase === 'drawing'}
