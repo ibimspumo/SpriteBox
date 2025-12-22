@@ -153,7 +153,7 @@
 
   /* ===== Pixel Art Specific ===== */
   --pixel-size: 1px;
-  --grid-line-color: rgba(255, 255, 255, 0.08);
+  --grid-line-color: rgba(0, 0, 0, 0.15);
   --grid-line-width: 1px;
 }
 

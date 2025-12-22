@@ -14,7 +14,7 @@ import {
   type VotingState,
 } from './voting.js';
 import { compressIfNeeded } from './compression.js';
-import { checkLobbyTimer } from './instance.js';
+import { checkLobbyTimer, cleanupInstance } from './instance.js';
 
 // IO instance (set by index.ts)
 let io: Server | null = null;
@@ -500,6 +500,22 @@ function resetForNextRound(instance: Instance): void {
   instance.submissions = [];
   instance.votes = [];
   instance.prompt = undefined;
+
+  // For private instances: check if host is still present
+  if (instance.type === 'private' && instance.hostId) {
+    const hostStillPresent = instance.players.has(instance.hostId) || instance.spectators.has(instance.hostId);
+
+    if (!hostStillPresent) {
+      log('Phase', `Host left private instance ${instance.id}, closing room`);
+
+      // Notify all players that the instance is closing
+      emitToInstance(instance, 'instance-closing', { reason: 'host-left' });
+
+      // Clean up the instance
+      cleanupInstance(instance);
+      return;
+    }
+  }
 
   // Back to lobby
   transitionTo(instance, 'lobby');

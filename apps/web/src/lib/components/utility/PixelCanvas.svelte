@@ -127,7 +127,8 @@
   .pixel {
     width: var(--cell-size);
     height: var(--cell-size);
-    border: 1px solid var(--grid-line-color);
+    /* Medium gray border visible on both light and dark colors */
+    border: 1px solid rgba(128, 128, 128, 0.4);
     transition: opacity var(--transition-fast);
     image-rendering: pixelated;
     image-rendering: crisp-edges;

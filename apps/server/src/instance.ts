@@ -229,9 +229,13 @@ export function removePlayerFromInstance(instance: Instance, playerId: string): 
 /**
  * Checks and starts the lobby timer
  * Exported for use in phases.ts after round reset
+ * Note: Private instances never auto-start - host must manually start the game
  */
 export function checkLobbyTimer(instance: Instance): void {
   if (instance.phase !== 'lobby') return;
+
+  // Private instances don't auto-start - host must manually start
+  if (instance.type === 'private') return;
 
   const playerCount = instance.players.size;
 
