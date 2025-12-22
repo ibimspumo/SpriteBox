@@ -97,9 +97,18 @@ export interface ServerToClientEvents {
   'left-lobby': () => void;
   'kicked': (data: { reason: string }) => void;
   'lobby-timer-started': (data: { duration: number; startsAt: number }) => void;
-  'phase-changed': (data: { phase: GamePhase; prompt?: string }) => void;
+  'phase-changed': (data: {
+    phase: GamePhase;
+    prompt?: string;
+    duration?: number;
+    startsAt?: number;
+    endsAt?: number;
+    message?: string;
+  }) => void;
+  'submission-received': (data: { success: boolean; submissionCount: number }) => void;
+  'submission-count': (data: { count: number; total: number }) => void;
   'voting-round': (data: { round: number; imageA: ImageData; imageB: ImageData; timeLimit: number }) => void;
-  'game-results': (data: { rankings: RankingEntry[]; totalParticipants: number }) => void;
+  'game-results': (data: { prompt?: string; rankings: RankingEntry[]; totalParticipants: number }) => void;
 }
 
 export interface ClientToServerEvents {

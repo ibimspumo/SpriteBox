@@ -13,7 +13,8 @@ import {
   startGameManually,
 } from './instance.js';
 import { generateId, generateDiscriminator, createFullName, log } from './utils.js';
-import { MIN_PLAYERS_TO_START } from './constants.js';
+import { MIN_PLAYERS_TO_START, CANVAS } from './constants.js';
+import { PixelSchema, validate, validateMinPixels } from './validation.js';
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -44,7 +45,7 @@ export function setupSocketHandlers(io: TypedServer): void {
     // Event-Handler registrieren
     registerLobbyHandlers(socket, io, player);
     registerHostHandlers(socket, io, player);
-    registerGameHandlers(socket, player);
+    registerGameHandlers(socket, io, player);
 
     // Disconnect
     socket.on('disconnect', (reason) => {
@@ -87,10 +88,14 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       return;
     }
 
+    // Prevent race condition by setting pending state immediately
+    socket.data.instanceId = 'pending';
+
     const instance = findOrCreatePublicInstance();
     const result = addPlayerToInstance(instance, player);
 
     if (!result.success) {
+      socket.data.instanceId = null; // Reset on failure
       socket.emit('error', { code: 'JOIN_FAILED', message: result.error });
       return;
     }
@@ -119,6 +124,9 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       socket.emit('error', { code: 'ALREADY_IN_GAME', message: 'Already in a game' });
       return;
     }
+
+    // Prevent race condition
+    socket.data.instanceId = 'pending';
 
     const { code, instance } = createPrivateRoom(player);
     addPlayerToInstance(instance, player);
@@ -162,9 +170,13 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       return;
     }
 
+    // Prevent race condition
+    socket.data.instanceId = 'pending';
+
     const result = addPlayerToInstance(instance, player);
 
     if (!result.success) {
+      socket.data.instanceId = null; // Reset on failure
       socket.emit('error', { code: 'JOIN_FAILED', message: result.error });
       return;
     }
@@ -249,8 +261,8 @@ function registerHostHandlers(socket: TypedSocket, io: TypedServer, player: Play
       return;
     }
 
-    // Nur Host kann starten
-    if (instance.hostId !== player.id) {
+    // Nur Host kann starten (und muss noch im Spiel sein)
+    if (instance.hostId !== player.id || !instance.players.has(player.id)) {
       socket.emit('error', { code: 'NOT_HOST', message: 'Only the host can start the game' });
       return;
     }
@@ -329,16 +341,84 @@ function registerHostHandlers(socket: TypedSocket, io: TypedServer, player: Play
   });
 }
 
-function registerGameHandlers(socket: TypedSocket, _player: Player): void {
-  // Placeholder für Phase 3+4
-  socket.on('submit-drawing', () => {
-    socket.emit('error', { code: 'NOT_IMPLEMENTED', message: 'Drawing not yet implemented' });
+function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Player): void {
+  // Submit Drawing Handler
+  socket.on('submit-drawing', (data: unknown) => {
+    const instanceId = socket.data.instanceId;
+    if (!instanceId) {
+      socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
+      return;
+    }
+
+    const instance = findInstance(instanceId);
+    if (!instance) {
+      socket.emit('error', { code: 'INSTANCE_NOT_FOUND', message: 'Instance not found' });
+      return;
+    }
+
+    // Phase prüfen
+    if (instance.phase !== 'drawing') {
+      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in drawing phase' });
+      return;
+    }
+
+    // Nur aktive Spieler können submitten
+    if (!instance.players.has(player.id)) {
+      socket.emit('error', { code: 'NOT_ACTIVE_PLAYER', message: 'Only active players can submit' });
+      return;
+    }
+
+    // Pixel validieren
+    const validation = validate(PixelSchema, data);
+    if (!validation.success) {
+      socket.emit('error', { code: 'INVALID_PIXELS', message: validation.error });
+      return;
+    }
+
+    // Minimum Pixel prüfen
+    const minCheck = validateMinPixels(validation.data.pixels);
+    if (!minCheck.valid) {
+      socket.emit('error', {
+        code: 'TOO_FEW_PIXELS',
+        message: `Need at least ${CANVAS.MIN_PIXELS_SET} non-background pixels (you have ${minCheck.setPixels})`,
+      });
+      return;
+    }
+
+    // Bereits submitted?
+    const alreadySubmitted = instance.submissions.some((s) => s.playerId === player.id);
+    if (alreadySubmitted) {
+      socket.emit('error', { code: 'ALREADY_SUBMITTED', message: 'You already submitted' });
+      return;
+    }
+
+    // Submission speichern
+    instance.submissions.push({
+      playerId: player.id,
+      pixels: validation.data.pixels,
+      timestamp: Date.now(),
+    });
+
+    socket.emit('submission-received', {
+      success: true,
+      submissionCount: instance.submissions.length,
+    });
+
+    log('Drawing', `${player.user.fullName} submitted drawing`);
+
+    // Alle informieren wie viele submitted haben
+    io.to(instance.id).emit('submission-count', {
+      count: instance.submissions.length,
+      total: instance.players.size,
+    });
   });
 
+  // Vote Handler (Placeholder - wird in Phase 4 implementiert)
   socket.on('vote', () => {
     socket.emit('error', { code: 'NOT_IMPLEMENTED', message: 'Voting not yet implemented' });
   });
 
+  // Stats Sync (Placeholder - wird in Phase 5 implementiert)
   socket.on('sync-stats', () => {
     // TODO: Phase 5 - Stats sync
   });

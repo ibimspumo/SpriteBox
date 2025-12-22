@@ -4,6 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { setupSocketHandlers } from './socket.js';
 import { getInstanceStats } from './instance.js';
+import { setPhaseIo } from './phases.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './types.js';
 
 const app = express();
@@ -22,6 +23,9 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
 });
 
 const PORT = process.env.PORT || 3000;
+
+// Phase-Manager mit IO-Instanz verbinden
+setPhaseIo(io);
 
 // Health Check
 app.get('/health', (_req, res) => {

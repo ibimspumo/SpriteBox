@@ -3,6 +3,7 @@ import type { Server } from 'socket.io';
 import type { Instance, Player, InstanceType } from './types.js';
 import { generateId, generateRoomCode, log } from './utils.js';
 import { MAX_PLAYERS_PER_INSTANCE, MIN_PLAYERS_TO_START, TIMERS } from './constants.js';
+import { startGame as startGamePhase } from './phases.js';
 
 // Globale Instanz-Verwaltung
 const instances = new Map<string, Instance>();
@@ -183,6 +184,7 @@ function checkLobbyTimer(instance: Instance): void {
     log('Instance', `Lobby timer started for instance ${instance.id}`);
 
     instance.lobbyTimer = setTimeout(() => {
+      instance.lobbyTimer = undefined; // Clear reference after execution
       if (instance.players.size >= MIN_PLAYERS_TO_START) {
         startGame(instance);
       }
@@ -197,17 +199,10 @@ function checkLobbyTimer(instance: Instance): void {
 }
 
 /**
- * Startet das Spiel (wird in Phase 3 erweitert)
+ * Startet das Spiel (delegiert an phases.ts)
  */
 function startGame(instance: Instance): void {
-  clearTimeout(instance.lobbyTimer);
-  instance.lobbyTimer = undefined;
-
-  log('Instance', `Starting game for instance ${instance.id} with ${instance.players.size} players`);
-
-  // Placeholder - wird in Phase 3 implementiert
-  instance.phase = 'countdown';
-  emitToInstance(instance, 'phase-changed', { phase: 'countdown' });
+  startGamePhase(instance);
 }
 
 /**
