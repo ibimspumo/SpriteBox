@@ -226,6 +226,9 @@
 
   /* ===== Canvas Frame ===== */
   .canvas-frame {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     padding: var(--space-3);
     background: var(--color-bg-tertiary);
     border-radius: var(--radius-sm);
@@ -342,6 +345,9 @@
   }
 
   .gallery-frame {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     padding: var(--space-2);
     background: var(--color-bg-elevated);
     border-radius: var(--radius-sm);
