@@ -95,7 +95,7 @@
 <div class="username-editor">
   {#if isEditing}
     <div class="edit-form">
-      <div class="input-wrapper">
+      <div class="input-row">
         <Input
           bind:value={editValue}
           placeholder="Name"
@@ -113,7 +113,7 @@
         <Button variant="primary" size="sm" onclick={handleSubmit} disabled={isSubmitting}>
           {isSubmitting ? '...' : 'OK'}
         </Button>
-        <Button variant="text" size="sm" onclick={cancelEditing} disabled={isSubmitting}>
+        <Button variant="ghost" size="sm" onclick={cancelEditing} disabled={isSubmitting}>
           Abbrechen
         </Button>
       </div>
@@ -131,8 +131,10 @@
 
 <style>
   .username-editor {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: center;
+    width: 100%;
   }
 
   .display-name {
@@ -141,7 +143,7 @@
     gap: var(--space-2);
     background: transparent;
     border: none;
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
     cursor: pointer;
     color: var(--color-text-secondary);
@@ -177,23 +179,26 @@
   .edit-form {
     display: flex;
     flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: center;
     gap: var(--space-2);
   }
 
-  .input-wrapper {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-  }
-
-  .input-wrapper :global(input) {
-    width: 120px;
+  .input-row :global(input) {
+    flex: 1;
+    min-width: 0;
   }
 
   .discriminator {
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .actions {
@@ -202,8 +207,13 @@
     align-items: center;
   }
 
+  .actions :global(button) {
+    flex: 1;
+  }
+
   .error {
     color: var(--color-danger);
     font-size: var(--font-size-xs);
+    text-align: center;
   }
 </style>

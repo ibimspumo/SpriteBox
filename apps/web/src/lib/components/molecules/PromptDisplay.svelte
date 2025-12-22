@@ -69,9 +69,9 @@
 
   .subject {
     font-weight: var(--font-weight-bold);
-    color: var(--color-accent);
+    color: var(--color-brand);
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.05em;
   }
 
   .suffix {

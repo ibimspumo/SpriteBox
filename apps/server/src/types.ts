@@ -152,6 +152,7 @@ export interface ServerToClientEvents {
   'queue-ready': (data: { message: string }) => void;
   'queue-removed': (data: { reason: 'timeout' | 'disconnect' | 'manual' }) => void;
   'server-status': (data: { status: 'ok' | 'warning' | 'critical'; currentPlayers: number; maxPlayers: number }) => void;
+  'online-count': (data: { count: number }) => void;
 }
 
 export interface ClientToServerEvents {

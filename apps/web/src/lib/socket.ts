@@ -26,6 +26,7 @@ export interface ServerToClientEvents {
   'password-required': (data: { code: string }) => void;
   'password-changed': (data: { hasPassword: boolean }) => void;
   'room-created': (data: { code: string; instanceId: string }) => void;
+  'online-count': (data: { count: number }) => void;
 }
 
 export interface ClientToServerEvents {

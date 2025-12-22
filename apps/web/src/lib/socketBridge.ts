@@ -1,5 +1,6 @@
 // apps/web/src/lib/socketBridge.ts
 import { browser } from '$app/environment';
+import { get } from 'svelte/store';
 import LZString from 'lz-string';
 import {
   initSocket,
@@ -16,6 +17,7 @@ import {
 import {
   connectionStatus,
   socketId,
+  globalOnlineCount,
   currentUser,
   lobby,
   game,
@@ -167,6 +169,11 @@ function setupEventHandlers(socket: AppSocket): void {
     console.error('[Socket Error]', data);
   });
 
+  // === Online Count (global player count) ===
+  socket.on('online-count', (data: { count: number }) => {
+    globalOnlineCount.set(data.count);
+  });
+
   // === Lobby Events ===
   socket.on('lobby-joined', (data: LobbyJoinedData) => {
     lobby.set({
@@ -177,6 +184,7 @@ function setupEventHandlers(socket: AppSocket): void {
       hasPassword: data.hasPassword ?? false,
       players: data.players,
       isSpectator: data.spectator,
+      onlineCount: data.players.length,
     });
     // Clear any password prompt on successful join
     passwordPrompt.set({ show: false, roomCode: null, error: null });
@@ -354,6 +362,7 @@ function setupEventHandlers(socket: AppSocket): void {
       hasPassword: false,
       players: data.players,
       isSpectator: data.isSpectator,
+      onlineCount: data.players.length,
     });
     game.update((g) => ({
       ...g,
@@ -437,4 +446,26 @@ export function vote(chosenId: string): void {
 export function finaleVote(playerId: string): void {
   getSocket()?.emit('finale-vote', { playerId });
   finaleVoted.set(true);
+}
+
+/**
+ * Return to lobby after game ends
+ * - Public game: Join new public queue
+ * - Private room: Try to rejoin same room if still available
+ */
+export function returnToLobby(): void {
+  const currentLobby = get(lobby);
+  const lobbyType = currentLobby.type;
+  const roomCode = currentLobby.code;
+
+  // Reset game state first
+  resetGameState();
+
+  if (lobbyType === 'private' && roomCode) {
+    // Try to rejoin the private room
+    getSocket()?.emit('join-room', { code: roomCode });
+  } else {
+    // Join public queue (default)
+    getSocket()?.emit('join-public');
+  }
 }

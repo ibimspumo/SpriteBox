@@ -1,4 +1,4 @@
-<!-- Timer Utility Component -->
+<!-- Timer Utility Component - Pixel Art Style -->
 <script lang="ts">
   import { game } from '$lib/stores';
   import { ProgressBar } from '../atoms';
@@ -8,48 +8,89 @@
     ? ($game.timer.remaining / $game.timer.duration) * 100
     : 100);
   let isLow = $derived(seconds <= 10);
+  let isCritical = $derived(seconds <= 5);
+
+  // Format seconds as MM:SS for longer durations
+  function formatTime(s: number): string {
+    if (s >= 60) {
+      const mins = Math.floor(s / 60);
+      const secs = s % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `0:${s.toString().padStart(2, '0')}`;
+  }
 </script>
 
 {#if $game.timer}
-  <div class="timer" class:low={isLow}>
+  <div class="timer" class:low={isLow} class:critical={isCritical}>
+    <div class="timer-display">
+      <span class="time-value">{formatTime(seconds)}</span>
+    </div>
     <div class="progress-wrapper">
       <ProgressBar
         {progress}
-        color={isLow ? 'error' : 'success'}
-        height="md"
+        color={isCritical ? 'error' : isLow ? 'warning' : 'accent'}
+        height="sm"
       />
     </div>
-    <span class="seconds">{seconds}s</span>
   </div>
 {/if}
 
 <style>
   .timer {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-2) var(--space-4);
-    background: var(--color-bg-secondary);
-    border-radius: var(--radius-xl);
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-bg-tertiary);
+    border: 2px solid var(--color-bg-elevated);
+    border-radius: var(--radius-sm);
+    min-width: 80px;
+  }
+
+  .timer-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .time-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
   }
 
   .progress-wrapper {
-    width: 120px;
+    width: 100%;
   }
 
-  .seconds {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    min-width: 40px;
+  /* Low time state */
+  .timer.low .time-value {
+    color: var(--color-warning);
   }
 
-  .timer.low .seconds {
+  /* Critical time state */
+  .timer.critical .time-value {
     color: var(--color-error);
-    animation: pulse 0.5s ease-in-out infinite;
+    animation: blink 0.5s step-end infinite;
   }
 
-  @keyframes pulse {
+  .timer.critical {
+    border-color: var(--color-error);
+    animation: shake 0.5s ease-in-out infinite;
+  }
+
+  @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
   }
 </style>

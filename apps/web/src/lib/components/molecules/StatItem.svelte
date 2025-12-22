@@ -37,11 +37,13 @@
   }
 
   .label {
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-normal);
   }
 
   .value {
-    font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
   }
 
   /* Sizes */

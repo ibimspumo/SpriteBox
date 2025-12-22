@@ -1,4 +1,4 @@
-<!-- ProgressBar Atom -->
+<!-- ProgressBar Atom - Pixel Art Style -->
 <script lang="ts">
   interface Props {
     progress: number; // 0-100
@@ -41,56 +41,62 @@
 
   .progress-track {
     flex: 1;
-    background: var(--color-bg-tertiary);
-    border-radius: var(--radius-sm);
+    background: var(--color-bg-primary);
+    border: 2px solid var(--color-bg-elevated);
+    border-radius: var(--radius-none);
     overflow: hidden;
   }
 
   /* Heights */
   .progress-container.sm .progress-track {
-    height: 4px;
+    height: 6px;
   }
 
   .progress-container.md .progress-track {
-    height: 8px;
+    height: 10px;
   }
 
   .progress-container.lg .progress-track {
-    height: 12px;
+    height: 14px;
   }
 
   .progress-fill {
     height: 100%;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-none);
   }
 
   .progress-fill.animated {
     transition: width 0.1s linear;
   }
 
-  /* Colors */
+  /* Colors - Pixelated look with no gradients */
   .progress-fill.default {
     background: var(--color-text-secondary);
   }
 
   .progress-fill.success {
     background: var(--color-success);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.2);
   }
 
   .progress-fill.warning {
     background: var(--color-warning);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.2);
   }
 
   .progress-fill.error {
     background: var(--color-error);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.2);
   }
 
   .progress-fill.accent {
     background: var(--color-accent);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.2);
   }
 
   .progress-label {
     font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     color: var(--color-text-secondary);
     min-width: 40px;
     text-align: right;

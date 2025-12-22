@@ -1,4 +1,4 @@
-<!-- Modal Organism -->
+<!-- Modal Organism - Pixel Art Style -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
@@ -38,7 +38,14 @@
   <div class="modal-overlay" onclick={handleOverlayClick} role="dialog" aria-modal="true" tabindex="-1">
     <div class="modal" style="max-width: {maxWidth}">
       {#if title}
-        <h3 class="modal-title">{title}</h3>
+        <div class="modal-header">
+          <h3 class="modal-title">{title}</h3>
+          {#if onclose}
+            <button class="close-btn" onclick={onclose} aria-label="Close">
+              <span class="close-icon">×</span>
+            </button>
+          {/if}
+        </div>
       {/if}
       <div class="modal-content">
         {@render children()}
@@ -55,26 +62,58 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: var(--space-4);
     z-index: var(--z-modal);
     animation: fadeIn var(--transition-fast);
   }
 
   .modal {
-    background: var(--color-bg-primary);
-    padding: var(--space-6);
-    border-radius: var(--radius-lg);
-    width: 90%;
+    background: var(--color-bg-secondary);
+    border: 3px solid var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: var(--space-5);
+    width: 100%;
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
-    animation: scaleIn var(--transition-normal);
+    animation: slideUp var(--transition-normal);
+    box-shadow: var(--shadow-pixel-lg);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--space-3);
+    border-bottom: 2px solid var(--color-bg-tertiary);
   }
 
   .modal-title {
     margin: 0;
-    color: var(--color-accent);
-    text-align: center;
+    color: var(--color-brand);
     font-size: var(--font-size-lg);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    padding: var(--space-1);
+    cursor: pointer;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xl);
+    line-height: 1;
+    transition: color var(--transition-fast);
+  }
+
+  .close-btn:hover {
+    color: var(--color-text-primary);
+  }
+
+  .close-icon {
+    display: block;
+    font-weight: var(--font-weight-bold);
   }
 
   .modal-content {
@@ -88,8 +127,14 @@
     to { opacity: 1; }
   }
 
-  @keyframes scaleIn {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 </style>

@@ -106,20 +106,43 @@
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    border: 2px solid var(--color-bg-tertiary);
+    background: var(--color-bg-primary);
+    border: 3px solid var(--color-bg-elevated);
     border-radius: var(--radius-sm);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+      var(--shadow-pixel-sm);
     touch-action: none;
     user-select: none;
     cursor: crosshair;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
   }
 
   .canvas.readonly {
     cursor: default;
+    opacity: 0.8;
   }
 
   .pixel {
     width: var(--cell-size);
     height: var(--cell-size);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--grid-line-color);
+    transition: opacity var(--transition-fast);
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .pixel:hover {
+    opacity: 0.9;
+  }
+
+  /* Pixel art rendering */
+  .canvas,
+  .pixel {
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
   }
 </style>

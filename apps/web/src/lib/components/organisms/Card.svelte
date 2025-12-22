@@ -48,13 +48,14 @@
 <style>
   .card {
     background: var(--color-bg-secondary);
-    border-radius: var(--radius-lg);
-    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    border: 3px solid var(--color-bg-tertiary);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-2);
-    transition: transform var(--transition-fast), border-color var(--transition-normal);
+    transition: transform var(--transition-fast), border-color var(--transition-normal), box-shadow var(--transition-normal);
+    box-shadow: var(--shadow-pixel);
   }
 
   button.card {
@@ -85,17 +86,20 @@
   /* Hoverable */
   .card.hoverable:hover,
   .card.clickable:hover {
-    transform: scale(1.05);
+    transform: translateY(-2px);
     border-color: var(--color-accent);
+    box-shadow: var(--shadow-pixel-lg);
   }
 
   /* Selected state */
   .card.selected {
     border-color: var(--color-success);
+    box-shadow: var(--shadow-pixel-lg);
   }
 
   /* Highlight state */
   .card.highlight {
-    border-color: var(--color-accent);
+    border-color: var(--color-brand);
+    box-shadow: var(--shadow-pixel-lg);
   }
 </style>

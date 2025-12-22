@@ -5,6 +5,7 @@ import type { User, Prompt, LobbyJoinedData, VotingRoundData, FinaleData, GameRe
 // === Connection State ===
 export const connectionStatus = writable<'disconnected' | 'connecting' | 'connected'>('disconnected');
 export const socketId = writable<string | null>(null);
+export const globalOnlineCount = writable<number>(0);
 
 // === User State ===
 export const currentUser = writable<User | null>(null);
@@ -18,6 +19,7 @@ export interface LobbyState {
   hasPassword: boolean;
   players: User[];
   isSpectator: boolean;
+  onlineCount: number;
 }
 
 export const lobby = writable<LobbyState>({
@@ -28,6 +30,7 @@ export const lobby = writable<LobbyState>({
   hasPassword: false,
   players: [],
   isSpectator: false,
+  onlineCount: 0,
 });
 
 // === Password Prompt State ===
@@ -154,6 +157,7 @@ export function resetLobbyState(): void {
     hasPassword: false,
     players: [],
     isSpectator: false,
+    onlineCount: 0,
   });
   passwordPrompt.set({ show: false, roomCode: null, error: null });
   resetGameState();

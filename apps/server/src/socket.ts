@@ -146,6 +146,11 @@ export function setupSocketHandlers(io: TypedServer): void {
   // Start periodic session cleanup (every 5 minutes)
   setInterval(cleanupExpiredSessions, 5 * 60 * 1000);
 
+  // Broadcast online count every 5 seconds
+  setInterval(() => {
+    io.emit('online-count', { count: totalConnections });
+  }, 5000);
+
   // === Middleware: Verbindungslimits prüfen ===
   io.use((socket, next) => {
     const ip = getClientIP(socket as TypedSocket);

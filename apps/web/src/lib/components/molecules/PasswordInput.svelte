@@ -62,7 +62,7 @@
 
     {#if oncancel}
       <Button
-        variant="text"
+        variant="ghost"
         onclick={oncancel}
       >
         {cancelLabel}

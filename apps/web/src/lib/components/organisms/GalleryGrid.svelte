@@ -1,4 +1,4 @@
-<!-- GalleryGrid Organism -->
+<!-- GalleryGrid Organism - Pixel Art Style -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
@@ -27,6 +27,7 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    padding: var(--space-2);
   }
 
   .gallery-grid.gap-sm {
@@ -39,5 +40,24 @@
 
   .gallery-grid.gap-lg {
     gap: var(--space-4);
+  }
+
+  /* Ensure all images inside gallery render as pixel art */
+  .gallery-grid :global(img),
+  .gallery-grid :global(canvas) {
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* Gallery item styling for cards */
+  .gallery-grid :global(.card) {
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .gallery-grid :global(.card:hover) {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-pixel-lg);
   }
 </style>

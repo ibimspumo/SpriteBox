@@ -1,4 +1,4 @@
-<!-- Input Atom -->
+<!-- Input Atom - Pixel Art Style -->
 <script lang="ts">
   interface Props {
     type?: 'text' | 'password' | 'number' | 'email';
@@ -40,7 +40,7 @@
   {disabled}
   {maxlength}
   {minlength}
-  class="input {size}"
+  class="pixel-input {size}"
   class:full-width={fullWidth}
   class:uppercase
   class:centered
@@ -50,41 +50,50 @@
 />
 
 <style>
-  .input {
-    border: 2px solid var(--color-bg-tertiary);
-    border-radius: var(--radius-md);
+  .pixel-input {
+    font-family: var(--font-family);
     background: var(--color-bg-secondary);
     color: var(--color-text-primary);
-    font-family: var(--font-family);
-    transition: border-color var(--transition-fast);
+    border: 3px solid;
+    border-color: #374151 #6b7280 #6b7280 #374151;
+    border-radius: var(--radius-sm);
+    box-shadow:
+      inset 2px 2px 0 rgba(0, 0, 0, 0.3),
+      inset -1px -1px 0 rgba(255, 255, 255, 0.05);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   }
 
-  .input:focus {
+  .pixel-input:focus {
     outline: none;
-    border-color: var(--color-accent);
+    border-color: var(--color-accent) #0d9488 #0d9488 var(--color-accent);
+    box-shadow:
+      inset 2px 2px 0 rgba(0, 0, 0, 0.3),
+      inset -1px -1px 0 rgba(255, 255, 255, 0.05),
+      0 0 0 2px rgba(78, 205, 196, 0.2);
   }
 
-  .input:disabled {
+  .pixel-input:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
-  .input::placeholder {
+  .pixel-input::placeholder {
     color: var(--color-text-muted);
+    font-family: var(--font-family);
   }
 
   /* Sizes */
-  .input.sm {
+  .pixel-input.sm {
     padding: var(--space-2);
     font-size: var(--font-size-sm);
   }
 
-  .input.md {
+  .pixel-input.md {
     padding: var(--space-3);
     font-size: var(--font-size-md);
   }
 
-  .input.lg {
+  .pixel-input.lg {
     padding: var(--space-4);
     font-size: var(--font-size-lg);
   }
@@ -97,6 +106,7 @@
   .uppercase {
     text-transform: uppercase;
     letter-spacing: 4px;
+    font-weight: var(--font-weight-bold);
   }
 
   .centered {
