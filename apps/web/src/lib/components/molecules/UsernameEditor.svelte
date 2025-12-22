@@ -1,6 +1,6 @@
 <!-- UsernameEditor Molecule - Inline editable username with discriminator -->
 <script lang="ts">
-  import { Button, Input } from '$lib/components/atoms';
+  import { Button, Input, Icon } from '$lib/components/atoms';
   import { changeName } from '$lib/socketBridge';
   import { lastError } from '$lib/stores';
 
@@ -119,12 +119,11 @@
       </div>
     </div>
   {:else}
-    <button class="display-name" onclick={startEditing} title="Change name">
+    <button class="display-name" onclick={startEditing} title="Click to change name">
       <span class="name">{displayName}</span><span class="disc">#{discriminator}</span>
-      <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-      </svg>
+      <span class="edit-icon">
+        <Icon name="edit" size="sm" />
+      </span>
     </button>
   {/if}
 </div>
@@ -166,14 +165,13 @@
   }
 
   .edit-icon {
-    width: 14px;
-    height: 14px;
-    opacity: 0;
+    display: inline-flex;
+    opacity: 0.4;
     transition: opacity var(--transition-fast);
   }
 
   .display-name:hover .edit-icon {
-    opacity: 0.7;
+    opacity: 1;
   }
 
   .edit-form {
