@@ -47,6 +47,7 @@ SpriteBox is a **free, browser-based multiplayer game** where you compete to cre
 - **100% Free & Open Source** - No ads, no paywalls, no tracking
 - **No Account Required** - Just open the link and play
 - **Works Everywhere** - Desktop, mobile, tablet - any modern browser
+- **Multilingual** - English and German support
 - **One Command to Host** - Self-host your own server in seconds
 
 ---
@@ -67,7 +68,7 @@ SpriteBox is a **free, browser-based multiplayer game** where you compete to cre
 | Mode | Players | Description |
 |------|---------|-------------|
 | **Public** | 5-100 | Auto-matchmaking with strangers |
-| **Private** | 5-100 | Create a 4-letter room code and share with friends |
+| **Private** | 5-100 | 4-letter room code, host starts manually |
 
 ---
 
@@ -84,6 +85,8 @@ SpriteBox is a **free, browser-based multiplayer game** where you compete to cre
 - **No Registration** - Jump in instantly
 - **Mobile-Optimized** - Touch-friendly drawing on phones
 - **Dark Theme** - Easy on the eyes
+- **Multilingual** - Switch between English and German anytime
+- **Idle Warning** - Get notified before disconnect due to inactivity
 - **Reconnection Support** - Rejoin within 15 seconds if disconnected
 
 ### Technical Philosophy
