@@ -362,6 +362,10 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       hasPassword: false,
       players: getInstancePlayers(instance).map(p => p.user),
       spectator: result.spectator,
+      // Include lobby timer if active
+      ...(instance.phase === 'lobby' && instance.lobbyTimerEndsAt && {
+        timerEndsAt: instance.lobbyTimerEndsAt,
+      }),
       // Include game state if joining mid-game
       ...(instance.phase !== 'lobby' && {
         phase: instance.phase,
@@ -526,6 +530,10 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       hasPassword: !!instance.passwordHash,
       players: getInstancePlayers(instance).map(p => p.user),
       spectator: result.spectator,
+      // Include lobby timer if active
+      ...(instance.phase === 'lobby' && instance.lobbyTimerEndsAt && {
+        timerEndsAt: instance.lobbyTimerEndsAt,
+      }),
       // Include game state if joining mid-game
       ...(instance.phase !== 'lobby' && {
         phase: instance.phase,

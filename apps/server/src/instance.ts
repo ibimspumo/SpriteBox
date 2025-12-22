@@ -238,6 +238,8 @@ export function checkLobbyTimer(instance: Instance): void {
   // Start immediately if full
   if (playerCount >= MAX_PLAYERS_PER_INSTANCE) {
     clearTimeout(instance.lobbyTimer);
+    instance.lobbyTimer = undefined;
+    instance.lobbyTimerEndsAt = undefined;
     startGame(instance);
     return;
   }
@@ -246,8 +248,12 @@ export function checkLobbyTimer(instance: Instance): void {
   if (playerCount >= MIN_PLAYERS_TO_START && !instance.lobbyTimer) {
     log('Instance', `Lobby timer started for instance ${instance.id}`);
 
+    const endsAt = Date.now() + TIMERS.LOBBY_TIMEOUT;
+    instance.lobbyTimerEndsAt = endsAt;
+
     instance.lobbyTimer = setTimeout(() => {
       instance.lobbyTimer = undefined; // Clear reference after execution
+      instance.lobbyTimerEndsAt = undefined;
       if (instance.players.size >= MIN_PLAYERS_TO_START) {
         startGame(instance);
       }
@@ -256,7 +262,7 @@ export function checkLobbyTimer(instance: Instance): void {
     // Send event to all players
     emitToInstance(instance, 'lobby-timer-started', {
       duration: TIMERS.LOBBY_TIMEOUT,
-      startsAt: Date.now() + TIMERS.LOBBY_TIMEOUT,
+      startsAt: endsAt,
     });
   }
 }
@@ -299,6 +305,8 @@ function checkInstanceCleanup(instance: Instance): void {
  */
 export function cleanupInstance(instance: Instance): void {
   clearTimeout(instance.lobbyTimer);
+  instance.lobbyTimer = undefined;
+  instance.lobbyTimerEndsAt = undefined;
   clearTimeout(instance.phaseTimer);
 
   instances.delete(instance.id);

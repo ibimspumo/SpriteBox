@@ -42,6 +42,7 @@ export interface Instance {
   createdAt: number;
   lastActivity: number;
   lobbyTimer?: NodeJS.Timeout;
+  lobbyTimerEndsAt?: number;  // When the lobby timer ends (for late joiners)
   phaseTimer?: NodeJS.Timeout;
 }
 
