@@ -82,20 +82,20 @@
     font-family: var(--font-family);
   }
 
-  /* Sizes */
+  /* Sizes - minimum 16px to prevent iOS zoom on focus */
   .pixel-input.sm {
     padding: var(--space-2);
-    font-size: var(--font-size-sm);
+    font-size: max(16px, var(--font-size-sm));
   }
 
   .pixel-input.md {
     padding: var(--space-3);
-    font-size: var(--font-size-md);
+    font-size: max(16px, var(--font-size-md));
   }
 
   .pixel-input.lg {
     padding: var(--space-4);
-    font-size: var(--font-size-lg);
+    font-size: max(16px, var(--font-size-lg));
   }
 
   /* Modifiers */

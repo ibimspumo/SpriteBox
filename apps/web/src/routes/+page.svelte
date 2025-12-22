@@ -10,11 +10,11 @@
   {#if $sessionBlocked}
     <div class="blocked-overlay">
       <div class="blocked-message">
-        <span class="blocked-icon">🚫</span>
-        <h2>Session Limit Reached</h2>
-        <p>You already have multiple tabs open with SpriteBox.</p>
-        <p>Please close other tabs and refresh this page.</p>
-        <button onclick={() => window.location.reload()}>Refresh Page</button>
+        <span class="blocked-icon">🎮</span>
+        <h2>Already Playing?</h2>
+        <p>It looks like you have SpriteBox open in another window or tab.</p>
+        <p>Close the other one first, then come back here!</p>
+        <button onclick={() => window.location.reload()}>Try Again</button>
       </div>
     </div>
   {:else}
@@ -71,7 +71,7 @@
     text-align: center;
     padding: var(--space-8);
     background: var(--color-bg-secondary);
-    border: 3px solid var(--color-error);
+    border: 3px solid var(--color-warning);
     border-radius: var(--radius-md);
     max-width: 400px;
   }
@@ -83,7 +83,7 @@
   .blocked-message h2 {
     margin: 0;
     font-size: var(--font-size-xl);
-    color: var(--color-error);
+    color: var(--color-warning);
   }
 
   .blocked-message p {
