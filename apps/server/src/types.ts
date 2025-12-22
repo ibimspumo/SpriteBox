@@ -104,10 +104,26 @@ export interface ServerToClientEvents {
     startsAt?: number;
     endsAt?: number;
     message?: string;
+    round?: number;
+    totalRounds?: number;
   }) => void;
   'submission-received': (data: { success: boolean; submissionCount: number }) => void;
   'submission-count': (data: { count: number; total: number }) => void;
-  'voting-round': (data: { round: number; imageA: ImageData; imageB: ImageData; timeLimit: number }) => void;
+  'voting-round': (data: {
+    round: number;
+    totalRounds: number;
+    imageA: ImageData;
+    imageB: ImageData;
+    timeLimit: number;
+    endsAt: number;
+  }) => void;
+  'vote-received': (data: { success: boolean; eloChange?: { winner: number; loser: number } }) => void;
+  'finale-start': (data: {
+    finalists: FinalistEntry[];
+    timeLimit: number;
+    endsAt: number;
+  }) => void;
+  'finale-vote-received': (data: { success: boolean }) => void;
   'game-results': (data: { prompt?: string; rankings: RankingEntry[]; totalParticipants: number }) => void;
 }
 
@@ -121,6 +137,7 @@ export interface ClientToServerEvents {
   'host-kick-player': (data: { playerId: string }) => void;
   'submit-drawing': (data: { pixels: string }) => void;
   'vote': (data: { chosenId: string }) => void;
+  'finale-vote': (data: { playerId: string }) => void;
   'sync-stats': (data: PlayerStats) => void;
   'change-name': (data: { name: string }) => void;
 }
@@ -129,6 +146,13 @@ export interface ClientToServerEvents {
 export interface ImageData {
   playerId: string;
   pixels: string;
+}
+
+export interface FinalistEntry {
+  playerId: string;
+  pixels: string;
+  user: User;
+  elo: number;
 }
 
 export interface RankingEntry {

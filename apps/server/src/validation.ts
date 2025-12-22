@@ -62,6 +62,13 @@ export const VoteSchema = z.object({
 });
 
 /**
+ * Finale-Vote Validierung
+ */
+export const FinaleVoteSchema = z.object({
+  playerId: z.string().min(1, 'Must choose a finalist'),
+});
+
+/**
  * Stats Validierung
  */
 export const StatsSchema = z.object({

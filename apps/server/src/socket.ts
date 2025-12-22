@@ -14,7 +14,9 @@ import {
 } from './instance.js';
 import { generateId, generateDiscriminator, createFullName, log } from './utils.js';
 import { MIN_PLAYERS_TO_START, CANVAS } from './constants.js';
-import { PixelSchema, validate, validateMinPixels } from './validation.js';
+import { PixelSchema, VoteSchema, FinaleVoteSchema, validate, validateMinPixels } from './validation.js';
+import { getVotingState } from './phases.js';
+import { processVote, processFinaleVote } from './voting.js';
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -413,9 +415,93 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
     });
   });
 
-  // Vote Handler (Placeholder - wird in Phase 4 implementiert)
-  socket.on('vote', () => {
-    socket.emit('error', { code: 'NOT_IMPLEMENTED', message: 'Voting not yet implemented' });
+  // Vote Handler
+  socket.on('vote', (data: unknown) => {
+    const instanceId = socket.data.instanceId;
+    if (!instanceId) {
+      socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
+      return;
+    }
+
+    const instance = findInstance(instanceId);
+    if (!instance) {
+      socket.emit('error', { code: 'INSTANCE_NOT_FOUND', message: 'Instance not found' });
+      return;
+    }
+
+    // Phase prüfen
+    if (instance.phase !== 'voting') {
+      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in voting phase' });
+      return;
+    }
+
+    // Validierung
+    const validation = validate(VoteSchema, data);
+    if (!validation.success) {
+      socket.emit('error', { code: 'INVALID_VOTE', message: validation.error });
+      return;
+    }
+
+    // Voting-State holen
+    const state = getVotingState(instanceId);
+    if (!state) {
+      socket.emit('error', { code: 'VOTING_NOT_ACTIVE', message: 'Voting not active' });
+      return;
+    }
+
+    // Vote verarbeiten
+    const result = processVote(instance, state, player.id, validation.data.chosenId);
+
+    if (!result.success) {
+      socket.emit('error', { code: 'VOTE_FAILED', message: result.error });
+      return;
+    }
+
+    socket.emit('vote-received', {
+      success: true,
+      eloChange: result.eloChange,
+    });
+
+    log('Vote', `${player.user.fullName} voted for ${validation.data.chosenId}`);
+  });
+
+  // Finale-Vote Handler
+  socket.on('finale-vote', (data: unknown) => {
+    const instanceId = socket.data.instanceId;
+    if (!instanceId) {
+      socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
+      return;
+    }
+
+    const instance = findInstance(instanceId);
+    if (!instance || instance.phase !== 'finale') {
+      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in finale phase' });
+      return;
+    }
+
+    // Validierung
+    const validation = validate(FinaleVoteSchema, data);
+    if (!validation.success) {
+      socket.emit('error', { code: 'INVALID_VOTE', message: validation.error });
+      return;
+    }
+
+    const state = getVotingState(instanceId);
+    if (!state) {
+      socket.emit('error', { code: 'VOTING_NOT_ACTIVE', message: 'Finale not active' });
+      return;
+    }
+
+    // Finale-Vote verarbeiten
+    const result = processFinaleVote(state, player.id, validation.data.playerId);
+
+    if (!result.success) {
+      socket.emit('error', { code: 'VOTE_FAILED', message: result.error });
+      return;
+    }
+
+    socket.emit('finale-vote-received', { success: true });
+    log('Finale', `${player.user.fullName} voted for ${validation.data.playerId}`);
   });
 
   // Stats Sync (Placeholder - wird in Phase 5 implementiert)

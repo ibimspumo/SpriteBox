@@ -1,15 +1,33 @@
 // apps/server/src/phases.ts
 import type { Server } from 'socket.io';
-import type { Instance, GamePhase } from './types.js';
+import type { Instance, GamePhase, RankingEntry } from './types.js';
 import { TIMERS } from './constants.js';
 import { log } from './utils.js';
 import { generatePrompt } from './prompts.js';
+import {
+  initVotingState,
+  prepareVotingRound,
+  calculateFinalistCount,
+  calculateFinalRanking,
+  validateFairness,
+  type VotingState,
+} from './voting.js';
 
 // IO-Instanz (wird von index.ts gesetzt)
 let io: Server | null = null;
 
+// Voting-State pro Instanz speichern
+const votingStates = new Map<string, VotingState>();
+
 export function setPhaseIo(ioInstance: Server): void {
   io = ioInstance;
+}
+
+/**
+ * Get voting state for an instance (used by socket handlers)
+ */
+export function getVotingState(instanceId: string): VotingState | undefined {
+  return votingStates.get(instanceId);
 }
 
 /**
@@ -136,37 +154,195 @@ function endDrawingPhase(instance: Instance): void {
 }
 
 /**
- * Voting-Phase (Placeholder - wird in Phase 4 implementiert)
+ * Voting-Phase
  */
 function handleVoting(instance: Instance): void {
-  log('Phase', `Voting started (placeholder)`);
+  // State initialisieren
+  const state = initVotingState(instance.submissions);
+  votingStates.set(instance.id, state);
 
-  // Placeholder: Nach 5s zu Results
-  instance.phaseTimer = setTimeout(() => {
-    transitionTo(instance, 'results');
-  }, 5000);
+  log('Phase', `Voting started with ${state.totalRounds} rounds for ${instance.submissions.length} submissions`);
 
-  emitToInstance(instance, 'phase-changed', {
-    phase: 'voting',
-    message: 'Voting coming in Phase 4',
-  });
+  // Erste Runde starten
+  startVotingRound(instance, state, 1);
 }
 
 /**
- * Finale-Phase (Placeholder - wird in Phase 4 implementiert)
+ * Startet eine Voting-Runde
+ */
+function startVotingRound(instance: Instance, state: VotingState, roundNumber: number): void {
+  log('Phase', `Voting round ${roundNumber}/${state.totalRounds}`);
+
+  // Assignments berechnen
+  const assignments = prepareVotingRound(instance, state, roundNumber);
+
+  // An jeden Voter sein Assignment senden
+  for (const assignment of assignments) {
+    const imageA = instance.submissions.find((s) => s.playerId === assignment.imageA);
+    const imageB = instance.submissions.find((s) => s.playerId === assignment.imageB);
+
+    if (!imageA || !imageB) continue;
+
+    // An spezifischen Socket senden
+    const player = instance.players.get(assignment.voterId) || instance.spectators.get(assignment.voterId);
+    if (player && io) {
+      io.to(player.socketId).emit('voting-round', {
+        round: roundNumber,
+        totalRounds: state.totalRounds,
+        imageA: { playerId: imageA.playerId, pixels: imageA.pixels },
+        imageB: { playerId: imageB.playerId, pixels: imageB.pixels },
+        timeLimit: TIMERS.VOTING_ROUND,
+        endsAt: Date.now() + TIMERS.VOTING_ROUND,
+      });
+    }
+  }
+
+  // Phase-Info an alle
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'voting',
+    round: roundNumber,
+    totalRounds: state.totalRounds,
+    duration: TIMERS.VOTING_ROUND,
+    endsAt: Date.now() + TIMERS.VOTING_ROUND,
+  });
+
+  // Timer für Runden-Ende
+  instance.phaseTimer = setTimeout(() => {
+    endVotingRound(instance, state, roundNumber);
+  }, TIMERS.VOTING_ROUND);
+}
+
+/**
+ * Beendet eine Voting-Runde
+ */
+function endVotingRound(instance: Instance, state: VotingState, roundNumber: number): void {
+  const fairness = validateFairness(state);
+  log(
+    'Phase',
+    `Voting round ${roundNumber} ended. Fairness: ${fairness.isFair ? 'OK' : 'WARN'} (${fairness.min}-${fairness.max})`
+  );
+
+  if (roundNumber < state.totalRounds) {
+    // Nächste Runde
+    startVotingRound(instance, state, roundNumber + 1);
+  } else {
+    // Voting beendet -> Finale
+    transitionTo(instance, 'finale');
+  }
+}
+
+/**
+ * Finale-Phase
  */
 function handleFinale(instance: Instance): void {
-  log('Phase', `Finale started (placeholder)`);
-
-  // Placeholder: Nach 5s zu Results
-  instance.phaseTimer = setTimeout(() => {
+  const state = votingStates.get(instance.id);
+  if (!state) {
+    log('Phase', `No voting state found, skipping to results`);
     transitionTo(instance, 'results');
-  }, 5000);
+    return;
+  }
+
+  const finalistCount = calculateFinalistCount(instance.submissions.length);
+
+  // Top X nach Elo auswählen
+  const sorted = [...state.eloRatings.entries()].sort((a, b) => b[1] - a[1]).slice(0, finalistCount);
+
+  const finalists = sorted.map(([playerId, elo]) => {
+    const submission = instance.submissions.find((s) => s.playerId === playerId);
+    const player = instance.players.get(playerId) || instance.spectators.get(playerId);
+    return {
+      playerId,
+      pixels: submission?.pixels || '',
+      user: player?.user || { displayName: 'Unknown', discriminator: '0000', fullName: 'Unknown#0000' },
+      elo,
+    };
+  });
+
+  log('Phase', `Finale with ${finalists.length} finalists`);
+
+  // Finale-Votes initialisieren
+  state.finaleVotes.clear();
+  state.finalists = finalists.map((f) => ({ playerId: f.playerId, pixels: f.pixels, elo: f.elo }));
+  state.votersVoted.clear();
+  finalists.forEach((f) => state.finaleVotes.set(f.playerId, 0));
+
+  emitToInstance(instance, 'finale-start', {
+    finalists,
+    timeLimit: TIMERS.FINALE,
+    endsAt: Date.now() + TIMERS.FINALE,
+  });
 
   emitToInstance(instance, 'phase-changed', {
     phase: 'finale',
-    message: 'Finale coming in Phase 4',
+    duration: TIMERS.FINALE,
+    endsAt: Date.now() + TIMERS.FINALE,
   });
+
+  instance.phaseTimer = setTimeout(() => {
+    endFinale(instance);
+  }, TIMERS.FINALE);
+}
+
+/**
+ * Beendet das Finale und berechnet Ergebnisse
+ */
+function endFinale(instance: Instance): void {
+  const state = votingStates.get(instance.id);
+  if (!state) {
+    transitionTo(instance, 'results');
+    return;
+  }
+
+  const ranking = calculateFinalRanking(instance.submissions, state);
+
+  log('Phase', `Finale ended. Winner: ${ranking[0]?.playerId || 'none'}`);
+
+  // State aufräumen
+  votingStates.delete(instance.id);
+
+  // Zu Results wechseln (mit Ranking)
+  handleResultsWithRanking(instance, ranking);
+}
+
+/**
+ * Results mit Ranking anzeigen
+ */
+function handleResultsWithRanking(instance: Instance, ranking: ReturnType<typeof calculateFinalRanking>): void {
+  instance.phase = 'results';
+
+  const results: RankingEntry[] = ranking.map((r) => {
+    const submission = instance.submissions.find((s) => s.playerId === r.playerId);
+    const player = instance.players.get(r.playerId) || instance.spectators.get(r.playerId);
+    return {
+      place: r.place,
+      playerId: r.playerId,
+      user: player?.user || { displayName: 'Unknown', discriminator: '0000', fullName: 'Unknown#0000' },
+      pixels: submission?.pixels || '',
+      finalVotes: r.finalVotes,
+      elo: r.elo,
+    };
+  });
+
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'results',
+    duration: TIMERS.RESULTS,
+  });
+
+  emitToInstance(instance, 'game-results', {
+    prompt: instance.prompt,
+    rankings: results,
+    totalParticipants: instance.submissions.length,
+  });
+
+  // Spectators zu Spielern für nächste Runde
+  for (const [id, spectator] of instance.spectators) {
+    instance.players.set(id, spectator);
+  }
+  instance.spectators.clear();
+
+  instance.phaseTimer = setTimeout(() => {
+    resetForNextRound(instance);
+  }, TIMERS.RESULTS);
 }
 
 /**
