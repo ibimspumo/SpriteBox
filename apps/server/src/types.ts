@@ -32,12 +32,13 @@ export interface Instance {
   type: InstanceType;
   code?: string;          // Nur für private Räume
   hostId?: string;        // Nur für private Räume
+  passwordHash?: string;  // Optionales Passwort für private Räume
   phase: GamePhase;
   players: Map<string, Player>;
   spectators: Map<string, Player>;
   submissions: Submission[];
   votes: Vote[];
-  prompt?: string;
+  prompt?: Prompt;
   createdAt: number;
   lastActivity: number;
   lobbyTimer?: NodeJS.Timeout;
@@ -67,6 +68,13 @@ export interface VotingAssignment {
   round: number;
 }
 
+// === Prompt ===
+export interface Prompt {
+  prefix: string;
+  subject: string;
+  suffix: string;
+}
+
 // === Stats ===
 export interface PlayerStats {
   gamesPlayed: number;
@@ -86,6 +94,7 @@ export interface ServerToClientEvents {
     type: InstanceType;
     code?: string;
     isHost?: boolean;
+    hasPassword?: boolean;
     players: User[];
     spectator: boolean;
   }) => void;
@@ -99,7 +108,7 @@ export interface ServerToClientEvents {
   'lobby-timer-started': (data: { duration: number; startsAt: number }) => void;
   'phase-changed': (data: {
     phase: GamePhase;
-    prompt?: string;
+    prompt?: Prompt;
     duration?: number;
     startsAt?: number;
     endsAt?: number;
@@ -124,28 +133,36 @@ export interface ServerToClientEvents {
     endsAt: number;
   }) => void;
   'finale-vote-received': (data: { success: boolean }) => void;
-  'game-results': (data: { prompt?: string; rankings: RankingEntry[]; compressedRankings?: string; totalParticipants: number }) => void;
+  'game-results': (data: { prompt?: Prompt; rankings: RankingEntry[]; compressedRankings?: string; totalParticipants: number }) => void;
   'idle-disconnect': (data: { reason: string }) => void;
   'session-restored': (data: {
     instanceId: string;
     user: User;
     phase: GamePhase;
-    prompt?: string;
+    prompt?: Prompt;
     players: User[];
     isSpectator: boolean;
   }) => void;
   'session-restore-failed': (data: { reason: string }) => void;
   'instance-closing': (data: { reason: string }) => void;
+  'password-required': (data: { code: string }) => void;
+  'password-changed': (data: { hasPassword: boolean }) => void;
+  'queued': (data: { position: number; estimatedWait: number }) => void;
+  'queue-update': (data: { position: number; estimatedWait: number }) => void;
+  'queue-ready': (data: { message: string }) => void;
+  'queue-removed': (data: { reason: 'timeout' | 'disconnect' | 'manual' }) => void;
+  'server-status': (data: { status: 'ok' | 'warning' | 'critical'; currentPlayers: number; maxPlayers: number }) => void;
 }
 
 export interface ClientToServerEvents {
   ping: (callback: (time: number) => void) => void;
   'join-public': () => void;
-  'create-room': () => void;
-  'join-room': (data: { code: string }) => void;
+  'create-room': (data?: { password?: string }) => void;
+  'join-room': (data: { code: string; password?: string }) => void;
   'leave-lobby': () => void;
   'host-start-game': () => void;
   'host-kick-player': (data: { playerId: string }) => void;
+  'host-change-password': (data: { password: string | null }) => void;
   'submit-drawing': (data: { pixels: string }) => void;
   'vote': (data: { chosenId: string }) => void;
   'finale-vote': (data: { playerId: string }) => void;
@@ -153,6 +170,7 @@ export interface ClientToServerEvents {
   'change-name': (data: { name: string }) => void;
   'restore-session': (data: { sessionId: string }) => void;
   'restore-user': (data: { displayName: string; discriminator: string }) => void;
+  'leave-queue': () => void;
 }
 
 // === Hilfstypes ===

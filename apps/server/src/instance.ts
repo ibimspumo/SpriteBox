@@ -4,6 +4,7 @@ import type { Instance, Player, InstanceType } from './types.js';
 import { generateId, generateRoomCode, log } from './utils.js';
 import { MAX_PLAYERS_PER_INSTANCE, MIN_PLAYERS_TO_START, TIMERS } from './constants.js';
 import { startGame as startGamePhase } from './phases.js';
+import { hashPassword, verifyPassword } from './password.js';
 
 // Disconnected players with grace period (sessionId -> {player, instanceId, timeout})
 const disconnectedPlayers = new Map<string, {
@@ -33,12 +34,14 @@ export function createInstance(options: {
   type: InstanceType;
   hostId?: string;
   code?: string;
+  passwordHash?: string;
 }): Instance {
   const instance: Instance = {
     id: generateId(),
     type: options.type,
     code: options.code,
     hostId: options.hostId,
+    passwordHash: options.passwordHash,
     phase: 'lobby',
     players: new Map(),
     spectators: new Map(),
@@ -54,7 +57,7 @@ export function createInstance(options: {
     privateRooms.set(options.code, instance);
   }
 
-  log('Instance', `Created ${options.type} instance: ${instance.id}`);
+  log('Instance', `Created ${options.type} instance: ${instance.id}${options.passwordHash ? ' (password protected)' : ''}`);
   return instance;
 }
 
@@ -78,17 +81,27 @@ export function findOrCreatePublicInstance(): Instance {
 }
 
 /**
- * Erstellt einen privaten Raum
+ * Erstellt einen privaten Raum (mit optionalem Passwort)
  */
-export function createPrivateRoom(hostPlayer: Player): { code: string; instance: Instance } {
+export async function createPrivateRoom(
+  hostPlayer: Player,
+  options: { password?: string } = {}
+): Promise<{ code: string; instance: Instance; hasPassword: boolean }> {
   const code = generateUniqueRoomCode();
+
+  let passwordHash: string | undefined;
+  if (options.password) {
+    passwordHash = await hashPassword(options.password);
+  }
+
   const instance = createInstance({
     type: 'private',
     hostId: hostPlayer.id,
     code,
+    passwordHash,
   });
 
-  return { code, instance };
+  return { code, instance, hasPassword: !!passwordHash };
 }
 
 /**
@@ -115,6 +128,47 @@ function generateUniqueRoomCode(): string {
  */
 export function findPrivateRoom(code: string): Instance | undefined {
   return privateRooms.get(code.toUpperCase());
+}
+
+/**
+ * Prüft ob ein privater Raum ein Passwort hat
+ */
+export function roomHasPassword(code: string): boolean {
+  const instance = privateRooms.get(code.toUpperCase());
+  return instance ? !!instance.passwordHash : false;
+}
+
+/**
+ * Verifiziert das Passwort für einen privaten Raum
+ */
+export async function verifyRoomPassword(code: string, password: string): Promise<boolean> {
+  const instance = privateRooms.get(code.toUpperCase());
+  if (!instance || !instance.passwordHash) {
+    return false;
+  }
+  return verifyPassword(password, instance.passwordHash);
+}
+
+/**
+ * Ändert das Passwort eines privaten Raums (nur Host)
+ */
+export async function changeRoomPassword(
+  instance: Instance,
+  newPassword: string | null
+): Promise<{ success: boolean; error?: string }> {
+  if (instance.type !== 'private') {
+    return { success: false, error: 'Not a private room' };
+  }
+
+  if (newPassword) {
+    instance.passwordHash = await hashPassword(newPassword);
+    log('Instance', `Password set for room ${instance.code}`);
+  } else {
+    instance.passwordHash = undefined;
+    log('Instance', `Password removed for room ${instance.code}`);
+  }
+
+  return { success: true };
 }
 
 /**

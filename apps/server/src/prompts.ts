@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { randomItem } from './utils.js';
+import type { Prompt } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -51,19 +52,19 @@ function loadPromptData(): PromptData {
 /**
  * Generiert einen zufälligen Prompt
  */
-export function generatePrompt(): string {
+export function generatePrompt(): Prompt {
   const data = loadPromptData();
 
   // Guard against empty arrays
   if (data.prefixes.length === 0 || data.subjects.length === 0 || data.suffixes.length === 0) {
-    return 'mysterious thing in a place';
+    return { prefix: 'mysterious', subject: 'thing', suffix: 'in a place' };
   }
 
   const prefix = randomItem(data.prefixes);
   const subject = randomItem(data.subjects);
   const suffix = randomItem(data.suffixes);
 
-  return `${prefix} ${subject} ${suffix}`;
+  return { prefix, subject, suffix };
 }
 
 /**

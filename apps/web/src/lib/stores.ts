@@ -1,6 +1,6 @@
 // apps/web/src/lib/stores.ts
 import { writable, derived, type Readable } from 'svelte/store';
-import type { User, LobbyJoinedData, VotingRoundData, FinaleData, GameResultsData } from './socket';
+import type { User, Prompt, LobbyJoinedData, VotingRoundData, FinaleData, GameResultsData } from './socket';
 
 // === Connection State ===
 export const connectionStatus = writable<'disconnected' | 'connecting' | 'connected'>('disconnected');
@@ -15,6 +15,7 @@ export interface LobbyState {
   type: 'public' | 'private' | null;
   code: string | null;
   isHost: boolean;
+  hasPassword: boolean;
   players: User[];
   isSpectator: boolean;
 }
@@ -24,8 +25,22 @@ export const lobby = writable<LobbyState>({
   type: null,
   code: null,
   isHost: false,
+  hasPassword: false,
   players: [],
   isSpectator: false,
+});
+
+// === Password Prompt State ===
+export interface PasswordPromptState {
+  show: boolean;
+  roomCode: string | null;
+  error: string | null;
+}
+
+export const passwordPrompt = writable<PasswordPromptState>({
+  show: false,
+  roomCode: null,
+  error: null,
 });
 
 // === Game State ===
@@ -33,7 +48,7 @@ export type GamePhase = 'idle' | 'lobby' | 'countdown' | 'drawing' | 'voting' | 
 
 export interface GameState {
   phase: GamePhase;
-  prompt: string | null;
+  prompt: Prompt | null;
   timer: {
     duration: number;
     endsAt: number;
@@ -136,8 +151,10 @@ export function resetLobbyState(): void {
     type: null,
     code: null,
     isHost: false,
+    hasPassword: false,
     players: [],
     isSpectator: false,
   });
+  passwordPrompt.set({ show: false, roomCode: null, error: null });
   resetGameState();
 }

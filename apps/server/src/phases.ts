@@ -10,6 +10,7 @@ import {
   calculateFinalistCount,
   calculateFinalRanking,
   validateFairness,
+  isRoundComplete,
   type VotingState,
 } from './voting.js';
 import { compressIfNeeded } from './compression.js';
@@ -62,6 +63,55 @@ export function setPhaseIo(ioInstance: Server): void {
  */
 export function getVotingState(instanceId: string): VotingState | undefined {
   return votingStates.get(instanceId);
+}
+
+/**
+ * Checks if all votes are in and triggers early phase end if so
+ * Returns true if early end was triggered
+ */
+export function checkAndTriggerEarlyVotingEnd(instanceId: string, instance: Instance): boolean {
+  const state = votingStates.get(instanceId);
+  if (!state) return false;
+
+  // Check if all assignments have been processed (all votes received)
+  if (!isRoundComplete(state)) {
+    return false;
+  }
+
+  log('Phase', `All votes received for round ${state.currentRound}, ending early`);
+
+  // Clear the phase timer to prevent double-execution
+  clearTimeout(instance.phaseTimer);
+
+  // Trigger early end based on current phase
+  if (instance.phase === 'voting') {
+    endVotingRound(instance, state, state.currentRound);
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Checks if all finale votes are in and triggers early phase end
+ */
+export function checkAndTriggerEarlyFinaleEnd(instanceId: string, instance: Instance, totalVoters: number): boolean {
+  const state = votingStates.get(instanceId);
+  if (!state) return false;
+
+  // Check if all voters have voted
+  if (state.votersVoted.size < totalVoters) {
+    return false;
+  }
+
+  log('Phase', `All finale votes received, ending early`);
+
+  // Clear the phase timer
+  clearTimeout(instance.phaseTimer);
+
+  // End finale
+  endFinale(instance);
+  return true;
 }
 
 /**

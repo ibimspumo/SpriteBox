@@ -25,6 +25,7 @@ import {
   lastError,
   hasSubmitted,
   finaleVoted,
+  passwordPrompt,
   startTimer,
   resetGameState,
   resetLobbyState,
@@ -173,9 +174,12 @@ function setupEventHandlers(socket: AppSocket): void {
       type: data.type,
       code: data.code ?? null,
       isHost: data.isHost ?? false,
+      hasPassword: data.hasPassword ?? false,
       players: data.players,
       isSpectator: data.spectator,
     });
+    // Clear any password prompt on successful join
+    passwordPrompt.set({ show: false, roomCode: null, error: null });
     game.update((g) => ({ ...g, phase: 'lobby' }));
   });
 
@@ -334,6 +338,7 @@ function setupEventHandlers(socket: AppSocket): void {
       type: 'public', // Will be updated by phase events
       code: null,
       isHost: false,
+      hasPassword: false,
       players: data.players,
       isSpectator: data.isSpectator,
     });
@@ -365,6 +370,17 @@ function setupEventHandlers(socket: AppSocket): void {
     currentSessionId = null;
     resetLobbyState();
   });
+
+  // === Password Events ===
+  socket.on('password-required', (data: { code: string }) => {
+    console.log('[Socket] Password required for room:', data.code);
+    passwordPrompt.set({ show: true, roomCode: data.code, error: null });
+  });
+
+  socket.on('password-changed', (data: { hasPassword: boolean }) => {
+    console.log('[Socket] Password changed:', data.hasPassword);
+    lobby.update((l) => ({ ...l, hasPassword: data.hasPassword }));
+  });
 }
 
 // === Action Functions ===
@@ -372,12 +388,16 @@ export function joinPublicGame(): void {
   getSocket()?.emit('join-public');
 }
 
-export function createPrivateRoom(): void {
-  getSocket()?.emit('create-room');
+export function createPrivateRoom(password?: string): void {
+  getSocket()?.emit('create-room', password ? { password } : undefined);
 }
 
-export function joinPrivateRoom(code: string): void {
-  getSocket()?.emit('join-room', { code });
+export function joinPrivateRoom(code: string, password?: string): void {
+  getSocket()?.emit('join-room', { code, password });
+}
+
+export function hostChangePassword(password: string | null): void {
+  getSocket()?.emit('host-change-password', { password });
 }
 
 export function leaveLobby(): void {

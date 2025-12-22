@@ -13,6 +13,7 @@ export const TIMERS = {
   FINALE: 15_000,              // 15s fürs Finale
   RESULTS: 15_000,             // 15s Ergebnisanzeige
   RECONNECT_GRACE: 15_000,     // 15s zum Reconnecten
+  SESSION_MAX_AGE: 24 * 60 * 60 * 1000, // 24h max session age
 } as const;
 
 // === Elo-Konfiguration ===
@@ -60,7 +61,7 @@ export const PALETTE = [
 // === Rate Limits ===
 export const RATE_LIMITS = {
   GLOBAL: { windowMs: 1_000, maxRequests: 50 },
-  SUBMIT: { windowMs: 60_000, maxRequests: 10 },
+  SUBMIT: { windowMs: 60_000, maxRequests: 5 },
   VOTE: { windowMs: 1_000, maxRequests: 3 },
   CREATE_ROOM: { windowMs: 60_000, maxRequests: 3 },
   JOIN_ROOM: { windowMs: 10_000, maxRequests: 5 },

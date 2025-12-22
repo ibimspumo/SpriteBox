@@ -9,6 +9,8 @@ import { getInstanceStats, startCleanupInterval } from './instance.js';
 import { setPhaseIo } from './phases.js';
 import { startMonitoring } from './monitoring.js';
 import { setupDebugEndpoints } from './debug.js';
+import { initServerConfig, getServerConfig, getMemoryInfo } from './serverConfig.js';
+import { startQueueProcessing, getQueueStats } from './queue.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -34,19 +36,34 @@ setPhaseIo(io);
 // Debug-Endpoints (nur in Development)
 setupDebugEndpoints(app, io);
 
+// Initialize server configuration (RAM detection)
+initServerConfig();
+
 // Health Check (muss vor SPA Fallback kommen)
 app.get('/health', (_req, res) => {
   const instanceStats = getInstanceStats();
+  const memoryInfo = getMemoryInfo();
+  const serverConfig = getServerConfig();
+  const queueStats = getQueueStats();
 
   res.json({
-    status: 'healthy',
+    status: memoryInfo.status === 'ok' ? 'healthy' : memoryInfo.status,
     connections: io.engine.clientsCount,
     instances: instanceStats,
     uptime: process.uptime(),
     memory: {
-      heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-      heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+      heapUsedMB: memoryInfo.heapUsedMB,
+      heapTotalMB: memoryInfo.heapTotalMB,
+      maxMB: memoryInfo.maxMB,
+      usagePercent: memoryInfo.usagePercent,
+      status: memoryInfo.status,
     },
+    server: {
+      maxPlayers: serverConfig.maxPlayers,
+      warningThreshold: serverConfig.warningThreshold,
+      criticalThreshold: serverConfig.criticalThreshold,
+    },
+    queue: queueStats,
     timestamp: Date.now(),
   });
 });
@@ -67,6 +84,9 @@ setupSocketHandlers(io);
 
 // Periodischen Cleanup starten
 startCleanupInterval();
+
+// Start queue processing
+startQueueProcessing();
 
 // Monitoring starten (Logs, Error-Handling)
 startMonitoring();

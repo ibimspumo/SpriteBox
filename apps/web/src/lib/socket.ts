@@ -5,7 +5,7 @@ import { browser } from '$app/environment';
 // Types for events (should match server)
 export interface ServerToClientEvents {
   connected: (data: { socketId: string; serverTime: number; user: User; sessionId: string }) => void;
-  error: (data: { code: string; message?: string }) => void;
+  error: (data: { code: string; message?: string; retryAfter?: number }) => void;
   'lobby-joined': (data: LobbyJoinedData) => void;
   'player-joined': (data: { user: User }) => void;
   'player-left': (data: { playerId: string; kicked?: boolean }) => void;
@@ -22,17 +22,21 @@ export interface ServerToClientEvents {
   'session-restored': (data: SessionRestoredData) => void;
   'session-restore-failed': (data: { reason: string }) => void;
   'instance-closing': (data: { reason: string }) => void;
+  'password-required': (data: { code: string }) => void;
+  'password-changed': (data: { hasPassword: boolean }) => void;
+  'room-created': (data: { code: string; instanceId: string }) => void;
 }
 
 export interface ClientToServerEvents {
   ping: (callback: (time: number) => void) => void;
   'join-public': () => void;
-  'create-room': () => void;
-  'join-room': (data: { code: string }) => void;
+  'create-room': (data?: { password?: string }) => void;
+  'join-room': (data: { code: string; password?: string }) => void;
   'leave-lobby': () => void;
   'change-name': (data: { name: string }) => void;
   'host-start-game': () => void;
   'host-kick-player': (data: { playerId: string }) => void;
+  'host-change-password': (data: { password: string | null }) => void;
   'submit-drawing': (data: { pixels: string }) => void;
   'vote': (data: { chosenId: string }) => void;
   'finale-vote': (data: { playerId: string }) => void;
@@ -45,12 +49,18 @@ export interface SessionRestoredData {
   instanceId: string;
   user: User;
   phase: string;
-  prompt?: string;
+  prompt?: Prompt;
   players: User[];
   isSpectator: boolean;
 }
 
 // Interfaces
+export interface Prompt {
+  prefix: string;
+  subject: string;
+  suffix: string;
+}
+
 export interface User {
   displayName: string;
   discriminator: string;
@@ -62,13 +72,14 @@ export interface LobbyJoinedData {
   type: 'public' | 'private';
   code?: string;
   isHost?: boolean;
+  hasPassword?: boolean;
   players: User[];
   spectator: boolean;
 }
 
 export interface PhaseChangedData {
   phase: string;
-  prompt?: string;
+  prompt?: Prompt;
   duration?: number;
   startsAt?: number;
   endsAt?: number;
@@ -97,7 +108,7 @@ export interface FinaleData {
 }
 
 export interface GameResultsData {
-  prompt: string;
+  prompt?: Prompt;
   rankings: Array<{
     place: number;
     playerId: string;
