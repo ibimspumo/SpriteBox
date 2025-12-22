@@ -38,7 +38,7 @@ import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, validate, va
 import { getVotingState, isWithinPhaseTime, getPhaseTimings, checkAndTriggerEarlyVotingEnd, checkAndTriggerEarlyFinaleEnd } from './phases.js';
 import { processVote, processFinaleVote } from './voting.js';
 import { checkRateLimit, checkConnectionRateLimit } from './rateLimit.js';
-import { checkMultiAccount, removeSocketFingerprint, isIpInInstance, trackIpInInstance, untrackIpFromInstance } from './fingerprint.js';
+import { checkMultiAccount, removeSocketFingerprint, isBrowserInInstance, trackBrowserInInstance, untrackBrowserFromInstance } from './fingerprint.js';
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -181,6 +181,10 @@ export function setupSocketHandlers(io: TypedServer): void {
     if (multiCheck.warning) {
       socket.data.multiAccountWarning = true;
     }
+
+    // Extract browser fingerprint from auth
+    const browserId = socket.handshake.auth?.browserId as string | undefined;
+    socket.data.browserId = browserId || `fallback-${ip}-${socket.id}`;
 
     // Track
     ipConns.add(socket.id);
@@ -328,10 +332,9 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
     socket.data.instanceId = 'pending';
 
     const instance = findOrCreatePublicInstance();
-    const ip = socket.data.ip || 'unknown';
 
-    // Check if this IP is already in this instance (prevent duplicate tabs)
-    if (isIpInInstance(ip, instance.id)) {
+    // Check if this browser is already in this instance (prevent duplicate tabs)
+    if (isBrowserInInstance(socket.data.browserId, instance.id)) {
       socket.data.instanceId = null;
       socket.emit('error', { code: 'DUPLICATE_SESSION', message: 'You are already in this game in another tab' });
       return;
@@ -345,8 +348,8 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       return;
     }
 
-    // Track IP in this instance
-    trackIpInInstance(ip, instance.id, socket.id);
+    // Track browser in this instance
+    trackBrowserInInstance(socket.data.browserId, instance.id, socket.id);
 
     // Add socket to room
     socket.join(instance.id);
@@ -410,9 +413,8 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       });
       addPlayerToInstance(instance, player);
 
-      // Track IP in this instance
-      const ip = socket.data.ip || 'unknown';
-      trackIpInInstance(ip, instance.id, socket.id);
+      // Track browser in this instance
+      trackBrowserInInstance(socket.data.browserId, instance.id, socket.id);
 
       socket.join(instance.id);
       socket.data.instanceId = instance.id;
@@ -493,8 +495,8 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       clearPasswordAttempts(ip, roomCode);
     }
 
-    // Check if this IP is already in this instance (prevent duplicate tabs)
-    if (isIpInInstance(ip, instance.id)) {
+    // Check if this browser is already in this instance (prevent duplicate tabs)
+    if (isBrowserInInstance(socket.data.browserId, instance.id)) {
       socket.emit('error', { code: 'DUPLICATE_SESSION', message: 'You are already in this game in another tab' });
       return;
     }
@@ -510,8 +512,8 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       return;
     }
 
-    // Track IP in this instance
-    trackIpInInstance(ip, instance.id, socket.id);
+    // Track browser in this instance
+    trackBrowserInInstance(socket.data.browserId, instance.id, socket.id);
 
     socket.join(instance.id);
     socket.data.instanceId = instance.id;
@@ -610,9 +612,8 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       socket.to(instance.id).emit('player-left', { playerId: player.id, user: player.user });
     }
 
-    // Untrack IP from instance
-    const ip = socket.data.ip || 'unknown';
-    untrackIpFromInstance(ip, instanceId);
+    // Untrack browser from instance
+    untrackBrowserFromInstance(socket.data.browserId, instanceId);
 
     socket.leave(instanceId);
     socket.data.instanceId = null;
@@ -704,11 +705,10 @@ function registerHostHandlers(socket: TypedSocket, io: TypedServer, player: Play
     io.to(targetPlayer.socketId).emit('kicked', { reason: 'Host kicked you' });
     io.sockets.sockets.get(targetPlayer.socketId)?.leave(instance.id);
 
-    // Reset socket.data for kicked player and untrack IP
+    // Reset socket.data for kicked player and untrack browser
     const kickedSocket = io.sockets.sockets.get(targetPlayer.socketId);
     if (kickedSocket) {
-      const kickedIp = kickedSocket.data.ip || 'unknown';
-      untrackIpFromInstance(kickedIp, instance.id);
+      untrackBrowserFromInstance(kickedSocket.data.browserId, instance.id);
       kickedSocket.data.instanceId = null;
     }
 
@@ -1107,9 +1107,8 @@ function handleDisconnect(socket: TypedSocket, player: Player, reason: string): 
 
   const instanceId = socket.data.instanceId;
   if (instanceId && instanceId !== 'pending') {
-    // Untrack IP from instance
-    const ip = socket.data.ip || 'unknown';
-    untrackIpFromInstance(ip, instanceId);
+    // Untrack browser from instance
+    untrackBrowserFromInstance(socket.data.browserId, instanceId);
 
     const instance = findInstance(instanceId);
     if (instance) {

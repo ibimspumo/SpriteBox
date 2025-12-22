@@ -5,8 +5,9 @@ import { log } from './utils.js';
 // IP -> Socket IDs
 const ipToSockets = new Map<string, Set<string>>();
 
-// Instance -> IP -> Socket ID (tracks which IPs are in which instances)
-const instanceIpMap = new Map<string, Map<string, string>>();
+// Instance -> BrowserId -> Socket ID (tracks which browsers are in which instances)
+// This allows multiple users on the same IP (same household) but prevents same browser multiple tabs
+const instanceBrowserMap = new Map<string, Map<string, string>>();
 
 // Max Sessions pro IP
 const MAX_SESSIONS_PER_IP = 3;
@@ -75,42 +76,42 @@ export function getMultiAccountStats(): { uniqueIPs: number; totalSessions: numb
 }
 
 /**
- * Checks if an IP is already in a specific instance
+ * Checks if a browser is already in a specific instance
  */
-export function isIpInInstance(ip: string, instanceId: string): boolean {
-  const instanceMap = instanceIpMap.get(instanceId);
-  return instanceMap?.has(ip) ?? false;
+export function isBrowserInInstance(browserId: string, instanceId: string): boolean {
+  const instanceMap = instanceBrowserMap.get(instanceId);
+  return instanceMap?.has(browserId) ?? false;
 }
 
 /**
- * Tracks an IP joining an instance
+ * Tracks a browser joining an instance
  */
-export function trackIpInInstance(ip: string, instanceId: string, socketId: string): void {
-  let instanceMap = instanceIpMap.get(instanceId);
+export function trackBrowserInInstance(browserId: string, instanceId: string, socketId: string): void {
+  let instanceMap = instanceBrowserMap.get(instanceId);
   if (!instanceMap) {
     instanceMap = new Map();
-    instanceIpMap.set(instanceId, instanceMap);
+    instanceBrowserMap.set(instanceId, instanceMap);
   }
-  instanceMap.set(ip, socketId);
-  log('MultiAccount', `IP ${ip} tracked in instance ${instanceId}`);
+  instanceMap.set(browserId, socketId);
+  log('MultiAccount', `Browser ${browserId.slice(0, 8)}... tracked in instance ${instanceId}`);
 }
 
 /**
- * Removes IP tracking when leaving an instance
+ * Removes browser tracking when leaving an instance
  */
-export function untrackIpFromInstance(ip: string, instanceId: string): void {
-  const instanceMap = instanceIpMap.get(instanceId);
+export function untrackBrowserFromInstance(browserId: string, instanceId: string): void {
+  const instanceMap = instanceBrowserMap.get(instanceId);
   if (instanceMap) {
-    instanceMap.delete(ip);
+    instanceMap.delete(browserId);
     if (instanceMap.size === 0) {
-      instanceIpMap.delete(instanceId);
+      instanceBrowserMap.delete(instanceId);
     }
   }
 }
 
 /**
- * Cleans up all IP tracking for an instance (when instance is deleted)
+ * Cleans up all browser tracking for an instance (when instance is deleted)
  */
-export function cleanupInstanceIpTracking(instanceId: string): void {
-  instanceIpMap.delete(instanceId);
+export function cleanupInstanceBrowserTracking(instanceId: string): void {
+  instanceBrowserMap.delete(instanceId);
 }

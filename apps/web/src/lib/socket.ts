@@ -157,6 +157,25 @@ export type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 // Socket instance
 let socket: AppSocket | null = null;
 
+// Browser fingerprint key
+const BROWSER_FINGERPRINT_KEY = 'spritebox-browser-id';
+
+/**
+ * Gets or creates a unique browser fingerprint (persisted in localStorage)
+ * This identifies a specific browser, not a user or IP
+ */
+function getBrowserFingerprint(): string {
+  if (!browser) return 'server';
+
+  let fingerprint = localStorage.getItem(BROWSER_FINGERPRINT_KEY);
+  if (!fingerprint) {
+    // Generate a unique ID for this browser
+    fingerprint = crypto.randomUUID();
+    localStorage.setItem(BROWSER_FINGERPRINT_KEY, fingerprint);
+  }
+  return fingerprint;
+}
+
 /**
  * Initializes the socket connection
  */
@@ -180,6 +199,9 @@ export function initSocket(): Socket<ServerToClientEvents, ClientToServerEvents>
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 20000,
+    auth: {
+      browserId: getBrowserFingerprint(),
+    },
   });
 
   // Debug-Logging in Development
