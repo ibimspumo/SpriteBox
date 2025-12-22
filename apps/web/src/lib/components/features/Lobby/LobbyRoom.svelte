@@ -8,6 +8,40 @@
 
   let showPasswordSettings = $state(false);
   let newPassword = $state('');
+  let showCopiedToast = $state(false);
+
+  function getRoomShareUrl(): string {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    return $lobby.code ? `${baseUrl}?room=${$lobby.code}` : baseUrl;
+  }
+
+  async function handleShareRoom() {
+    const shareUrl = getRoomShareUrl();
+    const shareData = {
+      title: 'SpriteBox',
+      text: `Join my SpriteBox room: ${$lobby.code}`,
+      url: shareUrl
+    };
+
+    // Try Web Share API first (mobile)
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
+      }
+    }
+
+    // Fallback: Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showCopiedToast = true;
+      setTimeout(() => { showCopiedToast = false; }, 2000);
+    } catch {
+      prompt('Copy this link:', shareUrl);
+    }
+  }
 
   function handleSetPassword() {
     if (newPassword.length >= 4) {
@@ -24,6 +58,11 @@
 </script>
 
 <div class="lobby-wrapper">
+  <!-- Copied Toast -->
+  {#if showCopiedToast}
+    <div class="copied-toast">Link copied!</div>
+  {/if}
+
   <!-- Logo -->
   <div class="logo-container">
     <img src="/logo.png" alt="SpriteBox" class="logo" />
@@ -43,6 +82,9 @@
             </span>
           {/if}
         </div>
+        <button class="share-room-btn" onclick={handleShareRoom} title="Invite friends">
+          <img src="/icons/link.svg" alt="Share" class="share-room-icon" />
+        </button>
       {:else}
         <div class="room-code-display">
           <span class="room-label">Public Lobby</span>
@@ -235,6 +277,67 @@
     width: 16px;
     height: 16px;
     filter: brightness(0) saturate(100%) invert(72%) sepia(95%) saturate(422%) hue-rotate(2deg) brightness(97%) contrast(93%);
+  }
+
+  .share-room-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: var(--color-bg-tertiary);
+    border: 3px solid var(--color-accent);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-shadow: var(--shadow-pixel-sm);
+  }
+
+  .share-room-btn:hover {
+    background: var(--color-accent);
+    transform: translateY(-2px);
+  }
+
+  .share-room-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  .share-room-icon {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+  }
+
+  .copied-toast {
+    position: fixed;
+    top: var(--space-6);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: var(--space-3) var(--space-5);
+    background: var(--color-success);
+    color: white;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-pixel);
+    z-index: var(--z-notification);
+    animation: toastIn 0.2s ease-out;
+  }
+
+  @keyframes toastIn {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   }
 
   .players-section {

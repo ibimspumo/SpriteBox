@@ -102,7 +102,7 @@ export const isInGame: Readable<boolean> = derived(lobby, ($lobby) => $lobby.ins
 export const isHost: Readable<boolean> = derived(lobby, ($lobby) => $lobby.isHost);
 export const playerCount: Readable<number> = derived(lobby, ($lobby) => $lobby.players.length);
 
-// === Timer Store (mit Auto-Update) ===
+// === Timer Store (with Auto-Update) ===
 let timerInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startTimer(duration: number, endsAt: number): void {

@@ -1,0 +1,222 @@
+/* Design Tokens - SpriteBox Pixel Art Design System */
+
+/* ===== Font Face - Pixelify Sans (locally hosted) ===== */
+@font-face {
+  font-family: 'Pixelify Sans';
+  src: url('/fonts/PixelifySans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  src: url('/fonts/PixelifySans-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  src: url('/fonts/PixelifySans-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  src: url('/fonts/PixelifySans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ===== Colors - Dark Mode Only ===== */
+
+  /* Background - Deep blue/purple gradient feel */
+  --color-bg-primary: #0f0f23;
+  --color-bg-secondary: #1a1a3e;
+  --color-bg-tertiary: #252552;
+  --color-bg-elevated: #2d2d5a;
+
+  /* Text */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b8b8d0;
+  --color-text-muted: #6b6b8a;
+
+  /* Brand - SpriteBox Orange/Yellow (from logo) */
+  --color-brand: #f5a623;
+  --color-brand-light: #ffc857;
+  --color-brand-dark: #d4870c;
+
+  /* Accent - Cyan/Teal for highlights */
+  --color-accent: #4ecdc4;
+  --color-accent-hover: #6ee7df;
+
+  /* Button Colors */
+  --color-btn-primary: #22c55e;
+  --color-btn-primary-hover: #16a34a;
+  --color-btn-primary-text: #ffffff;
+
+  --color-btn-secondary: #4b5563;
+  --color-btn-secondary-hover: #6b7280;
+  --color-btn-secondary-text: #ffffff;
+
+  --color-btn-action: #3b82f6;
+  --color-btn-action-hover: #2563eb;
+  --color-btn-action-text: #ffffff;
+
+  --color-btn-danger: #dc2626;
+  --color-btn-danger-hover: #b91c1c;
+  --color-btn-danger-text: #ffffff;
+
+  /* Semantic */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* Utility */
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(255, 255, 255, 0.2);
+  --color-overlay: rgba(15, 15, 35, 0.9);
+  --color-glow: rgba(78, 205, 196, 0.3);
+
+  /* ===== Spacing ===== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ===== Border Radius - Pixel-friendly (multiples of 4) ===== */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ===== Typography ===== */
+  --font-family: 'Pixelify Sans', 'Press Start 2P', monospace;
+  --font-family-mono: 'Courier New', monospace;
+
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-md: 1rem;      /* 16px */
+  --font-size-lg: 1.25rem;   /* 20px */
+  --font-size-xl: 1.5rem;    /* 24px */
+  --font-size-2xl: 2rem;     /* 32px */
+  --font-size-3xl: 2.5rem;   /* 40px */
+  --font-size-4xl: 3rem;     /* 48px */
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ===== Shadows - Pixel-style (hard edges) ===== */
+  --shadow-pixel: 4px 4px 0 rgba(0, 0, 0, 0.5);
+  --shadow-pixel-sm: 2px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-pixel-lg: 6px 6px 0 rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px var(--color-glow);
+  --shadow-glow-sm: 0 0 10px var(--color-glow);
+
+  /* ===== Borders - Pixel Style ===== */
+  --border-width: 3px;
+  --border-width-thin: 2px;
+  --border-style: solid;
+
+  /* ===== Transitions ===== */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* ===== Z-Index ===== */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal-backdrop: 900;
+  --z-modal: 1000;
+  --z-tooltip: 1100;
+  --z-notification: 1200;
+
+  /* ===== Pixel Art Specific ===== */
+  --pixel-size: 1px;
+  --grid-line-color: rgba(255, 255, 255, 0.08);
+  --grid-line-width: 1px;
+}
+
+/* ===== Global Pixel Art Styles ===== */
+
+/* Ensure pixel art images render crisp */
+.pixel-art,
+img[src*="logo"],
+.canvas-container canvas {
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ===== Animations ===== */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pixelBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: var(--shadow-glow-sm); }
+  50% { box-shadow: var(--shadow-glow); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* ===== Utility Classes ===== */
+.text-brand { color: var(--color-brand); }
+.text-accent { color: var(--color-accent); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-error { color: var(--color-error); }
+.text-muted { color: var(--color-text-muted); }
+
+.bg-elevated { background: var(--color-bg-elevated); }
+.bg-tertiary { background: var(--color-bg-tertiary); }
+
+.animate-pulse { animation: pulse 2s ease-in-out infinite; }
+.animate-glow { animation: glow 2s ease-in-out infinite; }
+.animate-bounce { animation: bounce 1s ease-in-out infinite; }
+.animate-blink { animation: pixelBlink 1s step-end infinite; }

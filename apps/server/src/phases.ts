@@ -14,8 +14,9 @@ import {
   type VotingState,
 } from './voting.js';
 import { compressIfNeeded } from './compression.js';
+import { checkLobbyTimer } from './instance.js';
 
-// IO-Instanz (wird von index.ts gesetzt)
+// IO instance (set by index.ts)
 let io: Server | null = null;
 
 // Voting-State pro Instanz speichern
@@ -37,7 +38,7 @@ function setPhaseTimings(instanceId: string, duration: number): void {
 }
 
 /**
- * Prüft ob eine Aktion im gültigen Zeitfenster liegt
+ * Checks if an action is within the valid time window
  */
 export function isWithinPhaseTime(instanceId: string, gracePeriodMs = 2000): boolean {
   const timings = instanceTimings.get(instanceId);
@@ -48,7 +49,7 @@ export function isWithinPhaseTime(instanceId: string, gracePeriodMs = 2000): boo
 }
 
 /**
- * Gibt die Phase-Timings zurück (für Anti-Bot Checks)
+ * Returns the phase timings (for anti-bot checks)
  */
 export function getPhaseTimings(instanceId: string): PhaseTimings | undefined {
   return instanceTimings.get(instanceId);
@@ -115,7 +116,7 @@ export function checkAndTriggerEarlyFinaleEnd(instanceId: string, instance: Inst
 }
 
 /**
- * Startet das Spiel für eine Instanz
+ * Starts the game for an instance
  */
 export function startGame(instance: Instance): void {
   clearTimeout(instance.lobbyTimer);
@@ -132,7 +133,7 @@ export function startGame(instance: Instance): void {
 }
 
 /**
- * Wechselt zu einer neuen Phase
+ * Transitions to a new phase
  */
 export function transitionTo(instance: Instance, phase: GamePhase): void {
   instance.phase = phase;
@@ -172,6 +173,9 @@ function handleLobby(instance: Instance): void {
     phase: 'lobby',
     message: 'Waiting for next round',
   });
+
+  // Check timer - important after round reset when players are already present
+  checkLobbyTimer(instance);
 }
 
 /**
@@ -191,13 +195,13 @@ function handleCountdown(instance: Instance): void {
 }
 
 /**
- * Zeichnen-Phase (60 Sekunden)
+ * Drawing phase (60 seconds)
  */
 function handleDrawing(instance: Instance): void {
-  // Submissions zurücksetzen
+  // Reset submissions
   instance.submissions = [];
 
-  // Phase-Timing setzen für Anti-Cheat
+  // Set phase timing for anti-cheat
   setPhaseTimings(instance.id, TIMERS.DRAWING);
 
   emitToInstance(instance, 'phase-changed', {
@@ -213,10 +217,10 @@ function handleDrawing(instance: Instance): void {
 }
 
 /**
- * Beendet die Zeichnen-Phase
+ * Ends the drawing phase
  */
 function endDrawingPhase(instance: Instance): void {
-  // Spieler die nicht submitted haben -> zu Spectators verschieben
+  // Players who didn't submit -> move to spectators
   const submittedIds = new Set(instance.submissions.map((s) => s.playerId));
 
   for (const [playerId, player] of instance.players) {
@@ -229,51 +233,62 @@ function endDrawingPhase(instance: Instance): void {
 
   log('Phase', `Drawing ended for ${instance.id}: ${instance.submissions.length} valid submissions`);
 
-  // Mindestens 2 Submissions für Voting
+  // At least 2 submissions for voting
   if (instance.submissions.length < 2) {
     log('Phase', `Not enough submissions, skipping to results`);
     transitionTo(instance, 'results');
     return;
   }
 
-  // Voting starten
+  // Start voting
   transitionTo(instance, 'voting');
 }
 
 /**
- * Voting-Phase
+ * Voting phase
  */
 function handleVoting(instance: Instance): void {
-  // State initialisieren
+  // Initialize state
   const state = initVotingState(instance.submissions);
   votingStates.set(instance.id, state);
 
   log('Phase', `Voting started with ${state.totalRounds} rounds for ${instance.submissions.length} submissions`);
 
-  // Erste Runde starten
+  // Start first round
   startVotingRound(instance, state, 1);
 }
 
 /**
- * Startet eine Voting-Runde
+ * Starts a voting round
  */
 function startVotingRound(instance: Instance, state: VotingState, roundNumber: number): void {
   log('Phase', `Voting round ${roundNumber}/${state.totalRounds}`);
 
-  // Phase-Timing setzen für Anti-Cheat
+  // Set phase timing for anti-cheat
   setPhaseTimings(instance.id, TIMERS.VOTING_ROUND);
 
-  // Assignments berechnen
+  // Calculate assignments
   const assignments = prepareVotingRound(instance, state, roundNumber);
 
-  // An jeden Voter sein Assignment senden
+  // IMPORTANT: Calculate endsAt once to ensure consistency
+  const endsAt = Date.now() + TIMERS.VOTING_ROUND;
+
+  // RACE CONDITION FIX: Send phase-changed FIRST
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'voting',
+    round: roundNumber,
+    totalRounds: state.totalRounds,
+    duration: TIMERS.VOTING_ROUND,
+    endsAt,
+  });
+
+  // THEN send individual voting-round events
   for (const assignment of assignments) {
     const imageA = instance.submissions.find((s) => s.playerId === assignment.imageA);
     const imageB = instance.submissions.find((s) => s.playerId === assignment.imageB);
 
     if (!imageA || !imageB) continue;
 
-    // An spezifischen Socket senden
     const player = instance.players.get(assignment.voterId) || instance.spectators.get(assignment.voterId);
     if (player && io) {
       io.to(player.socketId).emit('voting-round', {
@@ -282,28 +297,19 @@ function startVotingRound(instance: Instance, state: VotingState, roundNumber: n
         imageA: { playerId: imageA.playerId, pixels: imageA.pixels },
         imageB: { playerId: imageB.playerId, pixels: imageB.pixels },
         timeLimit: TIMERS.VOTING_ROUND,
-        endsAt: Date.now() + TIMERS.VOTING_ROUND,
+        endsAt,
       });
     }
   }
 
-  // Phase-Info an alle
-  emitToInstance(instance, 'phase-changed', {
-    phase: 'voting',
-    round: roundNumber,
-    totalRounds: state.totalRounds,
-    duration: TIMERS.VOTING_ROUND,
-    endsAt: Date.now() + TIMERS.VOTING_ROUND,
-  });
-
-  // Timer für Runden-Ende
+  // Timer for round end
   instance.phaseTimer = setTimeout(() => {
     endVotingRound(instance, state, roundNumber);
   }, TIMERS.VOTING_ROUND);
 }
 
 /**
- * Beendet eine Voting-Runde
+ * Ends a voting round
  */
 function endVotingRound(instance: Instance, state: VotingState, roundNumber: number): void {
   const fairness = validateFairness(state);
@@ -313,16 +319,16 @@ function endVotingRound(instance: Instance, state: VotingState, roundNumber: num
   );
 
   if (roundNumber < state.totalRounds) {
-    // Nächste Runde
+    // Next round
     startVotingRound(instance, state, roundNumber + 1);
   } else {
-    // Voting beendet -> Finale
+    // Voting ended -> Finale
     transitionTo(instance, 'finale');
   }
 }
 
 /**
- * Finale-Phase
+ * Finale phase
  */
 function handleFinale(instance: Instance): void {
   const state = votingStates.get(instance.id);
@@ -332,12 +338,12 @@ function handleFinale(instance: Instance): void {
     return;
   }
 
-  // Phase-Timing setzen für Anti-Cheat
+  // Set phase timing for anti-cheat
   setPhaseTimings(instance.id, TIMERS.FINALE);
 
   const finalistCount = calculateFinalistCount(instance.submissions.length);
 
-  // Top X nach Elo auswählen
+  // Select top X by Elo
   const sorted = [...state.eloRatings.entries()].sort((a, b) => b[1] - a[1]).slice(0, finalistCount);
 
   const finalists = sorted.map(([playerId, elo]) => {
@@ -353,7 +359,7 @@ function handleFinale(instance: Instance): void {
 
   log('Phase', `Finale with ${finalists.length} finalists`);
 
-  // Finale-Votes initialisieren
+  // Initialize finale votes
   state.finaleVotes.clear();
   state.finalists = finalists.map((f) => ({ playerId: f.playerId, pixels: f.pixels, elo: f.elo }));
   state.votersVoted.clear();
@@ -377,7 +383,7 @@ function handleFinale(instance: Instance): void {
 }
 
 /**
- * Beendet das Finale und berechnet Ergebnisse
+ * Ends the finale and calculates results
  */
 function endFinale(instance: Instance): void {
   const state = votingStates.get(instance.id);
@@ -390,10 +396,10 @@ function endFinale(instance: Instance): void {
 
   log('Phase', `Finale ended. Winner: ${ranking[0]?.playerId || 'none'}`);
 
-  // State aufräumen
+  // Clean up state
   votingStates.delete(instance.id);
 
-  // Zu Results wechseln (mit Ranking)
+  // Switch to results (with ranking)
   handleResultsWithRanking(instance, ranking);
 }
 
@@ -436,7 +442,7 @@ function handleResultsWithRanking(instance: Instance, ranking: ReturnType<typeof
     log('Compression', `Gallery compressed for ${playerCount} players`);
   }
 
-  // Spectators zu Spielern für nächste Runde
+  // Spectators to players for next round
   for (const [id, spectator] of instance.spectators) {
     instance.players.set(id, spectator);
   }
@@ -448,10 +454,10 @@ function handleResultsWithRanking(instance: Instance, ranking: ReturnType<typeof
 }
 
 /**
- * Ergebnis-Phase (15 Sekunden)
+ * Results phase (15 seconds)
  */
 function handleResults(instance: Instance): void {
-  // Einfaches Ranking nach Eingangsreihenfolge (wird in Phase 4 durch Elo ersetzt)
+  // Simple ranking by submission order (will be replaced by Elo in phase 4)
   const rankings = instance.submissions.map((sub, index) => {
     const player = instance.players.get(sub.playerId) || instance.spectators.get(sub.playerId);
     return {
@@ -475,34 +481,34 @@ function handleResults(instance: Instance): void {
     totalParticipants: instance.submissions.length,
   });
 
-  // Spectators zu Spielern machen für nächste Runde
+  // Make spectators players for next round
   for (const [id, spectator] of instance.spectators) {
     instance.players.set(id, spectator);
   }
   instance.spectators.clear();
 
-  // Nach Results: Zurück zur Lobby
+  // After results: Back to lobby
   instance.phaseTimer = setTimeout(() => {
     resetForNextRound(instance);
   }, TIMERS.RESULTS);
 }
 
 /**
- * Reset für nächste Runde
+ * Reset for next round
  */
 function resetForNextRound(instance: Instance): void {
   instance.submissions = [];
   instance.votes = [];
   instance.prompt = undefined;
 
-  // Zurück zur Lobby
+  // Back to lobby
   transitionTo(instance, 'lobby');
 
   log('Phase', `Instance ${instance.id} reset for next round`);
 }
 
 /**
- * Hilfsfunktion: Event an alle in der Instanz senden
+ * Helper function: Send event to all in the instance
  */
 function emitToInstance(instance: Instance, event: string, data: unknown): void {
   if (io) {

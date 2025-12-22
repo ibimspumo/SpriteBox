@@ -1,22 +1,22 @@
 // apps/server/src/constants.ts
 
-// === Spieler-Limits ===
+// === Player Limits ===
 export const MAX_PLAYERS_PER_INSTANCE = 100;
 export const MIN_PLAYERS_TO_START = 5;
 
-// === Timer (in Millisekunden) ===
+// === Timers (in milliseconds) ===
 export const TIMERS = {
-  LOBBY_TIMEOUT: 30_000,       // 30s Wartezeit in Lobby
-  COUNTDOWN: 5_000,            // 5s Countdown vor Zeichnen
-  DRAWING: 30_000,             // 30s zum Zeichnen
-  VOTING_ROUND: 5_000,         // 5s pro Voting-Runde
-  FINALE: 15_000,              // 15s fürs Finale
-  RESULTS: 15_000,             // 15s Ergebnisanzeige
-  RECONNECT_GRACE: 15_000,     // 15s zum Reconnecten
+  LOBBY_TIMEOUT: 30_000,       // 30s wait time in lobby
+  COUNTDOWN: 5_000,            // 5s countdown before drawing
+  DRAWING: 30_000,             // 30s to draw
+  VOTING_ROUND: 5_000,         // 5s per voting round
+  FINALE: 15_000,              // 15s for finale
+  RESULTS: 15_000,             // 15s results display
+  RECONNECT_GRACE: 15_000,     // 15s to reconnect
   SESSION_MAX_AGE: 24 * 60 * 60 * 1000, // 24h max session age
 } as const;
 
-// === Elo-Konfiguration ===
+// === Elo Configuration ===
 export const ELO = {
   START_RATING: 1000,
   K_FACTOR: 32,
@@ -34,28 +34,28 @@ export const CANVAS = {
   WIDTH: 8,
   HEIGHT: 8,
   TOTAL_PIXELS: 64,
-  MIN_PIXELS_SET: 5,           // Mindestens 5 nicht-leere Pixel
-  BACKGROUND_COLOR: '1',       // Weiß
+  MIN_PIXELS_SET: 5,           // At least 5 non-empty pixels
+  BACKGROUND_COLOR: '1',       // White
 } as const;
 
-// === Farbpalette (16 Farben) ===
+// === Color Palette (16 colors) ===
 export const PALETTE = [
-  '#000000', // 0 - Schwarz
-  '#FFFFFF', // 1 - Weiß
-  '#FF0000', // 2 - Rot
-  '#00FF00', // 3 - Grün
-  '#0000FF', // 4 - Blau
-  '#FFFF00', // 5 - Gelb
+  '#000000', // 0 - Black
+  '#FFFFFF', // 1 - White
+  '#FF0000', // 2 - Red
+  '#00FF00', // 3 - Green
+  '#0000FF', // 4 - Blue
+  '#FFFF00', // 5 - Yellow
   '#FF00FF', // 6 - Magenta
   '#00FFFF', // 7 - Cyan
   '#FF8000', // 8 - Orange
-  '#8000FF', // 9 - Lila
-  '#0080FF', // A - Hellblau
+  '#8000FF', // 9 - Purple
+  '#0080FF', // A - Light Blue
   '#80FF00', // B - Lime
   '#FF0080', // C - Pink
-  '#808080', // D - Grau
-  '#C0C0C0', // E - Hellgrau
-  '#804000', // F - Braun
+  '#808080', // D - Gray
+  '#C0C0C0', // E - Light Gray
+  '#804000', // F - Brown
 ] as const;
 
 // === Rate Limits ===
@@ -76,7 +76,7 @@ export const DOS = {
   IDLE_TIMEOUT: 300_000,       // 5 Minuten
 } as const;
 
-// === Kompression ===
+// === Compression ===
 export const COMPRESSION = {
-  THRESHOLD_PLAYERS: 50,       // Ab 50 Spielern komprimieren
+  THRESHOLD_PLAYERS: 50,       // Compress starting at 50 players
 } as const;

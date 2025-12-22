@@ -91,12 +91,12 @@ export function checkMemoryStatus(): MemoryStatus {
 export function canAcceptNewPlayer(currentPlayerCount: number): boolean {
   const memStatus = checkMemoryStatus();
 
-  // Bei kritischem Speicher: Keine neuen Spieler
+  // Critical memory: No new players
   if (memStatus === 'critical') {
     return false;
   }
 
-  // Player-Limit prüfen
+  // Check player limit
   const config = getServerConfig();
   if (currentPlayerCount >= config.maxPlayers) {
     return false;

@@ -11,7 +11,10 @@ const config = {
       fallback: 'index.html',  // SPA fallback
       precompress: false,
       strict: true
-    })
+    }),
+    serviceWorker: {
+      register: true
+    }
   }
 };
 

@@ -1,21 +1,23 @@
 // apps/web/src/lib/palette.ts
+// Optimized 16-color palette for pixel art prompts
+// Designed to cover: nature, fire/ice, characters, objects, emotions
 export const PALETTE = [
-  { hex: '#000000', name: 'Black' },      // 0
-  { hex: '#FFFFFF', name: 'White' },      // 1
-  { hex: '#FF0000', name: 'Red' },        // 2
-  { hex: '#00FF00', name: 'Green' },      // 3
-  { hex: '#0000FF', name: 'Blue' },       // 4
-  { hex: '#FFFF00', name: 'Yellow' },     // 5
-  { hex: '#FF00FF', name: 'Magenta' },    // 6
-  { hex: '#00FFFF', name: 'Cyan' },       // 7
-  { hex: '#FF8000', name: 'Orange' },     // 8
-  { hex: '#8000FF', name: 'Purple' },     // 9
-  { hex: '#0080FF', name: 'Sky Blue' },   // A (10)
-  { hex: '#80FF00', name: 'Lime' },       // B (11)
-  { hex: '#FF0080', name: 'Pink' },       // C (12)
-  { hex: '#808080', name: 'Gray' },       // D (13)
-  { hex: '#C0C0C0', name: 'Light Gray' }, // E (14)
-  { hex: '#804000', name: 'Brown' },      // F (15)
+  { hex: '#000000', name: 'Black' },      // 0 - Outlines, shadows, "in the dark"
+  { hex: '#FFFFFF', name: 'White' },      // 1 - Highlights, ghosts, clouds, snow
+  { hex: '#FF3B30', name: 'Red' },        // 2 - Hearts, fire, cherries, "angry"
+  { hex: '#8B1A1A', name: 'Dark Red' },   // 3 - Blood, "bleeding", deep shadows
+  { hex: '#4CD964', name: 'Green' },      // 4 - Grass, slime, leaves
+  { hex: '#2D5A27', name: 'Dark Green' }, // 5 - Trees, cactus, snake
+  { hex: '#007AFF', name: 'Blue' },       // 6 - Water, sky, drops, "sad"
+  { hex: '#1C2541', name: 'Dark Blue' },  // 7 - Space, night, "in the dark"
+  { hex: '#FFCC00', name: 'Yellow' },     // 8 - Sun, stars, coins, lightning, "golden"
+  { hex: '#FF9500', name: 'Orange' },     // 9 - Fire, lava, "burning"
+  { hex: '#A0522D', name: 'Brown' },      // A - Wood, earth, mushrooms, burger
+  { hex: '#FF2D92', name: 'Pink' },       // B - Flowers, love, "happy"
+  { hex: '#AF52DE', name: 'Purple' },     // C - Magic, gems, potions
+  { hex: '#5AC8FA', name: 'Cyan' },       // D - Ice, "frozen", "in ice"
+  { hex: '#8E8E93', name: 'Gray' },       // E - Skulls, stone, metal, "silver"
+  { hex: '#D4A574', name: 'Tan' },        // F - Skin, cookies, eggs, sand
 ] as const;
 
 /**

@@ -13,15 +13,15 @@ const disconnectedPlayers = new Map<string, {
   timeout: ReturnType<typeof setTimeout>;
 }>();
 
-// Globale Instanz-Verwaltung
+// Global instance management
 const instances = new Map<string, Instance>();
 const privateRooms = new Map<string, Instance>(); // code -> instance
 
-// Socket.io Instanz für Broadcasting
+// Socket.io instance for broadcasting
 let ioInstance: Server | null = null;
 
 /**
- * Setzt die Socket.io Server-Instanz für Broadcasting
+ * Sets the Socket.io server instance for broadcasting
  */
 export function setIoInstance(io: Server): void {
   ioInstance = io;
@@ -62,10 +62,10 @@ export function createInstance(options: {
 }
 
 /**
- * Findet eine offene öffentliche Instanz oder erstellt eine neue
+ * Finds an open public instance or creates a new one
  */
 export function findOrCreatePublicInstance(): Instance {
-  // Suche offene Instanz (Lobby-Phase, nicht voll)
+  // Search for open instance (lobby phase, not full)
   for (const instance of instances.values()) {
     if (
       instance.type === 'public' &&
@@ -76,12 +76,12 @@ export function findOrCreatePublicInstance(): Instance {
     }
   }
 
-  // Keine passende gefunden -> neue erstellen
+  // No suitable instance found -> create new one
   return createInstance({ type: 'public' });
 }
 
 /**
- * Erstellt einen privaten Raum (mit optionalem Passwort)
+ * Creates a private room (with optional password)
  */
 export async function createPrivateRoom(
   hostPlayer: Player,
@@ -105,7 +105,7 @@ export async function createPrivateRoom(
 }
 
 /**
- * Generiert einen eindeutigen Raum-Code
+ * Generates a unique room code
  */
 function generateUniqueRoomCode(): string {
   let code: string;
@@ -124,14 +124,14 @@ function generateUniqueRoomCode(): string {
 }
 
 /**
- * Findet einen privaten Raum anhand des Codes
+ * Finds a private room by code
  */
 export function findPrivateRoom(code: string): Instance | undefined {
   return privateRooms.get(code.toUpperCase());
 }
 
 /**
- * Prüft ob ein privater Raum ein Passwort hat
+ * Checks if a private room has a password
  */
 export function roomHasPassword(code: string): boolean {
   const instance = privateRooms.get(code.toUpperCase());
@@ -139,7 +139,7 @@ export function roomHasPassword(code: string): boolean {
 }
 
 /**
- * Verifiziert das Passwort für einen privaten Raum
+ * Verifies the password for a private room
  */
 export async function verifyRoomPassword(code: string, password: string): Promise<boolean> {
   const instance = privateRooms.get(code.toUpperCase());
@@ -150,7 +150,7 @@ export async function verifyRoomPassword(code: string, password: string): Promis
 }
 
 /**
- * Ändert das Passwort eines privaten Raums (nur Host)
+ * Changes the password of a private room (host only)
  */
 export async function changeRoomPassword(
   instance: Instance,
@@ -172,34 +172,34 @@ export async function changeRoomPassword(
 }
 
 /**
- * Findet eine Instanz anhand der ID
+ * Finds an instance by ID
  */
 export function findInstance(instanceId: string): Instance | undefined {
   return instances.get(instanceId);
 }
 
 /**
- * Fügt einen Spieler zu einer Instanz hinzu
+ * Adds a player to an instance
  */
 export function addPlayerToInstance(instance: Instance, player: Player): {
   success: boolean;
   spectator: boolean;
   error?: string;
 } {
-  // Instanz voll?
+  // Instance full?
   if (instance.players.size >= MAX_PLAYERS_PER_INSTANCE) {
     return { success: false, spectator: false, error: 'Instance is full' };
   }
 
-  // Spiel läuft bereits?
+  // Game already running?
   if (instance.phase !== 'lobby') {
-    // Als Spectator hinzufügen
+    // Add as spectator
     instance.spectators.set(player.id, player);
     log('Instance', `Player ${player.id} joined as spectator`);
     return { success: true, spectator: true };
   }
 
-  // Als aktiver Spieler hinzufügen
+  // Add as active player
   instance.players.set(player.id, player);
   instance.lastActivity = Date.now();
 
@@ -212,7 +212,7 @@ export function addPlayerToInstance(instance: Instance, player: Player): {
 }
 
 /**
- * Entfernt einen Spieler aus einer Instanz
+ * Removes a player from an instance
  */
 export function removePlayerFromInstance(instance: Instance, playerId: string): void {
   instance.players.delete(playerId);
@@ -226,21 +226,22 @@ export function removePlayerFromInstance(instance: Instance, playerId: string): 
 }
 
 /**
- * Prüft und startet den Lobby-Timer
+ * Checks and starts the lobby timer
+ * Exported for use in phases.ts after round reset
  */
-function checkLobbyTimer(instance: Instance): void {
+export function checkLobbyTimer(instance: Instance): void {
   if (instance.phase !== 'lobby') return;
 
   const playerCount = instance.players.size;
 
-  // Sofort starten wenn voll
+  // Start immediately if full
   if (playerCount >= MAX_PLAYERS_PER_INSTANCE) {
     clearTimeout(instance.lobbyTimer);
     startGame(instance);
     return;
   }
 
-  // Timer starten wenn Minimum erreicht
+  // Start timer when minimum reached
   if (playerCount >= MIN_PLAYERS_TO_START && !instance.lobbyTimer) {
     log('Instance', `Lobby timer started for instance ${instance.id}`);
 
@@ -251,7 +252,7 @@ function checkLobbyTimer(instance: Instance): void {
       }
     }, TIMERS.LOBBY_TIMEOUT);
 
-    // Event an alle Spieler senden
+    // Send event to all players
     emitToInstance(instance, 'lobby-timer-started', {
       duration: TIMERS.LOBBY_TIMEOUT,
       startsAt: Date.now() + TIMERS.LOBBY_TIMEOUT,
@@ -260,14 +261,14 @@ function checkLobbyTimer(instance: Instance): void {
 }
 
 /**
- * Startet das Spiel (delegiert an phases.ts)
+ * Starts the game (delegates to phases.ts)
  */
 function startGame(instance: Instance): void {
   startGamePhase(instance);
 }
 
 /**
- * Startet das Spiel manuell (für Host in privaten Räumen)
+ * Starts the game manually (for host in private rooms)
  */
 export function startGameManually(instance: Instance): { success: boolean; error?: string } {
   if (instance.phase !== 'lobby') {
@@ -283,7 +284,7 @@ export function startGameManually(instance: Instance): { success: boolean; error
 }
 
 /**
- * Prüft ob eine Instanz aufgeräumt werden sollte
+ * Checks if an instance should be cleaned up
  */
 function checkInstanceCleanup(instance: Instance): void {
   // Leere Instanz in Lobby -> sofort löschen
@@ -293,7 +294,7 @@ function checkInstanceCleanup(instance: Instance): void {
 }
 
 /**
- * Räumt eine Instanz auf
+ * Cleans up an instance
  */
 export function cleanupInstance(instance: Instance): void {
   clearTimeout(instance.lobbyTimer);
@@ -309,7 +310,7 @@ export function cleanupInstance(instance: Instance): void {
 }
 
 /**
- * Sendet ein Event an alle Spieler einer Instanz
+ * Sends an event to all players in an instance
  */
 function emitToInstance(instance: Instance, event: string, data: unknown): void {
   if (ioInstance) {
@@ -318,14 +319,14 @@ function emitToInstance(instance: Instance, event: string, data: unknown): void 
 }
 
 /**
- * Gibt alle Spieler einer Instanz als Array zurück
+ * Returns all players in an instance as an array
  */
 export function getInstancePlayers(instance: Instance): Player[] {
   return Array.from(instance.players.values());
 }
 
 /**
- * Gibt Statistiken über alle Instanzen zurück
+ * Returns statistics about all instances
  */
 export function getInstanceStats(): {
   total: number;
@@ -358,6 +359,15 @@ export function handlePlayerDisconnect(instance: Instance, player: Player): void
   // Mark as disconnected
   player.status = 'disconnected';
   player.disconnectedAt = Date.now();
+
+  // Immediately notify other players about temporary disconnect
+  if (ioInstance) {
+    ioInstance.to(instance.id).emit('player-disconnected', {
+      playerId: player.id,
+      user: player.user,
+      timestamp: Date.now(),
+    });
+  }
 
   // Grace-Period Timer
   const timeout = setTimeout(() => {
@@ -420,6 +430,15 @@ export function handlePlayerReconnect(
   player.status = 'connected';
   player.disconnectedAt = undefined;
   player.socketId = newSocketId;
+
+  // Notify other players about reconnection
+  if (ioInstance) {
+    ioInstance.to(instanceId).emit('player-reconnected', {
+      playerId: player.id,
+      user: player.user,
+      timestamp: Date.now(),
+    });
+  }
 
   log('Reconnect', `${player.user.fullName} reconnected to instance ${instanceId}`);
 

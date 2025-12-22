@@ -10,6 +10,8 @@ export interface ServerToClientEvents {
   'player-joined': (data: { user: User }) => void;
   'player-left': (data: { playerId: string; kicked?: boolean }) => void;
   'player-updated': (data: { playerId: string; user: User }) => void;
+  'player-disconnected': (data: { playerId: string; user: User; timestamp: number }) => void;
+  'player-reconnected': (data: { playerId: string; user: User; timestamp: number }) => void;
   'lobby-timer-started': (data: { duration: number; startsAt: number }) => void;
   'phase-changed': (data: PhaseChangedData) => void;
   'submission-received': (data: { success: boolean; submissionCount: number }) => void;
@@ -54,6 +56,27 @@ export interface SessionRestoredData {
   prompt?: Prompt;
   players: User[];
   isSpectator: boolean;
+  phaseState?: {
+    timer?: {
+      duration: number;
+      endsAt: number;
+    };
+    hasSubmitted?: boolean;
+    currentRound?: number;
+    totalRounds?: number;
+    votingAssignment?: {
+      imageA: { playerId: string; pixels: string };
+      imageB: { playerId: string; pixels: string };
+    };
+    hasVoted?: boolean;
+    finalists?: Array<{
+      playerId: string;
+      pixels: string;
+      user?: User;
+      elo: number;
+    }>;
+    finaleVoted?: boolean;
+  };
 }
 
 // Interfaces
@@ -77,6 +100,11 @@ export interface LobbyJoinedData {
   hasPassword?: boolean;
   players: User[];
   spectator: boolean;
+  phase?: string;
+  prompt?: Prompt;
+  timerEndsAt?: number;
+  votingRound?: number;
+  votingTotalRounds?: number;
 }
 
 export interface PhaseChangedData {

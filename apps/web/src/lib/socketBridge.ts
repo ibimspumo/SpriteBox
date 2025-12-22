@@ -102,7 +102,7 @@ function loadUser(): { displayName: string; discriminator: string } | null {
 }
 
 /**
- * Initialisiert Socket und verbindet mit Stores
+ * Initializes Socket and connects with Stores
  */
 export function initSocketBridge(): void {
   if (initialized) return;
@@ -162,6 +162,18 @@ function setupEventHandlers(socket: AppSocket): void {
 
     // Sync stats with server on connect
     syncStatsWithServer(socket);
+
+    // Check for room code in URL and auto-join
+    if (browser) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomCode = urlParams.get('room');
+      if (roomCode && roomCode.length === 4) {
+        console.log('[Socket] Auto-joining room from URL:', roomCode);
+        socket.emit('join-room', { code: roomCode.toUpperCase() });
+        // Clean up URL after attempting to join
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   });
 
   socket.on('error', (data: { code: string; message?: string }) => {
@@ -189,6 +201,32 @@ function setupEventHandlers(socket: AppSocket): void {
     // Clear any password prompt on successful join
     passwordPrompt.set({ show: false, roomCode: null, error: null });
     game.update((g) => ({ ...g, phase: 'lobby' }));
+
+    // Update game state with current phase (for mid-game joins)
+    if (data.phase) {
+      game.update((g) => ({
+        ...g,
+        phase: data.phase as GamePhase,
+        prompt: data.prompt ?? g.prompt,
+      }));
+    }
+
+    // Start timer if provided (for mid-game joins)
+    if (data.timerEndsAt) {
+      const remaining = data.timerEndsAt - Date.now();
+      if (remaining > 0) {
+        startTimer(remaining, data.timerEndsAt);
+      }
+    }
+
+    // Update voting state if in voting phase
+    if (data.phase === 'voting' && data.votingRound && data.votingTotalRounds) {
+      voting.update((v) => ({
+        ...v,
+        round: data.votingRound!,
+        totalRounds: data.votingTotalRounds!,
+      }));
+    }
   });
 
   socket.on('player-joined', (data: { user: User }) => {
@@ -225,6 +263,32 @@ function setupEventHandlers(socket: AppSocket): void {
     }));
   });
 
+  socket.on('player-disconnected', (data: { playerId: string; user: User; timestamp: number }) => {
+    console.log('[Socket] Player temporarily disconnected:', data.user.fullName);
+    // Update player status in lobby store
+    lobby.update((l) => ({
+      ...l,
+      players: l.players.map((p) =>
+        p.discriminator === data.user.discriminator
+          ? { ...p, status: 'disconnected' as const }
+          : p
+      ),
+    }));
+  });
+
+  socket.on('player-reconnected', (data: { playerId: string; user: User; timestamp: number }) => {
+    console.log('[Socket] Player reconnected:', data.user.fullName);
+    // Update player status in lobby store
+    lobby.update((l) => ({
+      ...l,
+      players: l.players.map((p) =>
+        p.discriminator === data.user.discriminator
+          ? { ...p, status: 'connected' as const }
+          : p
+      ),
+    }));
+  });
+
   socket.on('lobby-timer-started', (data: { duration: number; startsAt: number }) => {
     startTimer(data.duration, data.startsAt);
   });
@@ -239,14 +303,14 @@ function setupEventHandlers(socket: AppSocket): void {
       prompt: data.prompt ?? g.prompt,
     }));
 
-    // Timer starten wenn angegeben
+    // Start timer if provided
     if (data.duration && data.endsAt) {
       startTimer(data.duration, data.endsAt);
     } else if (data.duration && data.startsAt) {
       startTimer(data.duration, data.startsAt);
     }
 
-    // Phase-spezifische Resets
+    // Phase-specific resets
     if (phase === 'drawing') {
       hasSubmitted.set(false);
     } else if (phase === 'voting') {
@@ -319,19 +383,12 @@ function setupEventHandlers(socket: AppSocket): void {
     game.update((g) => ({ ...g, phase: 'results' }));
 
     // Record stats for this player
-    // Find our placement in the rankings
-    let myPlacement: number | undefined;
-    currentUser.subscribe((user) => {
-      if (user) {
-        const myResult = rankings.find((r) => r.user.fullName === user.fullName);
-        if (myResult) {
-          myPlacement = myResult.place;
-        }
+    const user = get(currentUser);
+    if (user) {
+      const myResult = rankings.find((r) => r.user.fullName === user.fullName);
+      if (myResult) {
+        recordGameResult(myResult.place);
       }
-    })();
-
-    if (myPlacement !== undefined) {
-      recordGameResult(myPlacement);
     }
   });
 
@@ -351,12 +408,12 @@ function setupEventHandlers(socket: AppSocket): void {
   // === Session Events ===
   socket.on('session-restored', (data: SessionRestoredData) => {
     console.log('[Socket] Session restored:', data);
-    clearSession(); // Clear saved session after successful restore
+    clearSession();
 
     currentUser.set(data.user);
     lobby.set({
       instanceId: data.instanceId,
-      type: 'public', // Will be updated by phase events
+      type: 'public',
       code: null,
       isHost: false,
       hasPassword: false,
@@ -369,6 +426,41 @@ function setupEventHandlers(socket: AppSocket): void {
       phase: data.phase as GamePhase,
       prompt: data.prompt ?? g.prompt,
     }));
+
+    // Restore phase-specific state
+    const ps = data.phaseState;
+    if (ps) {
+      // Restore timer
+      if (ps.timer && ps.timer.endsAt > Date.now()) {
+        startTimer(ps.timer.duration, ps.timer.endsAt);
+      }
+
+      // Drawing phase
+      if (data.phase === 'drawing' && ps.hasSubmitted !== undefined) {
+        hasSubmitted.set(ps.hasSubmitted);
+      }
+
+      // Voting phase
+      if (data.phase === 'voting' && ps.votingAssignment) {
+        voting.set({
+          round: ps.currentRound ?? 1,
+          totalRounds: ps.totalRounds ?? 1,
+          imageA: ps.votingAssignment.imageA,
+          imageB: ps.votingAssignment.imageB,
+          hasVoted: ps.hasVoted ?? false,
+        });
+      }
+
+      // Finale phase
+      if (data.phase === 'finale' && ps.finalists) {
+        finale.set({
+          finalists: ps.finalists,
+          timeLimit: ps.timer?.duration ?? 15000,
+          endsAt: ps.timer?.endsAt ?? Date.now() + 15000,
+        });
+        finaleVoted.set(ps.finaleVoted ?? false);
+      }
+    }
   });
 
   socket.on('session-restore-failed', (data: { reason: string }) => {

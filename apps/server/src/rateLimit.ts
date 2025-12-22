@@ -17,7 +17,7 @@ class RateLimiter {
   private records = new Map<string, RateLimitRecord>();
 
   /**
-   * Prüft ob ein Request erlaubt ist
+   * Checks if a request is allowed
    */
   check(identifier: string, config: RateLimitConfig): boolean {
     const now = Date.now();
@@ -25,23 +25,23 @@ class RateLimiter {
 
     let record = this.records.get(key);
 
-    // Geblockt?
+    // Blocked?
     if (record && record.blockedUntil > now) {
       return false;
     }
 
-    // Neuer Record oder Reset nach Block
+    // New record or reset after block
     if (!record || record.blockedUntil > 0) {
       record = { requests: [], blockedUntil: 0 };
       this.records.set(key, record);
     }
 
-    // Alte Requests entfernen (außerhalb Window)
+    // Remove old requests (outside window)
     record.requests = record.requests.filter((t) => now - t < config.windowMs);
 
-    // Limit erreicht?
+    // Limit reached?
     if (record.requests.length >= config.maxRequests) {
-      // Block für 3x Window-Zeit
+      // Block for 3x window time
       record.blockedUntil = now + config.windowMs * 3;
       log('RateLimit', `Blocked: ${key}`);
       return false;
@@ -53,7 +53,7 @@ class RateLimiter {
   }
 
   /**
-   * Cleanup alte Einträge (alle 5 Minuten aufrufen)
+   * Cleanup old entries (call every 5 minutes)
    */
   cleanup(): void {
     const now = Date.now();
@@ -68,7 +68,7 @@ class RateLimiter {
   }
 
   /**
-   * Stats für Monitoring
+   * Stats for monitoring
    */
   getStats(): { activeRecords: number; blockedCount: number } {
     const now = Date.now();
@@ -84,14 +84,14 @@ class RateLimiter {
 
 const rateLimiter = new RateLimiter();
 
-// Cleanup alle 5 Minuten
+// Cleanup every 5 minutes
 setInterval(() => rateLimiter.cleanup(), 5 * 60 * 1000);
 
 /**
- * Rate-Limit Check für Socket-Events
+ * Rate limit check for socket events
  */
 export function checkRateLimit(socket: Socket, event: string): boolean {
-  // Event-Name zu Config-Key konvertieren (z.B. "submit-drawing" -> "SUBMIT")
+  // Convert event name to config key (e.g. "submit-drawing" -> "SUBMIT")
   const eventKey = event.toUpperCase().replace(/-/g, '_').split('_')[0];
   const config = (RATE_LIMITS as Record<string, RateLimitConfig>)[eventKey] || RATE_LIMITS.GLOBAL;
   const identifier = `${socket.id}:${event}`;
@@ -109,7 +109,7 @@ export function checkRateLimit(socket: Socket, event: string): boolean {
 }
 
 /**
- * IP-basiertes Rate-Limiting für Verbindungen
+ * IP-based rate limiting for connections
  */
 const connectionAttempts = new Map<string, { count: number; resetAt: number }>();
 

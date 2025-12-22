@@ -15,11 +15,11 @@
     <Timer />
   </div>
 
-  <p class="instruction">Wahle deinen Favoriten!</p>
+  <p class="instruction">Pick your favorite!</p>
 
   {#if $finaleVoted}
     <Card padding="lg">
-      <span class="voted-text">Abgestimmt! Ergebnisse kommen gleich...</span>
+      <span class="voted-text">Voted! Results coming soon...</span>
     </Card>
   {:else if $finale}
     <GalleryGrid gap="md">
@@ -37,10 +37,10 @@
             size={100}
             readonly
           />
-          <span class="name">{finalist.user?.fullName ?? 'Anonym'}</span>
+          <span class="name">{finalist.user?.fullName ?? 'Anonymous'}</span>
           <span class="elo">Elo: {finalist.elo}</span>
           {#if isOwn}
-            <Badge variant="default" text="Dein Bild" />
+            <Badge variant="default" text="Your art" />
           {/if}
         </Card>
       {/each}

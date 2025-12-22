@@ -32,7 +32,7 @@
   // Watch for server errors
   $effect(() => {
     if (isSubmitting && $lastError?.code === 'INVALID_NAME') {
-      error = $lastError.message || 'Name wurde abgelehnt';
+      error = $lastError.message || 'Name rejected';
       isSubmitting = false;
       pendingName = null;
       // Clear the global error
@@ -59,12 +59,12 @@
 
     // Client-side validation
     if (!trimmed) {
-      error = 'Name darf nicht leer sein';
+      error = 'Name cannot be empty';
       return;
     }
 
     if (trimmed.length > 20) {
-      error = 'Max. 20 Zeichen';
+      error = 'Max. 20 characters';
       return;
     }
 
@@ -114,12 +114,12 @@
           {isSubmitting ? '...' : 'OK'}
         </Button>
         <Button variant="ghost" size="sm" onclick={cancelEditing} disabled={isSubmitting}>
-          Abbrechen
+          Cancel
         </Button>
       </div>
     </div>
   {:else}
-    <button class="display-name" onclick={startEditing} title="Name ändern">
+    <button class="display-name" onclick={startEditing} title="Change name">
       <span class="name">{displayName}</span><span class="disc">#{discriminator}</span>
       <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />

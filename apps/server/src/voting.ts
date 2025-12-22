@@ -5,11 +5,11 @@ import { shuffleArray, log } from './utils.js';
 
 // === Voting State ===
 export interface VotingState {
-  voterSeenImages: Map<string, Set<string>>; // voterId -> gesehene imageIds
-  imageShowCount: Map<string, number>; // imageId -> wie oft gezeigt
-  matchupHistory: Map<string, Set<string>>; // imageId -> gegen wen angetreten
-  eloRatings: Map<string, number>; // imageId -> Elo-Rating
-  assignments: VotingAssignment[]; // Aktuelle Runden-Assignments
+  voterSeenImages: Map<string, Set<string>>; // voterId -> seen imageIds
+  imageShowCount: Map<string, number>; // imageId -> how often shown
+  matchupHistory: Map<string, Set<string>>; // imageId -> who has faced
+  eloRatings: Map<string, number>; // imageId -> Elo rating
+  assignments: VotingAssignment[]; // Current round assignments
   currentRound: number;
   totalRounds: number;
   finaleVotes: Map<string, number>; // playerId -> vote count
@@ -24,7 +24,7 @@ export interface FinalistData {
 }
 
 /**
- * Initialisiert den Voting-State für eine Instanz
+ * Initializes the voting state for an instance
  */
 export function initVotingState(submissions: Submission[]): VotingState {
   const state: VotingState = {
@@ -40,27 +40,27 @@ export function initVotingState(submissions: Submission[]): VotingState {
     votersVoted: new Set(),
   };
 
-  // Alle Bilder starten mit gleichem Elo
+  // All images start with same Elo
   for (const sub of submissions) {
     state.eloRatings.set(sub.playerId, ELO.START_RATING);
     state.imageShowCount.set(sub.playerId, 0);
     state.matchupHistory.set(sub.playerId, new Set());
   }
 
-  // Anzahl Runden berechnen
+  // Calculate number of rounds
   state.totalRounds = calculateVotingRounds(submissions.length);
 
   return state;
 }
 
 /**
- * Berechnet die optimale Anzahl Voting-Runden
+ * Calculates the optimal number of voting rounds
  */
 export function calculateVotingRounds(playerCount: number): number {
-  // Maximum: Jeder sieht jedes fremde Bild nur 1x
+  // Maximum: Each sees each other image only 1x
   const maxPossibleRounds = Math.floor((playerCount - 1) / 2);
 
-  // Gewünschte Runden basierend auf Spielerzahl
+  // Desired rounds based on player count
   let desiredRounds: number;
   if (playerCount <= 10) desiredRounds = 3;
   else if (playerCount <= 20) desiredRounds = 4;
@@ -72,10 +72,10 @@ export function calculateVotingRounds(playerCount: number): number {
 }
 
 /**
- * Berechnet die Anzahl Finalisten
+ * Calculates the number of finalists
  */
 export function calculateFinalistCount(playerCount: number): number {
-  // 10% der Spieler, mindestens 3, maximal 10
+  // 10% of players, minimum 3, maximum 10
   return Math.min(10, Math.max(3, Math.ceil(playerCount * 0.1)));
 }
 
@@ -89,13 +89,13 @@ interface EloResult {
 }
 
 /**
- * Berechnet neue Elo-Werte nach einem Duell
+ * Calculates new Elo values after a duel
  */
 export function calculateElo(winnerElo: number, loserElo: number): EloResult {
-  // Erwartete Gewinnwahrscheinlichkeit
+  // Expected win probability
   const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
 
-  // Punkte-Änderung
+  // Points change
   const winnerChange = Math.round(ELO.K_FACTOR * (1 - expectedWinner));
   const loserChange = -winnerChange;
 
@@ -110,7 +110,7 @@ export function calculateElo(winnerElo: number, loserElo: number): EloResult {
 // === Assignment-Algorithmus ===
 
 /**
- * Bereitet die Assignments für eine Voting-Runde vor
+ * Prepares the assignments for a voting round
  */
 export function prepareVotingRound(
   instance: Instance,
@@ -120,19 +120,19 @@ export function prepareVotingRound(
   const submissions = instance.submissions;
   const assignments: VotingAssignment[] = [];
 
-  // Alle aktiven Voter (Spieler + Spectators)
+  // All active voters (players + spectators)
   const voterIds = [...instance.players.keys(), ...instance.spectators.keys()];
 
-  // Zufällige Reihenfolge für Fairness
+  // Random order for fairness
   const shuffledVoters = shuffleArray(voterIds);
 
   for (const voterId of shuffledVoters) {
     const seen = state.voterSeenImages.get(voterId) || new Set<string>();
 
-    // Eigenes Bild ausschließen
+    // Exclude own image
     seen.add(voterId);
 
-    // Verfügbare Bilder, sortiert nach wenigsten Anzeigen
+    // Available images, sorted by fewest displays
     const available = submissions
       .filter((s) => !seen.has(s.playerId))
       .map((s) => ({
@@ -142,10 +142,10 @@ export function prepareVotingRound(
       .sort((a, b) => a.showCount - b.showCount);
 
     if (available.length < 2) {
-      continue; // Voter überspringt diese Runde
+      continue; // Voter skips this round
     }
 
-    // Bestes Paar finden (noch nicht gegeneinander angetreten)
+    // Find best pair (haven't faced each other yet)
     let bestPair: [string, string] | null = null;
 
     for (let i = 0; i < available.length && !bestPair; i++) {
@@ -162,7 +162,7 @@ export function prepareVotingRound(
       }
     }
 
-    // Fallback: Die zwei mit wenigsten Anzeigen
+    // Fallback: The two with fewest displays
     if (!bestPair) {
       bestPair = [available[0].playerId, available[1].playerId];
     }
@@ -176,7 +176,7 @@ export function prepareVotingRound(
       round: roundNumber,
     });
 
-    // State aktualisieren
+    // Update state
     seen.add(imageA);
     seen.add(imageB);
     state.voterSeenImages.set(voterId, seen);
@@ -204,7 +204,7 @@ interface VoteResult {
 }
 
 /**
- * Verarbeitet einen einzelnen Vote
+ * Processes a single vote
  */
 export function processVote(
   instance: Instance,
@@ -217,14 +217,14 @@ export function processVote(
     return { success: false, error: 'Already voted this round' };
   }
 
-  // Assignment finden
+  // Find assignment
   const assignment = state.assignments.find((a) => a.voterId === voterId);
 
   if (!assignment) {
     return { success: false, error: 'No assignment found' };
   }
 
-  // Gültige Wahl?
+  // Valid choice?
   if (chosenImageId !== assignment.imageA && chosenImageId !== assignment.imageB) {
     return { success: false, error: 'Invalid choice' };
   }
@@ -232,17 +232,17 @@ export function processVote(
   const winnerId = chosenImageId;
   const loserId = winnerId === assignment.imageA ? assignment.imageB : assignment.imageA;
 
-  // Elo berechnen
+  // Calculate Elo
   const winnerElo = state.eloRatings.get(winnerId) || ELO.START_RATING;
   const loserElo = state.eloRatings.get(loserId) || ELO.START_RATING;
 
   const result = calculateElo(winnerElo, loserElo);
 
-  // Elo aktualisieren
+  // Update Elo
   state.eloRatings.set(winnerId, result.winnerNewElo);
   state.eloRatings.set(loserId, result.loserNewElo);
 
-  // Vote speichern
+  // Save vote
   instance.votes.push({
     voterId,
     winnerId,
@@ -254,7 +254,7 @@ export function processVote(
   // Mark as voted
   state.votersVoted.add(voterId);
 
-  // Assignment entfernen (wurde verarbeitet)
+  // Remove assignment (was processed)
   state.assignments = state.assignments.filter((a) => a.voterId !== voterId);
 
   return {
@@ -264,7 +264,7 @@ export function processVote(
 }
 
 /**
- * Verarbeitet einen Finale-Vote
+ * Processes a finale vote
  */
 export function processFinaleVote(
   state: VotingState,
@@ -303,7 +303,7 @@ export interface RankedPlayer {
 }
 
 /**
- * Erstellt das finale Ranking
+ * Creates the final ranking
  */
 export function calculateFinalRanking(
   submissions: Submission[],
@@ -316,7 +316,7 @@ export function calculateFinalRanking(
     place: 0,
   }));
 
-  // Sortieren: Finale-Votes > Elo
+  // Sort: Finale votes > Elo
   ranked.sort((a, b) => {
     if (a.finalVotes !== b.finalVotes) {
       return b.finalVotes - a.finalVotes;
@@ -324,7 +324,7 @@ export function calculateFinalRanking(
     return b.elo - a.elo;
   });
 
-  // Platzierungen vergeben (mit Ties)
+  // Assign placements (with ties)
   let currentPlace = 1;
   for (let i = 0; i < ranked.length; i++) {
     if (i > 0) {
@@ -351,7 +351,7 @@ export interface FairnessReport {
 }
 
 /**
- * Prüft ob alle Bilder fair oft gezeigt wurden
+ * Checks if all images were shown fairly often
  */
 export function validateFairness(state: VotingState): FairnessReport {
   const showCounts = [...state.imageShowCount.values()];

@@ -7,7 +7,7 @@ const FORBIDDEN_NAMES = ['admin', 'moderator', 'system', 'null', 'undefined', 'b
 const XSS_PATTERNS = [/<script/i, /javascript:/i, /on\w+=/i, /<iframe/i, /<img/i, /data:/i];
 
 /**
- * HTML-Entities escapen für sicheren Output
+ * Escape HTML entities for safe output
  */
 function escapeHtml(str: string): string {
   return str
@@ -19,7 +19,7 @@ function escapeHtml(str: string): string {
 }
 
 /**
- * Pixel-Daten Validierung
+ * Pixel data validation
  */
 export const PixelSchema = z.object({
   pixels: z
@@ -30,7 +30,7 @@ export const PixelSchema = z.object({
 });
 
 /**
- * Prüft ob genug Pixel gesetzt wurden (Anti-AFK)
+ * Checks if enough pixels were set (anti-AFK)
  */
 export function validateMinPixels(pixels: string): { valid: boolean; setPixels: number } {
   let setPixels = 0;
@@ -47,7 +47,7 @@ export function validateMinPixels(pixels: string): { valid: boolean; setPixels: 
 }
 
 /**
- * Room-Code Validierung
+ * Room code validation
  */
 export const RoomCodeSchema = z.object({
   code: z
@@ -58,7 +58,7 @@ export const RoomCodeSchema = z.object({
 });
 
 /**
- * Username Validierung - mit strikter XSS-Prävention
+ * Username validation - with strict XSS prevention
  */
 export const UsernameSchema = z.object({
   name: z
@@ -75,12 +75,12 @@ export const UsernameSchema = z.object({
       (s) => !XSS_PATTERNS.some((p) => p.test(s)),
       'Invalid characters'
     )
-    // HTML entities escapen für sicheren Output
+    // Escape HTML entities for safe output
     .transform(escapeHtml),
 });
 
 /**
- * Vote Validierung
+ * Vote validation
  */
 export const VoteSchema = z.object({
   chosenId: z
@@ -90,7 +90,7 @@ export const VoteSchema = z.object({
 });
 
 /**
- * Finale-Vote Validierung
+ * Finale vote validation
  */
 export const FinaleVoteSchema = z.object({
   playerId: z
@@ -100,7 +100,7 @@ export const FinaleVoteSchema = z.object({
 });
 
 /**
- * Stats Validierung - mit Limits gegen Manipulation
+ * Stats validation - with limits against manipulation
  */
 export const StatsSchema = z.object({
   gamesPlayed: z.number().int().min(0).max(1_000_000),
@@ -112,7 +112,7 @@ export const StatsSchema = z.object({
 });
 
 /**
- * Hilfsfunktion: Validiere mit Schema
+ * Helper function: Validate with schema
  */
 export function validate<T>(
   schema: z.ZodSchema<T>,

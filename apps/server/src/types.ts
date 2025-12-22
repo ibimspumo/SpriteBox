@@ -1,9 +1,9 @@
 // apps/server/src/types.ts
 
-// === Spieler ===
+// === Player ===
 export interface User {
   displayName: string;
-  discriminator: string;  // 4-stellig: "0000" - "9999"
+  discriminator: string;  // 4 digits: "0000" - "9999"
   fullName: string;       // "Name#0000"
 }
 
@@ -30,9 +30,9 @@ export type GamePhase =
 export interface Instance {
   id: string;
   type: InstanceType;
-  code?: string;          // Nur für private Räume
-  hostId?: string;        // Nur für private Räume
-  passwordHash?: string;  // Optionales Passwort für private Räume
+  code?: string;          // Only for private rooms
+  hostId?: string;        // Only for private rooms
+  passwordHash?: string;  // Optional password for private rooms
   phase: GamePhase;
   players: Map<string, Player>;
   spectators: Map<string, Player>;
@@ -48,7 +48,7 @@ export interface Instance {
 // === Submission ===
 export interface Submission {
   playerId: string;
-  pixels: string;         // 64-Zeichen Hex-String
+  pixels: string;         // 64-character hex string
   timestamp: number;
 }
 
@@ -97,6 +97,12 @@ export interface ServerToClientEvents {
     hasPassword?: boolean;
     players: User[];
     spectator: boolean;
+    // Mid-game state (for joining in-progress games)
+    phase?: GamePhase;
+    prompt?: Prompt;
+    timerEndsAt?: number;
+    votingRound?: number;
+    votingTotalRounds?: number;
   }) => void;
   'room-created': (data: { code: string; instanceId: string }) => void;
   'player-joined': (data: { user: User }) => void;
@@ -142,6 +148,7 @@ export interface ServerToClientEvents {
     prompt?: Prompt;
     players: User[];
     isSpectator: boolean;
+    phaseState?: any;
   }) => void;
   'session-restore-failed': (data: { reason: string }) => void;
   'instance-closing': (data: { reason: string }) => void;
@@ -174,7 +181,7 @@ export interface ClientToServerEvents {
   'leave-queue': () => void;
 }
 
-// === Hilfstypes ===
+// === Helper types ===
 export interface ImageData {
   playerId: string;
   pixels: string;

@@ -9,7 +9,7 @@ const ipToSockets = new Map<string, Set<string>>();
 const MAX_SESSIONS_PER_IP = 3;
 
 /**
- * Prüft auf Multi-Account basierend auf IP
+ * Checks for multi-account based on IP
  */
 export function checkMultiAccount(socket: Socket): { allowed: boolean; warning: boolean } {
   const ip = socket.data.ip || socket.handshake.address;
@@ -20,12 +20,12 @@ export function checkMultiAccount(socket: Socket): { allowed: boolean; warning: 
     ipToSockets.set(ip, sockets);
   }
 
-  // Bereits registriert?
+  // Already registered?
   if (sockets.has(socket.id)) {
     return { allowed: true, warning: false };
   }
 
-  // Limit erreicht?
+  // Limit reached?
   if (sockets.size >= MAX_SESSIONS_PER_IP) {
     log('MultiAccount', `IP ${ip} has ${sockets.size} sessions, blocking new`);
     return { allowed: false, warning: false };
@@ -39,7 +39,7 @@ export function checkMultiAccount(socket: Socket): { allowed: boolean; warning: 
 }
 
 /**
- * Entfernt Socket bei Disconnect
+ * Removes socket on disconnect
  */
 export function removeSocketFingerprint(socket: Socket): void {
   const ip = socket.data.ip || socket.handshake.address;
@@ -54,14 +54,14 @@ export function removeSocketFingerprint(socket: Socket): void {
 }
 
 /**
- * Gibt Anzahl Sessions pro IP zurück
+ * Returns number of sessions per IP
  */
 export function getSessionCount(ip: string): number {
   return ipToSockets.get(ip)?.size ?? 0;
 }
 
 /**
- * Stats für Health-Endpoint
+ * Stats for health endpoint
  */
 export function getMultiAccountStats(): { uniqueIPs: number; totalSessions: number } {
   let totalSessions = 0;

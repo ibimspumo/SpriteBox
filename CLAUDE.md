@@ -207,6 +207,7 @@ Edit `apps/server/data/prompts.json` - structure is `{ prefixes, subjects, suffi
 - Don't break the "one command to run" experience
 - Don't add heavy client-side processing (server is authoritative)
 - Don't store persistent user data (intentionally ephemeral)
+- **Don't use non-English text** - All UI text, labels, error messages, tooltips, and user-facing strings must be in English
 
 ## Reference Files
 

@@ -11,6 +11,7 @@ import { startMonitoring } from './monitoring.js';
 import { setupDebugEndpoints } from './debug.js';
 import { initServerConfig, getServerConfig, getMemoryInfo } from './serverConfig.js';
 import { startQueueProcessing, getQueueStats } from './queue.js';
+import { generateOgImage } from './ogImage.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -21,7 +22,7 @@ const server = createServer(app);
 
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
   cors: isProduction
-    ? { origin: false }  // Kein CORS nötig wenn same-origin
+    ? { origin: false }  // No CORS needed for same-origin
     : { origin: ['http://localhost:5173'], methods: ['GET', 'POST'] },
   pingTimeout: 20_000,
   pingInterval: 25_000,
@@ -30,7 +31,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
 
 const PORT = process.env.PORT || 3000;
 
-// Phase-Manager mit IO-Instanz verbinden
+// Connect phase manager with IO instance
 setPhaseIo(io);
 
 // Debug-Endpoints (nur in Development)
@@ -68,18 +69,31 @@ app.get('/health', (_req, res) => {
   });
 });
 
+// OG Image endpoint for social media sharing
+app.get('/og-image.png', async (_req, res) => {
+  try {
+    const imageBuffer = await generateOgImage();
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+    res.send(imageBuffer);
+  } catch (error) {
+    console.error('Failed to generate OG image:', error);
+    res.status(500).send('Failed to generate image');
+  }
+});
+
 // In Production: Statische Dateien servieren
 if (isProduction) {
   const publicPath = join(__dirname, 'public');
   app.use(express.static(publicPath));
 
-  // SPA Fallback für alle anderen Routen (Express 5 Syntax)
+  // SPA fallback for all other routes (Express 5 syntax)
   app.use((_req, res) => {
     res.sendFile(join(publicPath, 'index.html'));
   });
 }
 
-// Socket-Handler registrieren
+// Register socket handlers
 setupSocketHandlers(io);
 
 // Periodischen Cleanup starten

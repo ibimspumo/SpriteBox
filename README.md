@@ -1,18 +1,24 @@
 <div align="center">
 
+<img src="https://raw.githubusercontent.com/ibimspumo/SpriteBox/main/apps/web/static/logo.png" alt="SpriteBox Logo" width="400" />
+
 # SpriteBox
 
-**A real-time multiplayer pixel art battle game**
+### Real-time Multiplayer Pixel Art Battle Game
 
-Draw. Vote. Win.
+**Draw. Vote. Win.**
 
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org)
-[![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?logo=svelte&logoColor=white)](https://svelte.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Socket.io](https://img.shields.io/badge/Socket.io-4-010101?logo=socket.io&logoColor=white)](https://socket.io)
+[![Play Now](https://img.shields.io/badge/Play%20Now-spritebox.de-4ecdc4?style=for-the-badge&logo=gamepad&logoColor=white)](https://spritebox.de)
 
-[Features](#features) | [Quick Start](#quick-start) | [How It Works](#how-it-works) | [Tech Stack](#tech-stack) | [Contributing](#contributing)
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
+[![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square&logo=svelte&logoColor=white)](https://svelte.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Socket.io](https://img.shields.io/badge/Socket.io-4-010101?style=flat-square&logo=socket.io&logoColor=white)](https://socket.io)
+
+---
+
+[Play](#-play-now) | [Features](#-features) | [Quick Start](#-quick-start) | [How It Works](#-how-it-works) | [For Developers](#-for-developers) | [Contributing](#-contributing)
 
 </div>
 
@@ -20,79 +26,70 @@ Draw. Vote. Win.
 
 ## What is SpriteBox?
 
-SpriteBox is a web-based multiplayer game where players compete to create the best 8x8 pixel art based on creative prompts. Think *Gartic Phone* meets *Pixel Art* with a competitive twist.
+SpriteBox is a **free, browser-based multiplayer game** where you compete to create the best 8x8 pixel art based on creative prompts. Think *Gartic Phone* meets *Pixel Art* with a competitive Elo-based ranking twist.
 
 ```
-  "sleepy ghost eating cake"
+       Prompt: "sleepy ghost eating cake"
 
-  +-----------------+
-  |     @@@@        |
-  |   @@####@@      |  <- You have 60 seconds
-  |   @@####@@      |     to draw this
-  |     @@@@        |
-  |                 |
-  |  ##        ##   |
-  |  ############   |
-  +-----------------+
+       +-----------------+
+       |     @@@@        |
+       |   @@    @@      |     You have 30 seconds
+       |   @@    @@      |     to draw this!
+       |     @@@@        |
+       |                 |
+       |  ##        ##   |
+       |  ############   |
+       +-----------------+
 ```
 
-**100% Open Source** | **No Database Required** | **One Command to Run**
+### Why SpriteBox?
+
+- **100% Free & Open Source** - No ads, no paywalls, no tracking
+- **No Account Required** - Just open the link and play
+- **Works Everywhere** - Desktop, mobile, tablet - any modern browser
+- **One Command to Host** - Self-host your own server in seconds
+
+---
+
+## How to Play
+
+### For Everyone (No Technical Knowledge Needed)
+
+1. **Go to [spritebox.de](https://spritebox.de)**
+2. **Click "Join Public Game"** or create a private room with friends
+3. **Wait for players** (minimum 5 to start)
+4. **Draw!** When the prompt appears, you have 30 seconds to create pixel art
+5. **Vote!** Pick your favorite between two artworks each round
+6. **Win!** See who created the best pixel art
+
+### Game Modes
+
+| Mode | Players | Description |
+|------|---------|-------------|
+| **Public** | 5-100 | Auto-matchmaking with strangers |
+| **Private** | 5-100 | Create a 4-letter room code and share with friends |
 
 ---
 
 ## Features
 
 ### Core Gameplay
-- **8x8 Pixel Canvas** - Constrained creativity with a 16-color palette
-- **Random Prompts** - Over 2.5 million unique combinations (*"angry robot underwater"*, *"tiny pizza on fire"*)
-- **Elo-Based Voting** - Fair matchmaking ensures every artwork gets equal exposure
-- **Real-time Multiplayer** - See other players join, vote, and compete live
+- **8x8 Pixel Canvas** - Simple constraints spark creativity
+- **16-Color Palette** - Classic pixel art colors
+- **2.5M+ Unique Prompts** - *"angry robot underwater"*, *"tiny pizza on fire"*
+- **Elo-Based Ranking** - Fair voting ensures equal artwork exposure
+- **Real-time Multiplayer** - See players join, vote, and compete live
 
-### Game Modes
-- **Public Games** - Auto-matchmaking with 5-100 players
-- **Private Rooms** - Create a 4-character code and play with friends
+### Player Experience
+- **No Registration** - Jump in instantly
+- **Mobile-Optimized** - Touch-friendly drawing on phones
+- **Dark Theme** - Easy on the eyes
+- **Reconnection Support** - Rejoin within 15 seconds if disconnected
 
-### Technical Highlights
-- **Zero Configuration** - Clone, install, run. No API keys, no database setup
-- **Mobile First** - Touch-optimized UI that works great on phones
-- **Dark/Light Mode** - Respects system preference with manual toggle
-- **In-Memory State** - All game data lives in RAM (intentionally ephemeral)
-- **LZ-String Compression** - Efficient data transfer for large lobbies
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org) 20+
-- [pnpm](https://pnpm.io) 8+
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/spritebox.git
-cd spritebox
-
-# Install dependencies
-pnpm install
-
-# Start development servers
-pnpm dev
-```
-
-That's it. Open [http://localhost:5173](http://localhost:5173) and start playing.
-
-### Production Build
-
-```bash
-# Build both frontend and backend
-pnpm build
-
-# Start production server
-pnpm start
-```
+### Technical Philosophy
+- **Zero Configuration** - No database, no API keys, no secrets
+- **Privacy First** - No persistent user data stored
+- **Fully Open Source** - Inspect, modify, self-host
 
 ---
 
@@ -101,163 +98,219 @@ pnpm start
 ### Game Flow
 
 ```
-+-------------------------------------------------------------+
-|  1. LOBBY                                                   |
-|     Players join. Timer starts at 5 players (45s countdown) |
-|     or starts immediately when 100 players reached          |
-+-------------------------------------------------------------+
-                              |
-                              v
-+-------------------------------------------------------------+
-|  2. COUNTDOWN (5s)                                          |
-|     Prompt is revealed: "floating burger in space"          |
-+-------------------------------------------------------------+
-                              |
-                              v
-+-------------------------------------------------------------+
-|  3. DRAWING (60s)                                           |
-|     Draw your masterpiece on the 8x8 grid                   |
-|     Minimum 5 pixels required to submit                     |
-+-------------------------------------------------------------+
-                              |
-                              v
-+-------------------------------------------------------------+
-|  4. VOTING (2-7 rounds x 5s each)                           |
-|     See two random artworks -> pick your favorite           |
-|     Elo rating determines final rankings                    |
-+-------------------------------------------------------------+
-                              |
-                              v
-+-------------------------------------------------------------+
-|  5. FINALE (15s)                                            |
-|     Top 10% compete for the podium                          |
-|     Everyone votes on finalists                             |
-+-------------------------------------------------------------+
-                              |
-                              v
-+-------------------------------------------------------------+
-|  6. RESULTS                                                 |
-|     Winners announced! Full gallery available               |
-|     New round starts automatically                          |
-+-------------------------------------------------------------+
+  LOBBY                    COUNTDOWN                  DRAWING
+  +---------+              +---------+               +---------+
+  | Players |    5 sec     | Prompt  |    30 sec    |  Draw!  |
+  |  Join   | -----------> |Revealed | -----------> |         |
+  | (5-100) |              |         |              |  8x8    |
+  +---------+              +---------+               +---------+
+                                                          |
+       +--------------------------------------------------+
+       |
+       v
+  VOTING                   FINALE                    RESULTS
+  +---------+              +---------+               +---------+
+  | Pick    |    15 sec    | Top 10% |    15 sec    | Winners |
+  | A or B  | -----------> | Compete | -----------> |  Shown  |
+  | x2-7    |              |         |              |         |
+  +---------+              +---------+               +---------+
+                                                          |
+       +--------------------------------------------------+
+       |
+       v
+   (Back to Lobby)
 ```
 
-### Elo Voting System
+### The Elo Voting System
 
-Instead of simple upvotes, SpriteBox uses an **Elo rating system** for fair ranking:
+Instead of simple upvotes, SpriteBox uses **chess-style Elo ratings** for fair ranking:
 
-- Every artwork starts at 1000 Elo
-- Each vote is a "match" between two artworks
-- Winning against a higher-rated artwork gives more points
-- This ensures every submission gets roughly equal exposure
+- Every artwork starts at **1000 Elo**
+- Each vote is a **1v1 match** between two artworks
+- **Beating a higher-rated artwork** gives more points
+- This ensures **every submission gets equal exposure**
+
+### Timing
+
+| Phase | Duration |
+|-------|----------|
+| Lobby | Until 5+ players (or instantly at 100) |
+| Countdown | 5 seconds |
+| Drawing | 30 seconds |
+| Voting | 5 seconds per round (2-7 rounds) |
+| Finale | 15 seconds |
+| Results | 15 seconds |
 
 ---
 
-## Tech Stack
+## Quick Start
 
-| Layer | Technology | Why |
-|-------|------------|-----|
-| **Frontend** | Svelte 5 + Vite | Reactive, fast, tiny bundles |
-| **Backend** | Node.js + Express | Simple, proven, efficient |
-| **Real-time** | Socket.io | WebSocket with automatic fallbacks |
-| **State** | In-Memory (Map) | No database = no complexity |
+### For Players
+
+Just visit **[spritebox.de](https://spritebox.de)** - no installation needed!
+
+### For Hosts (Self-Hosting)
+
+Want to run your own SpriteBox server? It's easy:
+
+#### Prerequisites
+- [Node.js](https://nodejs.org) 20 or newer
+- [pnpm](https://pnpm.io) (install with `npm install -g pnpm`)
+
+#### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/ibimspumo/SpriteBox.git
+cd SpriteBox
+
+# Install dependencies
+pnpm install
+
+# Start development servers
+pnpm dev
+```
+
+Open **[http://localhost:5173](http://localhost:5173)** - that's it!
+
+#### Production Deployment
+
+```bash
+# Build for production
+pnpm build
+
+# Start server
+pnpm start
+```
+
+The server runs on port 3000 and serves both the API and the frontend.
+
+---
+
+## For Developers
+
+### Tech Stack
+
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| **Frontend** | Svelte 5 + Vite | Reactive UI with tiny bundles |
+| **Backend** | Node.js + Express | HTTP server + static files |
+| **Real-time** | Socket.io | WebSocket communication |
 | **Validation** | Zod | Runtime type safety |
-| **Compression** | LZ-String | Efficient gallery data transfer |
-| **Package Manager** | pnpm | Fast, disk-efficient monorepo support |
+| **Compression** | LZ-String | Efficient large gallery transfer |
+| **Package Manager** | pnpm | Fast monorepo management |
 
----
-
-## Project Structure
+### Architecture
 
 ```
-spritebox/
+SpriteBox/
 ├── apps/
-│   ├── server/                 # Backend
+│   ├── server/                    # Node.js Backend
 │   │   ├── src/
-│   │   │   ├── index.ts        # Entry point
-│   │   │   ├── socket.ts       # WebSocket handlers
-│   │   │   ├── instance.ts     # Game instance logic
-│   │   │   ├── voting.ts       # Elo algorithm
-│   │   │   └── phases.ts       # Game phase management
+│   │   │   ├── index.ts           # Entry point + Express setup
+│   │   │   ├── socket.ts          # WebSocket event handlers
+│   │   │   ├── instance.ts        # Game instance management
+│   │   │   ├── phases.ts          # Game phase state machine
+│   │   │   ├── voting.ts          # Elo algorithm implementation
+│   │   │   ├── validation.ts      # Zod schemas for input validation
+│   │   │   └── rateLimit.ts       # DoS protection
 │   │   └── data/
-│   │       └── prompts.json    # Prompt database
+│   │       └── prompts.json       # 2.5M+ prompt combinations
 │   │
-│   └── web/                    # Frontend
+│   └── web/                       # Svelte 5 Frontend
 │       ├── src/
 │       │   ├── lib/
-│       │   │   ├── socket.ts   # Socket.io client
-│       │   │   ├── stores.ts   # Svelte stores
-│       │   │   └── types.ts    # Shared types
-│       │   ├── components/
-│   │   │   ├── PixelCanvas.svelte
-│   │   │   ├── ColorPalette.svelte
-│   │   │   ├── Lobby.svelte
-│   │   │   ├── Voting.svelte
-│   │   │   └── Results.svelte
+│       │   │   ├── components/    # Atomic Design structure
+│       │   │   │   ├── atoms/     # Button, Input, Badge, etc.
+│       │   │   │   ├── molecules/ # PromptDisplay, PasswordInput
+│       │   │   │   ├── organisms/ # Modal, Card, GalleryGrid
+│       │   │   │   ├── features/  # Lobby, Drawing, Voting, Results
+│       │   │   │   └── utility/   # PixelCanvas, ColorPalette, Timer
+│       │   │   ├── stores.ts      # Svelte stores (state management)
+│       │   │   ├── socket.ts      # Socket.io client types
+│       │   │   ├── socketBridge.ts # Event handlers + store updates
+│       │   │   └── styles/
+│       │   │       └── tokens.css # Design system variables
 │       │   └── routes/
-│       │       └── +page.svelte
-│       └── vite.config.ts
+│       │       └── +page.svelte   # Main game component
+│       └── static/
+│           └── fonts/             # Pixelify Sans (pixel font)
 │
-├── package.json                # Workspace root
-├── pnpm-workspace.yaml
-├── CLAUDE.md                   # AI assistant context
-├── CONTRIBUTING.md
-├── CODE_OF_CONDUCT.md
-└── LICENSE                     # MIT
+├── package.json                   # Workspace scripts
+├── pnpm-workspace.yaml            # Monorepo configuration
+└── CLAUDE.md                      # AI assistant context
 ```
 
----
+### Key Design Decisions
 
-## Configuration
+#### Server-Authoritative
+All game logic runs on the server. Clients only send inputs and receive state updates. This prevents cheating.
 
-SpriteBox is designed to work out of the box, but you can tune these values:
+#### In-Memory State
+No database. All game data lives in JavaScript `Map` objects. Games are intentionally ephemeral - when the server restarts, everything resets.
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `MAX_PLAYERS` | 100 | Maximum players per instance |
-| `MIN_PLAYERS` | 5 | Minimum to start a game |
-| `LOBBY_TIMEOUT` | 45s | Wait time before auto-start |
-| `DRAWING_TIME` | 60s | Time to draw |
-| `VOTING_TIME` | 5s | Time per voting round |
-| `RECONNECT_GRACE` | 15s | Time to reconnect if disconnected |
+#### Atomic Design (Frontend)
+Components follow strict hierarchy:
+- **Atoms**: Basic UI elements (Button, Input)
+- **Molecules**: Combinations of atoms (PasswordInput)
+- **Organisms**: Complex sections (Modal, PlayerList)
+- **Features**: Game phases (Lobby, Drawing, Voting)
+
+#### Type Safety
+- TypeScript everywhere
+- Zod schemas validate all client inputs
+- Socket.io events are fully typed
+
+### Development Commands
+
+```bash
+pnpm install      # Install all dependencies
+pnpm dev          # Start both servers with hot reload
+pnpm build        # Production build
+pnpm start        # Start production server
+pnpm lint         # Run ESLint
+pnpm typecheck    # Run TypeScript checks
+```
+
+### Environment
+
+No environment variables needed! The server auto-detects:
+- Available RAM for player limits
+- Development vs production mode
+- CORS settings
+
+### Rate Limiting & Security
+
+| Protection | Limit |
+|------------|-------|
+| Global requests | 50/second |
+| Drawing submissions | 5/minute |
+| Votes | 3/second |
+| Room creation | 3/minute |
+| Connections per IP | 5 simultaneous |
+| Max payload size | 1KB |
 
 ---
 
 ## Deployment
 
-### Render (Recommended)
+### Render.com (Recommended)
 
-1. Connect your GitHub repository at [render.com](https://render.com)
-2. Create a new **Web Service**
-3. Select **Frankfurt (EU)** region for lowest latency
-4. Set build command: `pnpm install && pnpm build`
-5. Set start command: `pnpm start`
-6. Deploy
+1. Connect GitHub repository at [render.com](https://render.com)
+2. Create new **Web Service**
+3. Set build command: `pnpm install && pnpm build`
+4. Set start command: `pnpm start`
+5. Deploy
 
-No environment variables needed. No secrets. No database.
-
-### Self-Hosting
-
-```bash
-# On any Linux server
-git clone https://github.com/YOUR_USERNAME/spritebox.git
-cd spritebox
-pnpm install
-pnpm build
-pnpm start
-```
+No environment variables. No secrets. No database.
 
 ### Resource Requirements
 
-| Players | RAM | Notes |
-|---------|-----|-------|
-| 1,000 | ~100 MB | Comfortable |
-| 5,000 | ~250 MB | No issues |
-| 10,000 | ~500 MB | Single server limit |
-
----
-
-## API Endpoints
+| Players | RAM |
+|---------|-----|
+| 1,000 | ~100 MB |
+| 5,000 | ~250 MB |
+| 10,000 | ~500 MB |
 
 ### Health Check
 
@@ -265,25 +318,14 @@ pnpm start
 GET /health
 ```
 
-Returns server status, memory usage, and player counts. Useful for load balancers.
+Returns server status for load balancers:
 
 ```json
 {
-  "status": "healthy",
-  "memory": {
-    "heapUsedMB": 45,
-    "heapTotalMB": 120
-  },
-  "players": {
-    "current": 847,
-    "max": 10000,
-    "queued": 0
-  },
-  "instances": {
-    "active": 12,
-    "public": 9,
-    "private": 3
-  }
+  "status": "ok",
+  "memory": { "heapUsedMB": 45, "heapTotalMB": 120, "status": "ok" },
+  "players": { "current": 847, "max": 10000, "queued": 0 },
+  "instances": { "active": 12, "public": 9, "private": 3 }
 }
 ```
 
@@ -291,35 +333,34 @@ Returns server status, memory usage, and player counts. Useful for load balancer
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions! Here's how to get started:
 
-### Development Workflow
+### Setup
 
 ```bash
-# Install dependencies
+git clone https://github.com/ibimspumo/SpriteBox.git
+cd SpriteBox
 pnpm install
-
-# Start dev servers (hot reload)
 pnpm dev
-
-# Run linter
-pnpm lint
-
-# Run type checker
-pnpm typecheck
-
-# Build for production
-pnpm build
 ```
 
-### Areas We Need Help
+### What We Need Help With
 
-- UI/UX improvements
-- Accessibility (a11y)
-- Translations (i18n)
-- Performance optimization
-- Mobile touch gestures
-- Sound effects
+- **UI/UX improvements**
+- **Accessibility (a11y)**
+- **Performance optimization**
+- **Mobile touch gestures**
+- **Sound effects**
+- **Bug fixes**
+
+### Guidelines
+
+- Follow the existing code style (ESLint + TypeScript strict mode)
+- Write descriptive commit messages
+- Test your changes locally before submitting
+- Keep PRs focused on a single feature/fix
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
@@ -328,10 +369,39 @@ pnpm build
 - [ ] Sound effects and music
 - [ ] Achievement system
 - [ ] Custom color palettes
-- [ ] Replay/timelapse of drawings
+- [ ] Drawing replay/timelapse
 - [ ] Tournament mode
-- [ ] PWA support (offline play)
-- [ ] Docker support
+- [ ] PWA offline support
+- [ ] Docker container
+
+---
+
+## FAQ
+
+### For Players
+
+**Q: Do I need to create an account?**
+A: No! Just open the website and play.
+
+**Q: Can I play on mobile?**
+A: Yes! The game is fully mobile-optimized.
+
+**Q: How many players can play together?**
+A: 5 to 100 players per game.
+
+**Q: What happens if I disconnect?**
+A: You have 15 seconds to rejoin and keep your progress.
+
+### For Developers
+
+**Q: Why no database?**
+A: Simplicity. No setup, no maintenance, no data breaches. Games are ephemeral by design.
+
+**Q: Can I self-host this?**
+A: Yes! Clone the repo and run `pnpm install && pnpm build && pnpm start`.
+
+**Q: Is this production-ready?**
+A: Yes! It's been designed with rate limiting, input validation, and DoS protection.
 
 ---
 
@@ -339,19 +409,19 @@ pnpm build
 
 SpriteBox follows security best practices:
 
-- **Server-Authoritative** - All game logic runs on the server
-- **Input Validation** - Zod schemas validate all client inputs
+- **Server-Authoritative** - All game logic on server
+- **Input Validation** - Zod schemas validate everything
 - **Rate Limiting** - Protection against spam and DoS
-- **XSS Prevention** - DOMPurify sanitizes all user content
-- **No Secrets** - Nothing to leak (no API keys, no database credentials)
+- **XSS Prevention** - All user input is sanitized
+- **No Secrets** - Nothing to leak
 
-See [SECURITY.md](SECURITY.md) for vulnerability reporting.
+Report vulnerabilities to: **security@spritebox.de**
 
 ---
 
 ## License
 
-MIT License - do whatever you want with it.
+**MIT License** - Do whatever you want with it.
 
 See [LICENSE](LICENSE) for details.
 
@@ -361,14 +431,18 @@ See [LICENSE](LICENSE) for details.
 
 - Inspired by [Gartic Phone](https://garticphone.com), [Skribbl.io](https://skribbl.io), and classic pixel art tools
 - Built with [Svelte](https://svelte.dev), [Socket.io](https://socket.io), and [Vite](https://vite.dev)
-- Prompt system inspired by [Drawful](https://www.jackboxgames.com/drawful-2)
+- Uses [Pixelify Sans](https://fonts.google.com/specimen/Pixelify+Sans) font
 
 ---
 
 <div align="center">
 
-**[Play Now](https://spritebox.example.com)** | **[Report Bug](https://github.com/YOUR_USERNAME/spritebox/issues)** | **[Request Feature](https://github.com/YOUR_USERNAME/spritebox/issues)**
+**[Play Now](https://spritebox.de)** | **[Report Bug](https://github.com/ibimspumo/SpriteBox/issues)** | **[Request Feature](https://github.com/ibimspumo/SpriteBox/issues)**
+
+---
 
 Made with pixels and love
+
+*Star this repo if you like SpriteBox!*
 
 </div>

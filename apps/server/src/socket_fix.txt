@@ -1,0 +1,107 @@
+  // Session restoration (for reconnects)
+  socket.on('restore-session', (data) => {
+    if (!data?.sessionId || typeof data.sessionId !== 'string') {
+      socket.emit('session-restore-failed', { reason: 'Invalid session ID' });
+      return;
+    }
+
+    // Validate session token with timing-safe comparison
+    const tokenValidation = validateSessionToken(data.sessionId);
+    if (!tokenValidation.valid) {
+      socket.emit('session-restore-failed', {
+        reason: tokenValidation.expired ? 'Session expired (24h limit)' : 'Invalid session'
+      });
+      return;
+    }
+
+    const result = handlePlayerReconnect(data.sessionId, socket.id);
+
+    if (!result.success || !result.player || !result.instanceId) {
+      socket.emit('session-restore-failed', { reason: 'Session not found or expired' });
+      return;
+    }
+
+    // Extract player to help TypeScript's type narrowing
+    const reconnectedPlayer = result.player;
+    const reconnectedInstanceId = result.instanceId;
+
+    // Update socket data
+    socket.data.player = reconnectedPlayer;
+    socket.data.instanceId = reconnectedInstanceId;
+
+    // Rejoin room
+    socket.join(reconnectedInstanceId);
+
+    const instance = findInstance(reconnectedInstanceId);
+    if (!instance) {
+      socket.emit('session-restore-failed', { reason: 'Instance no longer exists' });
+      return;
+    }
+
+    // Build phase-specific state
+    let phaseState: any = undefined;
+
+    if (instance.phase !== 'lobby') {
+      const timings = getPhaseTimings(instance.id);
+      phaseState = {};
+
+      // Timer info
+      if (timings && timings.phaseEndsAt > Date.now()) {
+        phaseState.timer = {
+          duration: timings.phaseEndsAt - timings.phaseStartedAt,
+          endsAt: timings.phaseEndsAt,
+        };
+      }
+
+      // Drawing phase
+      if (instance.phase === 'drawing') {
+        phaseState.hasSubmitted = instance.submissions.some(s => s.playerId === reconnectedPlayer.id);
+        phaseState.submissionCount = instance.submissions.length;
+      }
+
+      // Voting phase
+      if (instance.phase === 'voting') {
+        const votingState = getVotingState(instance.id);
+        if (votingState) {
+          phaseState.currentRound = votingState.currentRound;
+          phaseState.totalRounds = votingState.totalRounds;
+          phaseState.hasVoted = votingState.votersVoted.has(reconnectedPlayer.id);
+
+          // Find this player's voting assignment
+          const assignment = votingState.assignments.find(a => a.voterId === reconnectedPlayer.id);
+          if (assignment) {
+            const imageA = instance.submissions.find(s => s.playerId === assignment.imageA);
+            const imageB = instance.submissions.find(s => s.playerId === assignment.imageB);
+            if (imageA && imageB) {
+              phaseState.votingAssignment = {
+                imageA: { playerId: imageA.playerId, pixels: imageA.pixels },
+                imageB: { playerId: imageB.playerId, pixels: imageB.pixels },
+              };
+            }
+          }
+        }
+      }
+
+      // Finale phase
+      if (instance.phase === 'finale') {
+        const votingState = getVotingState(instance.id);
+        if (votingState) {
+          phaseState.finalists = votingState.finalists;
+          phaseState.finaleVoted = votingState.votersVoted.has(reconnectedPlayer.id);
+        }
+      }
+    }
+
+    // Send session restored event with full game state
+    socket.emit('session-restored', {
+      instanceId: reconnectedInstanceId,
+      user: reconnectedPlayer.user,
+      phase: instance.phase,
+      prompt: instance.prompt,
+      players: getInstancePlayers(instance).map(p => p.user),
+      isSpectator: instance.spectators.has(reconnectedPlayer.id),
+      phaseState,
+    });
+
+    log('Reconnect', `Session restored for ${reconnectedPlayer.user.fullName}`);
+  });
