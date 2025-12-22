@@ -1,12 +1,12 @@
 <!-- apps/web/src/routes/+page.svelte -->
 <script lang="ts">
   import { game, lobby, currentUser } from '$lib/stores';
-  // Components werden in Phase 6 erstellt
-  // import Lobby from '$lib/components/Lobby.svelte';
-  // import Drawing from '$lib/components/Drawing.svelte';
-  // import Voting from '$lib/components/Voting.svelte';
-  // import Finale from '$lib/components/Finale.svelte';
-  // import Results from '$lib/components/Results.svelte';
+  import Lobby from '$lib/components/Lobby.svelte';
+  import Drawing from '$lib/components/Drawing.svelte';
+  import Voting from '$lib/components/Voting.svelte';
+  import Finale from '$lib/components/Finale.svelte';
+  import Results from '$lib/components/Results.svelte';
+  import Timer from '$lib/components/Timer.svelte';
 </script>
 
 <main>
@@ -18,41 +18,22 @@
   </header>
 
   <div class="game-container">
-    {#if $game.phase === 'idle'}
-      <div class="welcome">
-        <h2>Willkommen bei SpriteBox!</h2>
-        <p>Zeichne 8x8 Pixel-Art und vote für die besten Werke.</p>
-        <!-- Buttons kommen in Phase 6 -->
-        <p class="dev-note">Phase 5 abgeschlossen - UI kommt in Phase 6</p>
-      </div>
-    {:else if $game.phase === 'lobby'}
-      <div class="phase-placeholder">
-        <h2>Lobby</h2>
-        <p>{$lobby.players.length} Spieler</p>
-        <p>Phase: {$game.phase}</p>
-      </div>
+    {#if $game.phase === 'idle' || $game.phase === 'lobby'}
+      <Lobby />
     {:else if $game.phase === 'countdown'}
-      <div class="phase-placeholder">
-        <h2>Countdown</h2>
-        <p>Prompt: {$game.prompt}</p>
+      <div class="countdown">
+        <h2>Bereit machen!</h2>
+        <p class="prompt">Prompt: <strong>{$game.prompt}</strong></p>
+        <Timer />
       </div>
     {:else if $game.phase === 'drawing'}
-      <div class="phase-placeholder">
-        <h2>Zeichnen</h2>
-        <p>Prompt: {$game.prompt}</p>
-      </div>
+      <Drawing />
     {:else if $game.phase === 'voting'}
-      <div class="phase-placeholder">
-        <h2>Voting</h2>
-      </div>
+      <Voting />
     {:else if $game.phase === 'finale'}
-      <div class="phase-placeholder">
-        <h2>Finale</h2>
-      </div>
+      <Finale />
     {:else if $game.phase === 'results'}
-      <div class="phase-placeholder">
-        <h2>Ergebnisse</h2>
-      </div>
+      <Results />
     {/if}
   </div>
 </main>
@@ -91,28 +72,27 @@
     padding: 2rem;
   }
 
-  .welcome, .phase-placeholder {
+  .countdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
     text-align: center;
-    max-width: 500px;
   }
 
-  .welcome h2 {
+  .countdown h2 {
+    font-size: 2.5rem;
+    color: #fbbf24;
+    animation: pulse 1s ease-in-out infinite;
+  }
+
+  .countdown .prompt {
+    font-size: 1.5rem;
     color: #e94560;
-    margin-bottom: 1rem;
   }
 
-  .dev-note {
-    margin-top: 2rem;
-    padding: 1rem;
-    background: #0f3460;
-    border-radius: 8px;
-    color: #aaa;
-  }
-
-  .phase-placeholder {
-    padding: 2rem;
-    background: #16213e;
-    border-radius: 12px;
-    border: 1px solid #0f3460;
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
   }
 </style>
