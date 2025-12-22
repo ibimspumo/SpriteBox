@@ -7,6 +7,7 @@ export const connectionStatus = writable<'disconnected' | 'connecting' | 'connec
 export const socketId = writable<string | null>(null);
 export const globalOnlineCount = writable<number>(0);
 export const sessionBlocked = writable<boolean>(false); // Too many sessions from same browser
+export const idleWarning = writable<{ show: boolean; timeLeft: number }>({ show: false, timeLeft: 0 });
 
 // === User State ===
 export const currentUser = writable<User | null>(null);

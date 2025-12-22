@@ -29,6 +29,7 @@ import {
   finaleVoted,
   passwordPrompt,
   sessionBlocked,
+  idleWarning,
   startTimer,
   resetGameState,
   resetLobbyState,
@@ -477,8 +478,14 @@ function setupEventHandlers(socket: AppSocket): void {
     currentSessionId = null;
   });
 
+  socket.on('idle-warning', (data: { timeLeft: number }) => {
+    console.log('[Socket] Idle warning:', data.timeLeft, 'seconds left');
+    idleWarning.set({ show: true, timeLeft: data.timeLeft });
+  });
+
   socket.on('idle-disconnect', (data: { reason: string }) => {
     console.log('[Socket] Idle disconnect:', data.reason);
+    idleWarning.set({ show: false, timeLeft: 0 });
     lastError.set({ code: 'IDLE_DISCONNECT', message: data.reason });
     clearSession();
     currentSessionId = null;

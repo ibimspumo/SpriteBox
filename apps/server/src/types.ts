@@ -141,6 +141,7 @@ export interface ServerToClientEvents {
   }) => void;
   'finale-vote-received': (data: { success: boolean }) => void;
   'game-results': (data: { prompt?: Prompt; rankings: RankingEntry[]; compressedRankings?: string; totalParticipants: number }) => void;
+  'idle-warning': (data: { timeLeft: number }) => void;
   'idle-disconnect': (data: { reason: string }) => void;
   'session-restored': (data: {
     instanceId: string;

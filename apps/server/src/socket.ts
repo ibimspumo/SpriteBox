@@ -217,18 +217,32 @@ export function setupSocketHandlers(io: TypedServer): void {
       next();
     });
 
-    // === Idle-Timeout ===
+    // === Idle-Timeout with Warning ===
     let lastActivity = Date.now();
+    let warningSent = false;
+
     socket.onAny(() => {
       lastActivity = Date.now();
+      warningSent = false; // Reset warning on any activity
     });
 
     const idleCheck = setInterval(() => {
-      if (Date.now() - lastActivity > DOS.IDLE_TIMEOUT) {
+      const idleTime = Date.now() - lastActivity;
+
+      // Disconnect after full timeout
+      if (idleTime > DOS.IDLE_TIMEOUT) {
         socket.emit('idle-disconnect', { reason: 'Inactivity' });
         socket.disconnect(true);
+        return;
       }
-    }, 60_000);
+
+      // Warning before disconnect (1 minute left)
+      if (idleTime > DOS.IDLE_WARNING && !warningSent) {
+        const timeLeft = Math.ceil((DOS.IDLE_TIMEOUT - idleTime) / 1000);
+        socket.emit('idle-warning', { timeLeft });
+        warningSent = true;
+      }
+    }, 30_000); // Check every 30 seconds for more responsive warnings
 
     // Willkommens-Event
     socket.emit('connected', {

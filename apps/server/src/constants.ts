@@ -73,7 +73,8 @@ export const DOS = {
   MAX_CONNECTIONS_PER_IP: 5,
   MAX_TOTAL_CONNECTIONS: 15_000,
   MAX_PAYLOAD_SIZE: 1024,      // 1 KB
-  IDLE_TIMEOUT: 300_000,       // 5 Minuten
+  IDLE_WARNING: 240_000,       // 4 minutes - show warning
+  IDLE_TIMEOUT: 300_000,       // 5 minutes - disconnect
 } as const;
 
 // === Compression ===

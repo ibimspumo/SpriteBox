@@ -21,6 +21,7 @@ export interface ServerToClientEvents {
   'game-results': (data: GameResultsData) => void;
   'name-changed': (data: { user: User }) => void;
   'kicked': (data: { reason: string }) => void;
+  'idle-warning': (data: { timeLeft: number }) => void;
   'idle-disconnect': (data: { reason: string }) => void;
   'session-restored': (data: SessionRestoredData) => void;
   'session-restore-failed': (data: { reason: string }) => void;
