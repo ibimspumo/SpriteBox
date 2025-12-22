@@ -5,6 +5,9 @@ import { log } from './utils.js';
 // IP -> Socket IDs
 const ipToSockets = new Map<string, Set<string>>();
 
+// Instance -> IP -> Socket ID (tracks which IPs are in which instances)
+const instanceIpMap = new Map<string, Map<string, string>>();
+
 // Max Sessions pro IP
 const MAX_SESSIONS_PER_IP = 3;
 
@@ -69,4 +72,45 @@ export function getMultiAccountStats(): { uniqueIPs: number; totalSessions: numb
     totalSessions += sockets.size;
   }
   return { uniqueIPs: ipToSockets.size, totalSessions };
+}
+
+/**
+ * Checks if an IP is already in a specific instance
+ */
+export function isIpInInstance(ip: string, instanceId: string): boolean {
+  const instanceMap = instanceIpMap.get(instanceId);
+  return instanceMap?.has(ip) ?? false;
+}
+
+/**
+ * Tracks an IP joining an instance
+ */
+export function trackIpInInstance(ip: string, instanceId: string, socketId: string): void {
+  let instanceMap = instanceIpMap.get(instanceId);
+  if (!instanceMap) {
+    instanceMap = new Map();
+    instanceIpMap.set(instanceId, instanceMap);
+  }
+  instanceMap.set(ip, socketId);
+  log('MultiAccount', `IP ${ip} tracked in instance ${instanceId}`);
+}
+
+/**
+ * Removes IP tracking when leaving an instance
+ */
+export function untrackIpFromInstance(ip: string, instanceId: string): void {
+  const instanceMap = instanceIpMap.get(instanceId);
+  if (instanceMap) {
+    instanceMap.delete(ip);
+    if (instanceMap.size === 0) {
+      instanceIpMap.delete(instanceId);
+    }
+  }
+}
+
+/**
+ * Cleans up all IP tracking for an instance (when instance is deleted)
+ */
+export function cleanupInstanceIpTracking(instanceId: string): void {
+  instanceIpMap.delete(instanceId);
 }

@@ -5,6 +5,7 @@ import { generateId, generateRoomCode, log } from './utils.js';
 import { MAX_PLAYERS_PER_INSTANCE, MIN_PLAYERS_TO_START, TIMERS } from './constants.js';
 import { startGame as startGamePhase } from './phases.js';
 import { hashPassword, verifyPassword } from './password.js';
+import { cleanupInstanceIpTracking } from './fingerprint.js';
 
 // Disconnected players with grace period (sessionId -> {player, instanceId, timeout})
 const disconnectedPlayers = new Map<string, {
@@ -305,6 +306,9 @@ export function cleanupInstance(instance: Instance): void {
   if (instance.code) {
     privateRooms.delete(instance.code);
   }
+
+  // Clean up IP tracking for this instance
+  cleanupInstanceIpTracking(instance.id);
 
   log('Instance', `Cleaned up instance ${instance.id}`);
 }

@@ -38,7 +38,7 @@ import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, validate, va
 import { getVotingState, isWithinPhaseTime, getPhaseTimings, checkAndTriggerEarlyVotingEnd, checkAndTriggerEarlyFinaleEnd } from './phases.js';
 import { processVote, processFinaleVote } from './voting.js';
 import { checkRateLimit, checkConnectionRateLimit } from './rateLimit.js';
-import { checkMultiAccount, removeSocketFingerprint } from './fingerprint.js';
+import { checkMultiAccount, removeSocketFingerprint, isIpInInstance, trackIpInInstance, untrackIpFromInstance } from './fingerprint.js';
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -328,6 +328,15 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
     socket.data.instanceId = 'pending';
 
     const instance = findOrCreatePublicInstance();
+    const ip = socket.data.ip || 'unknown';
+
+    // Check if this IP is already in this instance (prevent duplicate tabs)
+    if (isIpInInstance(ip, instance.id)) {
+      socket.data.instanceId = null;
+      socket.emit('error', { code: 'DUPLICATE_SESSION', message: 'You are already in this game in another tab' });
+      return;
+    }
+
     const result = addPlayerToInstance(instance, player);
 
     if (!result.success) {
@@ -335,6 +344,9 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       socket.emit('error', { code: 'JOIN_FAILED', message: result.error });
       return;
     }
+
+    // Track IP in this instance
+    trackIpInInstance(ip, instance.id, socket.id);
 
     // Add socket to room
     socket.join(instance.id);
@@ -397,6 +409,10 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
         password: data?.password,
       });
       addPlayerToInstance(instance, player);
+
+      // Track IP in this instance
+      const ip = socket.data.ip || 'unknown';
+      trackIpInInstance(ip, instance.id, socket.id);
 
       socket.join(instance.id);
       socket.data.instanceId = instance.id;
@@ -477,6 +493,12 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       clearPasswordAttempts(ip, roomCode);
     }
 
+    // Check if this IP is already in this instance (prevent duplicate tabs)
+    if (isIpInInstance(ip, instance.id)) {
+      socket.emit('error', { code: 'DUPLICATE_SESSION', message: 'You are already in this game in another tab' });
+      return;
+    }
+
     // Prevent race condition
     socket.data.instanceId = 'pending';
 
@@ -487,6 +509,9 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       socket.emit('error', { code: 'JOIN_FAILED', message: result.error });
       return;
     }
+
+    // Track IP in this instance
+    trackIpInInstance(ip, instance.id, socket.id);
 
     socket.join(instance.id);
     socket.data.instanceId = instance.id;
@@ -577,13 +602,17 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
   // Lobby verlassen
   socket.on('leave-lobby', () => {
     const instanceId = socket.data.instanceId;
-    if (!instanceId) return;
+    if (!instanceId || instanceId === 'pending') return;
 
     const instance = findInstance(instanceId);
     if (instance) {
       removePlayerFromInstance(instance, player.id);
       socket.to(instance.id).emit('player-left', { playerId: player.id, user: player.user });
     }
+
+    // Untrack IP from instance
+    const ip = socket.data.ip || 'unknown';
+    untrackIpFromInstance(ip, instanceId);
 
     socket.leave(instanceId);
     socket.data.instanceId = null;
@@ -675,9 +704,11 @@ function registerHostHandlers(socket: TypedSocket, io: TypedServer, player: Play
     io.to(targetPlayer.socketId).emit('kicked', { reason: 'Host kicked you' });
     io.sockets.sockets.get(targetPlayer.socketId)?.leave(instance.id);
 
-    // Reset socket.data for kicked player
+    // Reset socket.data for kicked player and untrack IP
     const kickedSocket = io.sockets.sockets.get(targetPlayer.socketId);
     if (kickedSocket) {
+      const kickedIp = kickedSocket.data.ip || 'unknown';
+      untrackIpFromInstance(kickedIp, instance.id);
       kickedSocket.data.instanceId = null;
     }
 
@@ -1076,6 +1107,10 @@ function handleDisconnect(socket: TypedSocket, player: Player, reason: string): 
 
   const instanceId = socket.data.instanceId;
   if (instanceId && instanceId !== 'pending') {
+    // Untrack IP from instance
+    const ip = socket.data.ip || 'unknown';
+    untrackIpFromInstance(ip, instanceId);
+
     const instance = findInstance(instanceId);
     if (instance) {
       // For lobby phase: remove immediately and clean up session
