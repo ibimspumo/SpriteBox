@@ -6,9 +6,9 @@ export const MIN_PLAYERS_TO_START = 5;
 
 // === Timer (in Millisekunden) ===
 export const TIMERS = {
-  LOBBY_TIMEOUT: 45_000,       // 45s Wartezeit in Lobby
+  LOBBY_TIMEOUT: 30_000,       // 30s Wartezeit in Lobby
   COUNTDOWN: 5_000,            // 5s Countdown vor Zeichnen
-  DRAWING: 60_000,             // 60s zum Zeichnen
+  DRAWING: 30_000,             // 30s zum Zeichnen
   VOTING_ROUND: 5_000,         // 5s pro Voting-Runde
   FINALE: 15_000,              // 15s fürs Finale
   RESULTS: 15_000,             // 15s Ergebnisanzeige
