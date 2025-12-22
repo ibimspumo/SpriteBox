@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { initSocketBridge } from '$lib/socketBridge';
-  import { connectionStatus, lastError } from '$lib/stores';
+  import { connectionStatus, lastError, lobby } from '$lib/stores';
   import DebugPanel from '$lib/components/debug/DebugPanel.svelte';
   import { CookieNotice } from '$lib/components/organisms';
   import '$lib/styles/tokens.css';
@@ -126,15 +126,17 @@
     </button>
   {/if}
 
-  <!-- Share Button - Always visible -->
-  <button
-    class="share-fab"
-    onclick={handleShare}
-    title="Share SpriteBox"
-  >
-    <img src="/icons/link.svg" alt="Share" class="share-icon" />
-    <span class="share-text">Share</span>
-  </button>
+  <!-- Share Button - Only on start page (not in game) -->
+  {#if !$lobby.instanceId}
+    <button
+      class="share-fab"
+      onclick={handleShare}
+      title="Share SpriteBox"
+    >
+      <img src="/icons/link.svg" alt="Share" class="share-icon" />
+      <span class="share-text">Share</span>
+    </button>
+  {/if}
 
   <!-- GitHub Link - Desktop Only -->
   <a
