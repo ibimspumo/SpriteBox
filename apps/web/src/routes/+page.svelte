@@ -5,6 +5,7 @@
   import { Lobby, Drawing, Voting, Finale, Results } from '$lib/components/features';
   import { Timer } from '$lib/components/utility';
   import { PromptDisplay } from '$lib/components/molecules';
+  import { Button } from '$lib/components/atoms';
 
   function handleStillHere() {
     // Send ping to reset idle timer
@@ -23,7 +24,7 @@
       <span class="idle-icon">👋</span>
       <h2>Are you still there?</h2>
       <p>You'll be disconnected soon due to inactivity.</p>
-      <button onclick={handleStillHere}>I'm here!</button>
+      <Button variant="action" size="lg" onclick={handleStillHere}>I'm here!</Button>
     </div>
   </div>
 {/if}
@@ -36,7 +37,7 @@
         <h2>Already Playing?</h2>
         <p>It looks like you have SpriteBox open in another window or tab.</p>
         <p>Close the other one first, then come back here!</p>
-        <button onclick={() => window.location.reload()}>Try Again</button>
+        <Button variant="secondary" onclick={() => window.location.reload()}>Try Again</Button>
       </div>
     </div>
   {:else}
@@ -113,24 +114,6 @@
     font-size: var(--font-size-sm);
   }
 
-  .idle-warning-modal button {
-    margin-top: var(--space-2);
-    padding: var(--space-4) var(--space-8);
-    background: var(--color-accent);
-    color: white;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-lg);
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.1s, background 0.2s;
-  }
-
-  .idle-warning-modal button:hover {
-    background: var(--color-accent-hover);
-    transform: scale(1.05);
-  }
-
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -190,23 +173,6 @@
     margin: 0;
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);
-  }
-
-  .blocked-message button {
-    margin-top: var(--space-4);
-    padding: var(--space-3) var(--space-6);
-    background: var(--color-accent);
-    color: white;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-
-  .blocked-message button:hover {
-    background: var(--color-accent-hover);
   }
 
   .countdown {
