@@ -1,9 +1,10 @@
-<!-- apps/web/src/lib/components/DebugPanel.svelte -->
-<!-- Visual Debug Panel - Only visible in development mode -->
+<!-- DebugPanel - Visual Debug Panel (Development only) -->
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import { dev } from '$app/environment';
   import { lobby, game } from '$lib/stores';
+  import { Button } from '../atoms';
+  import { StatItem } from '../molecules';
 
   // Only render in development
   if (!dev) {
@@ -78,10 +79,8 @@
     { value: 'disconnector', label: 'Disconnector', desc: '30% DC chance' },
   ];
 
-  // API base URL
   const API_BASE = dev ? 'http://localhost:3000' : '';
 
-  // Fetch debug info
   async function fetchDebugInfo(): Promise<void> {
     try {
       const res = await fetch(`${API_BASE}/debug/info`);
@@ -92,7 +91,6 @@
     }
   }
 
-  // Fetch instance info
   async function fetchInstanceInfo(): Promise<void> {
     if (!$lobby.instanceId) {
       instanceInfo = null;
@@ -107,7 +105,6 @@
     }
   }
 
-  // Add bots
   async function addBots(): Promise<void> {
     isLoading = true;
     error = null;
@@ -131,7 +128,6 @@
     }
   }
 
-  // Remove all bots
   async function removeAllBots(): Promise<void> {
     isLoading = true;
     error = null;
@@ -151,7 +147,6 @@
     }
   }
 
-  // Remove bots from current instance
   async function removeInstanceBots(): Promise<void> {
     if (!$lobby.instanceId) return;
     isLoading = true;
@@ -172,7 +167,6 @@
     }
   }
 
-  // Force start game
   async function forceStart(): Promise<void> {
     if (!$lobby.instanceId) return;
     isLoading = true;
@@ -193,7 +187,6 @@
     }
   }
 
-  // Quick start (create instance with bots and start)
   async function quickStart(): Promise<void> {
     isLoading = true;
     error = null;
@@ -216,12 +209,10 @@
     }
   }
 
-  // Refresh all data
   async function refresh(): Promise<void> {
     await Promise.all([fetchDebugInfo(), fetchInstanceInfo()]);
   }
 
-  // Toggle panel
   function toggle(): void {
     isOpen = !isOpen;
     if (isOpen) {
@@ -229,7 +220,6 @@
     }
   }
 
-  // Format uptime
   function formatUptime(seconds: number): string {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -239,7 +229,6 @@
     return `${s}s`;
   }
 
-  // Auto-refresh when open
   let refreshInterval: ReturnType<typeof setInterval> | null = null;
 
   $effect(() => {
@@ -260,19 +249,15 @@
 </script>
 
 {#if dev}
-  <!-- Toggle Button -->
   <button class="debug-toggle" onclick={toggle} title="Debug Panel">
     {isOpen ? '×' : '🔧'}
   </button>
 
-  <!-- Debug Panel -->
   {#if isOpen}
     <div class="debug-panel">
       <div class="panel-header">
         <h3>Debug Panel</h3>
-        <button class="refresh-btn" onclick={refresh} disabled={isLoading}>
-          ↻
-        </button>
+        <button class="refresh-btn" onclick={refresh} disabled={isLoading}>↻</button>
       </div>
 
       {#if error}
@@ -283,13 +268,13 @@
       <section class="section">
         <h4>Quick Actions</h4>
         <div class="button-row">
-          <button onclick={quickStart} disabled={isLoading} class="primary">
+          <Button variant="primary" size="sm" onclick={quickStart} disabled={isLoading}>
             Quick Start
-          </button>
+          </Button>
           {#if $lobby.instanceId && $game.phase === 'lobby'}
-            <button onclick={forceStart} disabled={isLoading}>
+            <Button size="sm" onclick={forceStart} disabled={isLoading}>
               Force Start
-            </button>
+            </Button>
           {/if}
         </div>
       </section>
@@ -313,15 +298,15 @@
         </div>
         <p class="hint">{behaviors.find(b => b.value === selectedBehavior)?.desc}</p>
         <div class="button-row">
-          <button onclick={addBots} disabled={isLoading || !$lobby.instanceId}>
+          <Button size="sm" onclick={addBots} disabled={isLoading || !$lobby.instanceId}>
             + Bots
-          </button>
-          <button onclick={removeInstanceBots} disabled={isLoading || !$lobby.instanceId}>
-            - Instance Bots
-          </button>
-          <button onclick={removeAllBots} disabled={isLoading} class="danger">
+          </Button>
+          <Button size="sm" onclick={removeInstanceBots} disabled={isLoading || !$lobby.instanceId}>
+            - Instance
+          </Button>
+          <Button size="sm" variant="danger" onclick={removeAllBots} disabled={isLoading}>
             Remove All
-          </button>
+          </Button>
         </div>
       </section>
 
@@ -330,26 +315,11 @@
         <section class="section">
           <h4>Server</h4>
           <div class="stats-grid">
-            <div class="stat">
-              <span class="label">Bots</span>
-              <span class="value">{debugInfo.bots.total}/{debugInfo.bots.maxAllowed}</span>
-            </div>
-            <div class="stat">
-              <span class="label">Instances</span>
-              <span class="value">{debugInfo.instances.total}</span>
-            </div>
-            <div class="stat">
-              <span class="label">Players</span>
-              <span class="value">{debugInfo.instances.totalPlayers}</span>
-            </div>
-            <div class="stat">
-              <span class="label">Memory</span>
-              <span class="value">{debugInfo.memory.heapUsed}MB</span>
-            </div>
-            <div class="stat">
-              <span class="label">Uptime</span>
-              <span class="value">{formatUptime(debugInfo.uptime)}</span>
-            </div>
+            <StatItem label="Bots" value="{debugInfo.bots.total}/{debugInfo.bots.maxAllowed}" variant="highlight" size="sm" />
+            <StatItem label="Instances" value={debugInfo.instances.total} size="sm" />
+            <StatItem label="Players" value={debugInfo.instances.totalPlayers} size="sm" />
+            <StatItem label="Memory" value="{debugInfo.memory.heapUsed}MB" size="sm" />
+            <StatItem label="Uptime" value={formatUptime(debugInfo.uptime)} size="sm" />
           </div>
         </section>
       {/if}
@@ -389,7 +359,6 @@
             {/if}
           </div>
 
-          <!-- Player List -->
           <div class="player-list">
             <h5>Players ({instanceInfo.players.length})</h5>
             <div class="players">
@@ -435,162 +404,121 @@
 <style>
   .debug-toggle {
     position: fixed;
-    bottom: 1rem;
-    left: 1rem;
+    bottom: var(--space-4);
+    left: var(--space-4);
     z-index: 9999;
     width: 48px;
     height: 48px;
-    border-radius: 50%;
-    background: #e94560;
+    border-radius: var(--radius-full);
+    background: var(--color-accent);
     color: white;
     border: none;
-    font-size: 1.5rem;
+    font-size: var(--font-size-xl);
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s, background 0.2s;
+    box-shadow: var(--shadow-lg);
+    transition: transform var(--transition-normal), background var(--transition-normal);
   }
 
   .debug-toggle:hover {
     transform: scale(1.1);
-    background: #ff6b6b;
+    background: var(--color-accent-hover);
   }
 
   .debug-panel {
     position: fixed;
     bottom: 70px;
-    left: 1rem;
+    left: var(--space-4);
     z-index: 9998;
     width: 360px;
     max-height: calc(100vh - 100px);
     overflow-y: auto;
-    background: #1a1a2e;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    font-size: 0.85rem;
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    font-size: var(--font-size-sm);
   }
 
   .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    background: #16213e;
-    border-radius: 12px 12px 0 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .panel-header h3 {
     margin: 0;
-    font-size: 1rem;
-    color: #e94560;
+    font-size: var(--font-size-md);
+    color: var(--color-accent);
   }
 
   .refresh-btn {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #aaa;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
     width: 28px;
     height: 28px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 1rem;
+    font-size: var(--font-size-md);
   }
 
   .refresh-btn:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: white;
+    color: var(--color-text-primary);
   }
 
   .error-msg {
     background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
-    padding: 8px 16px;
-    font-size: 0.8rem;
+    color: var(--color-error);
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--font-size-xs);
   }
 
   .section {
-    padding: 12px 16px;
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   .section h4 {
-    margin: 0 0 8px 0;
-    font-size: 0.75rem;
+    margin: 0 0 var(--space-2) 0;
+    font-size: var(--font-size-xs);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #888;
+    color: var(--color-text-muted);
   }
 
   .button-row {
     display: flex;
-    gap: 8px;
+    gap: var(--space-2);
     flex-wrap: wrap;
-  }
-
-  button {
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.05);
-    color: #eee;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.2s;
-  }
-
-  button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  button.primary {
-    background: #e94560;
-    border-color: #e94560;
-  }
-
-  button.primary:hover:not(:disabled) {
-    background: #ff6b6b;
-    border-color: #ff6b6b;
-  }
-
-  button.danger {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.5);
-    color: #f87171;
-  }
-
-  button.danger:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.3);
   }
 
   .control-row {
     display: flex;
-    gap: 12px;
-    margin-bottom: 8px;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
   }
 
   .control-row label {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    font-size: 0.75rem;
-    color: #888;
+    gap: var(--space-1);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
   }
 
   input[type="number"],
   select {
-    padding: 6px 8px;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
     background: rgba(0, 0, 0, 0.3);
-    color: #eee;
-    font-size: 0.85rem;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
     width: 100px;
   }
 
@@ -599,70 +527,56 @@
   }
 
   .hint {
-    margin: 4px 0 8px 0;
-    font-size: 0.7rem;
-    color: #666;
+    margin: var(--space-1) 0 var(--space-2) 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
     font-style: italic;
   }
 
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    gap: var(--space-2);
   }
 
-  .stat {
+  .stats-grid :global(.stat-item) {
     background: rgba(0, 0, 0, 0.2);
-    padding: 8px;
-    border-radius: 6px;
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
     text-align: center;
-  }
-
-  .stat .label {
-    display: block;
-    font-size: 0.65rem;
-    color: #666;
-    text-transform: uppercase;
-  }
-
-  .stat .value {
-    display: block;
-    font-size: 1rem;
-    font-weight: bold;
-    color: #e94560;
   }
 
   .instance-info {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 6px;
-    padding: 8px;
-    margin-bottom: 8px;
+    border-radius: var(--radius-sm);
+    padding: var(--space-2);
+    margin-bottom: var(--space-2);
   }
 
   .info-row {
     display: flex;
     justify-content: space-between;
-    padding: 4px 0;
-    font-size: 0.8rem;
+    padding: var(--space-1) 0;
+    font-size: var(--font-size-xs);
   }
 
   .info-row span:first-child {
-    color: #888;
+    color: var(--color-text-muted);
   }
 
   code {
     background: rgba(255, 255, 255, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-sm);
     font-family: monospace;
-    font-size: 0.75rem;
+    font-size: var(--font-size-xs);
   }
 
   .phase-badge {
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.7rem;
-    font-weight: bold;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-xl);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
     text-transform: uppercase;
   }
 
@@ -674,15 +588,15 @@
   .phase-results { background: #6366f1; }
 
   .player-list h5 {
-    margin: 8px 0 4px 0;
-    font-size: 0.75rem;
-    color: #888;
+    margin: var(--space-2) 0 var(--space-1) 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
   }
 
   .players {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: var(--space-1);
     max-height: 120px;
     overflow-y: auto;
   }
@@ -690,11 +604,11 @@
   .player {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--space-1);
     background: rgba(255, 255, 255, 0.05);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
   }
 
   .player.bot {
@@ -702,7 +616,7 @@
   }
 
   .player .icon {
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
   }
 
   .player .name {
@@ -714,16 +628,16 @@
 
   details summary {
     cursor: pointer;
-    color: #888;
-    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
   }
 
   details summary:hover {
-    color: #eee;
+    color: var(--color-text-primary);
   }
 
   .bot-list {
-    margin-top: 8px;
+    margin-top: var(--space-2);
     max-height: 150px;
     overflow-y: auto;
   }
@@ -731,11 +645,11 @@
   .bot-item {
     display: flex;
     justify-content: space-between;
-    padding: 4px 8px;
+    padding: var(--space-1) var(--space-2);
     background: rgba(255, 255, 255, 0.03);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     margin-bottom: 2px;
-    font-size: 0.75rem;
+    font-size: var(--font-size-xs);
   }
 
   .bot-item.inactive {
@@ -743,15 +657,15 @@
   }
 
   .bot-behavior {
-    color: #888;
-    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
   }
 
   .muted {
-    color: #666;
-    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
     text-align: center;
-    padding: 8px 0;
+    padding: var(--space-2) 0;
   }
 
   /* Scrollbar styling */

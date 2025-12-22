@@ -1,12 +1,9 @@
 <!-- apps/web/src/routes/+page.svelte -->
 <script lang="ts">
-  import { game, lobby, currentUser } from '$lib/stores';
-  import Lobby from '$lib/components/Lobby.svelte';
-  import Drawing from '$lib/components/Drawing.svelte';
-  import Voting from '$lib/components/Voting.svelte';
-  import Finale from '$lib/components/Finale.svelte';
-  import Results from '$lib/components/Results.svelte';
-  import Timer from '$lib/components/Timer.svelte';
+  import { game, currentUser } from '$lib/stores';
+  import { Lobby, Drawing, Voting, Finale, Results } from '$lib/components/features';
+  import { Timer } from '$lib/components/utility';
+  import { PromptDisplay } from '$lib/components/molecules';
 </script>
 
 <main>
@@ -23,7 +20,7 @@
     {:else if $game.phase === 'countdown'}
       <div class="countdown">
         <h2>Bereit machen!</h2>
-        <p class="prompt">Prompt: <strong>{$game.prompt}</strong></p>
+        <PromptDisplay prompt={$game.prompt} label="Prompt:" size="lg" centered />
         <Timer />
       </div>
     {:else if $game.phase === 'drawing'}
@@ -49,20 +46,20 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
+    padding: var(--space-4);
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
   }
 
   header h1 {
     margin: 0;
-    font-size: 1.5rem;
-    color: var(--text-primary);
+    font-size: var(--font-size-xl);
+    color: var(--color-text-primary);
   }
 
   .user {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
   }
 
   .game-container {
@@ -70,26 +67,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    padding: var(--space-8);
   }
 
   .countdown {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    gap: var(--space-6);
     text-align: center;
   }
 
   .countdown h2 {
-    font-size: 2.5rem;
-    color: var(--warning);
+    font-size: var(--font-size-2xl);
+    color: var(--color-warning);
     animation: pulse 1s ease-in-out infinite;
-  }
-
-  .countdown .prompt {
-    font-size: 1.5rem;
-    color: var(--accent);
   }
 
   @keyframes pulse {

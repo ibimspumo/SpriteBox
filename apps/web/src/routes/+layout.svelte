@@ -4,14 +4,13 @@
   import { browser } from '$app/environment';
   import { initSocketBridge } from '$lib/socketBridge';
   import { connectionStatus } from '$lib/stores';
-  import { initTheme, toggleTheme, theme } from '$lib/theme';
-  import DebugPanel from '$lib/components/DebugPanel.svelte';
+  import DebugPanel from '$lib/components/debug/DebugPanel.svelte';
+  import '$lib/styles/tokens.css';
 
   let { children } = $props();
 
   onMount(() => {
     if (browser) {
-      initTheme();
       initSocketBridge();
     }
   });
@@ -24,10 +23,6 @@
     </div>
   {/if}
 
-  <button class="theme-toggle" onclick={toggleTheme} aria-label="Toggle theme">
-    {$theme === 'dark' ? '☀️' : '🌙'}
-  </button>
-
   {@render children()}
 
   <!-- Debug Panel (nur in Development) -->
@@ -35,36 +30,20 @@
 </div>
 
 <style>
-  /* CSS Variables for theming */
+  /* Legacy aliases - mapped to new design tokens */
   :global(:root) {
-    /* Dark theme (default) */
-    --bg-primary: #1a1a2e;
-    --bg-secondary: #16213e;
-    --bg-tertiary: #0f3460;
-    --text-primary: #eee;
-    --text-secondary: #aaa;
-    --text-muted: #666;
-    --accent: #e94560;
-    --accent-hover: #ff6b6b;
-    --success: #4ade80;
-    --warning: #fbbf24;
-    --border: rgba(255, 255, 255, 0.1);
-    --overlay: rgba(0, 0, 0, 0.8);
-  }
-
-  :global([data-theme="light"]) {
-    --bg-primary: #f5f5f5;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #e0e0e0;
-    --text-primary: #1a1a1a;
-    --text-secondary: #666;
-    --text-muted: #999;
-    --accent: #e94560;
-    --accent-hover: #d63950;
-    --success: #22c55e;
-    --warning: #f59e0b;
-    --border: rgba(0, 0, 0, 0.1);
-    --overlay: rgba(255, 255, 255, 0.9);
+    --bg-primary: var(--color-bg-primary);
+    --bg-secondary: var(--color-bg-secondary);
+    --bg-tertiary: var(--color-bg-tertiary);
+    --text-primary: var(--color-text-primary);
+    --text-secondary: var(--color-text-secondary);
+    --text-muted: var(--color-text-muted);
+    --accent: var(--color-accent);
+    --accent-hover: var(--color-accent-hover);
+    --success: var(--color-success);
+    --warning: var(--color-warning);
+    --border: var(--color-border);
+    --overlay: var(--color-overlay);
   }
 
   :global(*, *::before, *::after) {
@@ -74,40 +53,16 @@
   :global(body) {
     margin: 0;
     padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    font-family: var(--font-family);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
     min-height: 100vh;
-    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   .app {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-  }
-
-  .theme-toggle {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    z-index: 100;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    cursor: pointer;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s ease, background-color 0.3s ease;
-  }
-
-  .theme-toggle:hover {
-    transform: scale(1.1);
-    background: var(--bg-tertiary);
   }
 
   .connection-overlay {

@@ -1,9 +1,9 @@
-<!-- apps/web/src/lib/components/Voting.svelte -->
+<!-- Voting Feature Component -->
 <script lang="ts">
   import { voting } from '$lib/stores';
   import { vote } from '$lib/socketBridge';
-  import PixelCanvas from './PixelCanvas.svelte';
-  import Timer from './Timer.svelte';
+  import { Card } from '../organisms';
+  import { PixelCanvas, Timer } from '../utility';
 
   function handleVote(chosenId: string): void {
     vote(chosenId);
@@ -12,20 +12,22 @@
 
 <div class="voting">
   <div class="header">
-    <span>Round {$voting.round}/{$voting.totalRounds}</span>
+    <span class="round">Round {$voting.round}/{$voting.totalRounds}</span>
     <Timer />
   </div>
 
   {#if $voting.hasVoted}
-    <div class="waiting">
-      Voted! Waiting for next round...
-    </div>
+    <Card padding="lg">
+      <span class="waiting-text">Voted! Waiting for next round...</span>
+    </Card>
   {:else if $voting.imageA && $voting.imageB}
     <p class="instruction">Which image is better?</p>
 
     <div class="duel">
-      <button
-        class="image-btn"
+      <Card
+        hoverable
+        clickable
+        padding="md"
         onclick={() => handleVote($voting.imageA!.playerId)}
       >
         <PixelCanvas
@@ -33,12 +35,14 @@
           size={140}
           readonly
         />
-      </button>
+      </Card>
 
       <span class="vs">VS</span>
 
-      <button
-        class="image-btn"
+      <Card
+        hoverable
+        clickable
+        padding="md"
         onclick={() => handleVote($voting.imageB!.playerId)}
       >
         <PixelCanvas
@@ -46,12 +50,12 @@
           size={140}
           readonly
         />
-      </button>
+      </Card>
     </div>
   {:else}
-    <div class="waiting">
-      Waiting for images...
-    </div>
+    <Card padding="lg">
+      <span class="waiting-text">Waiting for images...</span>
+    </Card>
   {/if}
 </div>
 
@@ -60,8 +64,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
-    padding: 16px;
+    gap: var(--space-6);
+    padding: var(--space-4);
   }
 
   .header {
@@ -72,43 +76,31 @@
     max-width: 400px;
   }
 
+  .round {
+    font-size: var(--font-size-md);
+    color: var(--color-text-secondary);
+  }
+
   .instruction {
-    font-size: 1.25rem;
-    color: #aaa;
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    margin: 0;
   }
 
   .duel {
     display: flex;
     align-items: center;
-    gap: 24px;
-  }
-
-  .image-btn {
-    padding: 12px;
-    background: #16213e;
-    border: 3px solid transparent;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: transform 0.1s, border-color 0.2s;
-  }
-
-  .image-btn:hover {
-    transform: scale(1.05);
-    border-color: #e94560;
+    gap: var(--space-6);
   }
 
   .vs {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #e94560;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-accent);
   }
 
-  .waiting {
-    padding: 32px;
-    background: #16213e;
-    border-radius: 12px;
-    text-align: center;
-    color: #4ade80;
+  .waiting-text {
+    color: var(--color-success);
   }
 
   @media (max-width: 400px) {

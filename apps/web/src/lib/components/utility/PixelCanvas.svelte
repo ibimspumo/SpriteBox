@@ -1,4 +1,4 @@
-<!-- apps/web/src/lib/components/PixelCanvas.svelte -->
+<!-- PixelCanvas Utility Component -->
 <script lang="ts">
   import { pixels, selectedColor } from '$lib/stores';
   import { PALETTE, indexToHexChar, hexCharToIndex } from '$lib/palette';
@@ -106,8 +106,8 @@
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    border: 2px solid #333;
-    border-radius: 4px;
+    border: 2px solid var(--color-bg-tertiary);
+    border-radius: var(--radius-sm);
     touch-action: none;
     user-select: none;
     cursor: crosshair;

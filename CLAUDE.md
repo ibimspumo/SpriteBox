@@ -30,10 +30,115 @@ apps/
 │       └── phases.ts     # Game phase management
 └── web/             # Svelte frontend
     └── src/
-        ├── lib/          # Shared utilities, stores, types
-        ├── components/   # Svelte components
-        └── routes/       # SvelteKit routes
+        ├── lib/
+        │   ├── components/   # Atomic Design structure (see below)
+        │   ├── stores.ts     # Svelte stores
+        │   ├── socket.ts     # Socket client
+        │   └── styles/       # Design tokens
+        └── routes/           # SvelteKit routes
 ```
+
+## Frontend Component Architecture (Atomic Design)
+
+The frontend follows **Atomic Design** principles for maintainability and consistency.
+
+### Component Hierarchy
+
+```
+components/
+├── atoms/           # Smallest UI building blocks
+│   ├── Button.svelte
+│   ├── Input.svelte
+│   ├── Badge.svelte
+│   └── ProgressBar.svelte
+├── molecules/       # Combinations of atoms
+│   ├── StatItem.svelte
+│   ├── PromptDisplay.svelte
+│   └── PasswordInput.svelte
+├── organisms/       # Complex UI sections
+│   ├── Modal.svelte
+│   ├── Card.svelte
+│   ├── GalleryGrid.svelte
+│   └── PlayerList.svelte
+├── features/        # Game-phase components
+│   ├── Lobby/
+│   │   ├── index.svelte
+│   │   ├── LobbyMenu.svelte
+│   │   └── LobbyRoom.svelte
+│   ├── Drawing.svelte
+│   ├── Voting.svelte
+│   ├── Finale.svelte
+│   └── Results.svelte
+├── utility/         # Functional components
+│   ├── PixelCanvas.svelte
+│   ├── ColorPalette.svelte
+│   └── Timer.svelte
+└── debug/           # Development tools
+    └── DebugPanel.svelte
+```
+
+### Design Tokens
+
+All styling uses CSS variables defined in `lib/styles/tokens.css`:
+
+```css
+/* Colors */
+--color-bg-primary, --color-accent, --color-success, etc.
+
+/* Spacing */
+--space-1 (4px) to --space-8 (32px)
+
+/* Border Radius */
+--radius-sm (4px) to --radius-xl (20px)
+
+/* Typography */
+--font-size-xs to --font-size-2xl
+```
+
+### Imports (Barrel Exports)
+
+```typescript
+// DO: Use barrel exports
+import { Button, Input } from '$lib/components/atoms';
+import { Modal, Card } from '$lib/components/organisms';
+import { Lobby, Drawing } from '$lib/components/features';
+
+// DON'T: Direct file imports
+import Button from '$lib/components/atoms/Button.svelte';
+```
+
+### Component Guidelines
+
+**DO:**
+- Use design tokens (`var(--space-4)`) instead of hardcoded values
+- Keep atoms small and single-purpose
+- Compose molecules from atoms
+- Pass data via props, not global stores (when possible)
+- Use TypeScript interfaces for props
+
+**DON'T:**
+- Create new atoms if an existing one can be extended
+- Put business logic in atoms/molecules
+- Duplicate styles across components
+- Use inline styles for reusable patterns
+- Skip the component hierarchy (e.g., feature importing atom directly for complex UI)
+
+### Adding a New Component
+
+1. **Atom**: Simple, single-purpose UI element (button, input, badge)
+   - No business logic, just props and styling
+   - Example: `<Button variant="primary" onclick={...}>Click</Button>`
+
+2. **Molecule**: Combination of 2-3 atoms with minimal logic
+   - Example: `<PasswordInput value={...} onsubmit={...} />`
+
+3. **Organism**: Complex section with multiple molecules/atoms
+   - Can have local state
+   - Example: `<Modal show={...}><PasswordInput /></Modal>`
+
+4. **Feature**: Game-phase component
+   - Contains business logic, uses stores
+   - Composes organisms/molecules/atoms
 
 ## Key Commands
 

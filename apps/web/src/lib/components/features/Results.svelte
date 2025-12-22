@@ -1,7 +1,10 @@
-<!-- apps/web/src/lib/components/Results.svelte -->
+<!-- Results Feature Component -->
 <script lang="ts">
   import { results, currentUser } from '$lib/stores';
-  import PixelCanvas from './PixelCanvas.svelte';
+  import { Badge } from '../atoms';
+  import { PromptDisplay } from '../molecules';
+  import { Card, GalleryGrid } from '../organisms';
+  import { PixelCanvas } from '../utility';
 
   const medals = ['1.', '2.', '3.'];
 </script>
@@ -9,12 +12,17 @@
 <div class="results">
   {#if $results}
     <h2>Results</h2>
-    <p class="prompt">Prompt: "{$results.prompt}"</p>
+
+    <PromptDisplay prompt={$results.prompt} label="Prompt:" size="sm" centered />
 
     <div class="podium">
       {#each $results.rankings.slice(0, 3) as entry, index}
         {@const isOwn = entry.user.fullName === $currentUser?.fullName}
-        <div class="winner" class:first={index === 0} class:own={isOwn}>
+        <Card
+          padding="md"
+          selected={isOwn}
+          highlight={index === 0}
+        >
           <span class="medal">{medals[index]}</span>
           <PixelCanvas
             pixelData={entry.pixels}
@@ -24,22 +32,22 @@
           <span class="name">{entry.user.displayName}</span>
           <span class="votes">{entry.finalVotes} Votes</span>
           {#if isOwn}
-            <span class="own-tag">You!</span>
+            <Badge variant="success" text="You!" />
           {/if}
-        </div>
+        </Card>
       {/each}
     </div>
 
     <div class="gallery">
       <h3>All Images ({$results.totalParticipants})</h3>
-      <div class="gallery-grid">
+      <GalleryGrid gap="sm">
         {#each $results.rankings.slice(3) as entry}
           <div class="gallery-item">
             <PixelCanvas pixelData={entry.pixels} size={60} readonly />
-            <span>#{entry.place}</span>
+            <span class="rank">#{entry.place}</span>
           </div>
         {/each}
-      </div>
+      </GalleryGrid>
     </div>
 
     <p class="next-round">Next round starting soon...</p>
@@ -51,65 +59,49 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
-    padding: 16px;
+    gap: var(--space-6);
+    padding: var(--space-4);
     text-align: center;
   }
 
   h2 {
-    color: #fbbf24;
+    color: var(--color-warning);
     margin: 0;
-  }
-
-  .prompt {
-    color: #aaa;
-    font-style: italic;
   }
 
   .podium {
     display: flex;
     align-items: flex-end;
-    gap: 16px;
+    gap: var(--space-4);
   }
 
-  .winner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 16px;
-    background: #16213e;
-    border-radius: 12px;
+  .podium > :global(:first-child) {
+    order: 1;
   }
 
-  .winner.first {
-    order: -1;
+  .podium > :global(:nth-child(2)) {
+    order: 0;
+  }
+
+  .podium > :global(:nth-child(3)) {
+    order: 2;
+  }
+
+  .podium > :global(:first-child) {
     transform: translateY(-20px);
   }
 
-  .winner.own {
-    border: 2px solid #4ade80;
-  }
-
   .medal {
-    font-size: 2rem;
+    font-size: var(--font-size-2xl);
   }
 
   .name {
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
   }
 
   .votes {
-    font-size: 0.875rem;
-    color: #aaa;
-  }
-
-  .own-tag {
-    font-size: 0.75rem;
-    padding: 2px 8px;
-    background: #4ade80;
-    color: #000;
-    border-radius: 4px;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
   }
 
   .gallery {
@@ -118,27 +110,23 @@
   }
 
   .gallery h3 {
-    color: #aaa;
-  }
-
-  .gallery-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
+    color: var(--color-text-secondary);
   }
 
   .gallery-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    font-size: 0.75rem;
-    color: #666;
+    gap: var(--space-1);
+  }
+
+  .rank {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
   }
 
   .next-round {
-    color: #aaa;
+    color: var(--color-text-secondary);
     animation: pulse 1s ease-in-out infinite;
   }
 

@@ -1,4 +1,4 @@
-<!-- apps/web/src/lib/components/ColorPalette.svelte -->
+<!-- ColorPalette Utility Component -->
 <script lang="ts">
   import { selectedColor } from '$lib/stores';
   import { PALETTE } from '$lib/palette';
@@ -21,19 +21,19 @@
   .palette {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    gap: 4px;
-    padding: 8px;
-    background: #16213e;
-    border-radius: 8px;
+    gap: var(--space-1);
+    padding: var(--space-2);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
   }
 
   .color-button {
     width: 32px;
     height: 32px;
     border: 2px solid transparent;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: transform 0.1s, border-color 0.1s;
+    transition: transform var(--transition-fast), border-color var(--transition-fast);
   }
 
   .color-button:hover {
@@ -41,7 +41,7 @@
   }
 
   .color-button.selected {
-    border-color: #fff;
+    border-color: white;
     transform: scale(1.15);
   }
 
