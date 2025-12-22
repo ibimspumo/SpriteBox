@@ -3,13 +3,58 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { initSocketBridge } from '$lib/socketBridge';
-  import { connectionStatus } from '$lib/stores';
+  import { connectionStatus, lastError } from '$lib/stores';
   import DebugPanel from '$lib/components/debug/DebugPanel.svelte';
   import { CookieNotice } from '$lib/components/organisms';
   import '$lib/styles/tokens.css';
 
   let { children } = $props();
   let showCopiedToast = $state(false);
+  let errorToast = $state<{ message: string; code: string } | null>(null);
+  let errorTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Watch for errors and show toast
+  $effect(() => {
+    const error = $lastError;
+    if (error && error.code !== 'INVALID_NAME') {
+      // Show error toast (except INVALID_NAME which is handled by UsernameEditor)
+      errorToast = {
+        message: error.message || getErrorMessage(error.code),
+        code: error.code,
+      };
+
+      // Clear previous timeout
+      if (errorTimeout) clearTimeout(errorTimeout);
+
+      // Auto-dismiss after 5 seconds
+      errorTimeout = setTimeout(() => {
+        errorToast = null;
+        lastError.set(null);
+      }, 5000);
+    }
+  });
+
+  function dismissError() {
+    errorToast = null;
+    lastError.set(null);
+    if (errorTimeout) clearTimeout(errorTimeout);
+  }
+
+  function getErrorMessage(code: string): string {
+    const messages: Record<string, string> = {
+      'DUPLICATE_SESSION': 'You are already in this game in another tab',
+      'ALREADY_IN_GAME': 'You are already in a game',
+      'JOIN_FAILED': 'Failed to join the game',
+      'ROOM_NOT_FOUND': 'Room not found',
+      'WRONG_PASSWORD': 'Incorrect password',
+      'PASSWORD_BLOCKED': 'Too many failed attempts. Try again later.',
+      'NOT_ENOUGH_PLAYERS': 'Not enough players to start',
+      'KICKED': 'You were kicked from the game',
+      'IDLE_DISCONNECT': 'Disconnected due to inactivity',
+      'INSTANCE_CLOSED': 'The game was closed',
+    };
+    return messages[code] || 'An error occurred';
+  }
 
   onMount(() => {
     if (browser) {
@@ -71,6 +116,14 @@
   <!-- Copied Toast -->
   {#if showCopiedToast}
     <div class="copied-toast">Link copied!</div>
+  {/if}
+
+  <!-- Error Toast -->
+  {#if errorToast}
+    <button class="error-toast" onclick={dismissError}>
+      <span class="error-message">{errorToast.message}</span>
+      <span class="error-dismiss">×</span>
+    </button>
   {/if}
 
   <!-- Share Button - Always visible -->
@@ -242,6 +295,49 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+  }
+
+  /* Error Toast */
+  .error-toast {
+    position: fixed;
+    top: var(--space-6);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-5);
+    background: var(--color-danger);
+    color: white;
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-pixel);
+    z-index: var(--z-notification);
+    cursor: pointer;
+    animation: toastIn 0.2s ease-out;
+    max-width: calc(100vw - var(--space-8));
+  }
+
+  .error-toast:hover {
+    background: var(--color-danger-hover, #d32f2f);
+  }
+
+  .error-message {
+    flex: 1;
+    text-align: left;
+  }
+
+  .error-dismiss {
+    font-size: var(--font-size-lg);
+    opacity: 0.7;
+    line-height: 1;
+  }
+
+  .error-toast:hover .error-dismiss {
+    opacity: 1;
   }
 
   /* Share Button - Always visible, bottom left */
