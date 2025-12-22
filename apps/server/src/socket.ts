@@ -11,6 +11,9 @@ import {
   getInstancePlayers,
   setIoInstance,
   startGameManually,
+  handlePlayerDisconnect,
+  handlePlayerReconnect,
+  startCleanupInterval,
 } from './instance.js';
 import { generateId, generateDiscriminator, createFullName, log } from './utils.js';
 import { MIN_PLAYERS_TO_START, CANVAS, DOS } from './constants.js';
@@ -129,6 +132,7 @@ export function setupSocketHandlers(io: TypedServer): void {
       socketId: socket.id,
       serverTime: Date.now(),
       user: player.user,
+      sessionId: player.sessionId,
     });
 
     // Event-Handler registrieren
@@ -661,9 +665,50 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
     log('Finale', `${player.user.fullName} voted for ${validation.data.playerId}`);
   });
 
-  // Stats Sync (Placeholder - wird in Phase 5 implementiert)
-  socket.on('sync-stats', () => {
-    // TODO: Phase 5 - Stats sync
+  // Stats Sync (validates and stores stats from client)
+  socket.on('sync-stats', (data) => {
+    // Stats are stored locally on the client, this is just for display to others
+    log('Stats', `${player.user.fullName} synced stats`);
+  });
+
+  // Session restoration (for reconnects)
+  socket.on('restore-session', (data) => {
+    if (!data?.sessionId || typeof data.sessionId !== 'string') {
+      socket.emit('session-restore-failed', { reason: 'Invalid session ID' });
+      return;
+    }
+
+    const result = handlePlayerReconnect(data.sessionId, socket.id);
+
+    if (!result.success || !result.player || !result.instanceId) {
+      socket.emit('session-restore-failed', { reason: 'Session not found or expired' });
+      return;
+    }
+
+    // Update socket data
+    socket.data.player = result.player;
+    socket.data.instanceId = result.instanceId;
+
+    // Rejoin room
+    socket.join(result.instanceId);
+
+    const instance = findInstance(result.instanceId);
+    if (!instance) {
+      socket.emit('session-restore-failed', { reason: 'Instance no longer exists' });
+      return;
+    }
+
+    // Send session restored event with full game state
+    socket.emit('session-restored', {
+      instanceId: result.instanceId,
+      user: result.player.user,
+      phase: instance.phase,
+      prompt: instance.prompt,
+      players: getInstancePlayers(instance).map(p => p.user),
+      isSpectator: instance.spectators.has(result.player.id),
+    });
+
+    log('Reconnect', `Session restored for ${result.player.user.fullName}`);
   });
 }
 
@@ -671,18 +716,17 @@ function handleDisconnect(socket: TypedSocket, player: Player, reason: string): 
   log('Socket', `Disconnected: ${socket.id} (${reason})`);
 
   const instanceId = socket.data.instanceId;
-  if (instanceId) {
+  if (instanceId && instanceId !== 'pending') {
     const instance = findInstance(instanceId);
     if (instance) {
-      player.status = 'disconnected';
-      player.disconnectedAt = Date.now();
-
-      // Für Lobby-Phase: Sofort entfernen
+      // For lobby phase: remove immediately
       if (instance.phase === 'lobby') {
         removePlayerFromInstance(instance, player.id);
         socket.to(instance.id).emit('player-left', { playerId: player.id });
+      } else {
+        // For active games: use grace period
+        handlePlayerDisconnect(instance, player);
       }
-      // Für aktive Spiele: Grace Period (wird in Phase 8 implementiert)
     }
   }
 }

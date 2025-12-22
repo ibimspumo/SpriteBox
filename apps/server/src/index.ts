@@ -3,7 +3,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { setupSocketHandlers } from './socket.js';
-import { getInstanceStats } from './instance.js';
+import { getInstanceStats, startCleanupInterval } from './instance.js';
 import { setPhaseIo } from './phases.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './types.js';
 
@@ -46,6 +46,9 @@ app.get('/health', (_req, res) => {
 
 // Socket-Handler registrieren
 setupSocketHandlers(io);
+
+// Periodischen Cleanup starten
+startCleanupInterval();
 
 server.listen(PORT, () => {
   console.log(`🎨 SpriteBox Server running on port ${PORT}`);

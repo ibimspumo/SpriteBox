@@ -1,9 +1,16 @@
 // apps/server/src/instance.ts
-import type { Server } from 'socket.io';
+import type { Server, Socket } from 'socket.io';
 import type { Instance, Player, InstanceType } from './types.js';
 import { generateId, generateRoomCode, log } from './utils.js';
 import { MAX_PLAYERS_PER_INSTANCE, MIN_PLAYERS_TO_START, TIMERS } from './constants.js';
 import { startGame as startGamePhase } from './phases.js';
+
+// Disconnected players with grace period (sessionId -> {player, instanceId, timeout})
+const disconnectedPlayers = new Map<string, {
+  player: Player;
+  instanceId: string;
+  timeout: ReturnType<typeof setTimeout>;
+}>();
 
 // Globale Instanz-Verwaltung
 const instances = new Map<string, Instance>();
@@ -288,4 +295,127 @@ export function getInstanceStats(): {
     private: privateCount,
     totalPlayers,
   };
+}
+
+/**
+ * Handles player disconnect with grace period
+ */
+export function handlePlayerDisconnect(instance: Instance, player: Player): void {
+  // Mark as disconnected
+  player.status = 'disconnected';
+  player.disconnectedAt = Date.now();
+
+  // Grace-Period Timer
+  const timeout = setTimeout(() => {
+    // Still disconnected?
+    const entry = disconnectedPlayers.get(player.sessionId);
+    if (entry && entry.player.status === 'disconnected') {
+      // Permanently remove
+      removePlayerFromInstance(instance, player.id);
+      disconnectedPlayers.delete(player.sessionId);
+      log('Reconnect', `Grace period expired for ${player.user.fullName}`);
+
+      // Notify others
+      if (ioInstance) {
+        ioInstance.to(instance.id).emit('player-left', { playerId: player.id });
+      }
+    }
+  }, TIMERS.RECONNECT_GRACE);
+
+  // Store for potential reconnect
+  disconnectedPlayers.set(player.sessionId, {
+    player,
+    instanceId: instance.id,
+    timeout,
+  });
+
+  log('Reconnect', `${player.user.fullName} disconnected, grace period started (${TIMERS.RECONNECT_GRACE}ms)`);
+}
+
+/**
+ * Handles player reconnect
+ */
+export function handlePlayerReconnect(
+  sessionId: string,
+  newSocketId: string
+): { success: boolean; player?: Player; instanceId?: string } {
+  const entry = disconnectedPlayers.get(sessionId);
+
+  if (!entry) {
+    return { success: false };
+  }
+
+  const { player, instanceId, timeout } = entry;
+
+  // Clear grace period timer
+  clearTimeout(timeout);
+  disconnectedPlayers.delete(sessionId);
+
+  // Check if instance still exists
+  const instance = instances.get(instanceId);
+  if (!instance) {
+    return { success: false };
+  }
+
+  // Check if player is still in instance (might have been removed)
+  if (!instance.players.has(player.id) && !instance.spectators.has(player.id)) {
+    return { success: false };
+  }
+
+  // Reconnect successful
+  player.status = 'connected';
+  player.disconnectedAt = undefined;
+  player.socketId = newSocketId;
+
+  log('Reconnect', `${player.user.fullName} reconnected to instance ${instanceId}`);
+
+  return { success: true, player, instanceId };
+}
+
+/**
+ * Gets the current instance ID for a disconnected player's session
+ */
+export function getDisconnectedPlayerInstance(sessionId: string): string | undefined {
+  return disconnectedPlayers.get(sessionId)?.instanceId;
+}
+
+/**
+ * Starts periodic cleanup interval
+ */
+export function startCleanupInterval(): void {
+  setInterval(() => {
+    const now = Date.now();
+
+    for (const [id, instance] of instances) {
+      // Empty instances in lobby -> delete
+      if (instance.players.size === 0 && instance.spectators.size === 0) {
+        if (now - instance.lastActivity > 30_000) {
+          cleanupInstance(instance);
+          continue;
+        }
+      }
+
+      // Stale instances (>1h without activity)
+      if (now - instance.lastActivity > 60 * 60 * 1000) {
+        // Warn players
+        if (ioInstance) {
+          ioInstance.to(instance.id).emit('instance-closing', { reason: 'inactivity' });
+        }
+        cleanupInstance(instance);
+      }
+    }
+
+    // Log memory usage
+    logMemoryUsage();
+  }, 60_000); // Every minute
+}
+
+function logMemoryUsage(): void {
+  const usage = process.memoryUsage();
+  const stats = getInstanceStats();
+  log(
+    'Memory',
+    `Heap: ${Math.round(usage.heapUsed / 1024 / 1024)}MB/${Math.round(usage.heapTotal / 1024 / 1024)}MB, ` +
+      `Instances: ${stats.total}, Players: ${stats.totalPlayers}`
+  );
 }

@@ -1,7 +1,7 @@
 // apps/server/src/phases.ts
 import type { Server } from 'socket.io';
 import type { Instance, GamePhase, RankingEntry } from './types.js';
-import { TIMERS } from './constants.js';
+import { TIMERS, COMPRESSION } from './constants.js';
 import { log } from './utils.js';
 import { generatePrompt } from './prompts.js';
 import {
@@ -12,6 +12,7 @@ import {
   validateFairness,
   type VotingState,
 } from './voting.js';
+import { compressIfNeeded } from './compression.js';
 
 // IO-Instanz (wird von index.ts gesetzt)
 let io: Server | null = null;
@@ -370,11 +371,20 @@ function handleResultsWithRanking(instance: Instance, ranking: ReturnType<typeof
     duration: TIMERS.RESULTS,
   });
 
+  // Use compression for large galleries
+  const playerCount = instance.submissions.length;
+  const compressedRankings = compressIfNeeded(results, playerCount);
+
   emitToInstance(instance, 'game-results', {
     prompt: instance.prompt,
-    rankings: results,
+    rankings: compressedRankings.compressed ? [] : results, // Send empty if compressed
+    compressedRankings: compressedRankings.compressed ? compressedRankings.data : undefined,
     totalParticipants: instance.submissions.length,
   });
+
+  if (compressedRankings.compressed) {
+    log('Compression', `Gallery compressed for ${playerCount} players`);
+  }
 
   // Spectators zu Spielern für nächste Runde
   for (const [id, spectator] of instance.spectators) {

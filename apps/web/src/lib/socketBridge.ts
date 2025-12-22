@@ -1,4 +1,6 @@
 // apps/web/src/lib/socketBridge.ts
+import { browser } from '$app/environment';
+import LZString from 'lz-string';
 import {
   initSocket,
   getSocket,
@@ -9,6 +11,7 @@ import {
   type VotingRoundData,
   type FinaleData,
   type GameResultsData,
+  type SessionRestoredData,
 } from './socket';
 import {
   connectionStatus,
@@ -27,8 +30,46 @@ import {
   resetLobbyState,
   type GamePhase,
 } from './stores';
+import { recordGameResult, syncStatsWithServer } from './stats';
 
+const SESSION_STORAGE_KEY = 'spritebox-session';
 let initialized = false;
+
+// Session management
+function saveSession(sessionId: string): void {
+  if (!browser) return;
+  try {
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ sessionId, savedAt: Date.now() }));
+  } catch (e) {
+    console.error('Failed to save session:', e);
+  }
+}
+
+function loadSession(): { sessionId: string; savedAt: number } | null {
+  if (!browser) return null;
+  try {
+    const stored = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Session expires after 30 seconds (grace period + buffer)
+      if (Date.now() - parsed.savedAt < 30_000) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load session:', e);
+  }
+  return null;
+}
+
+function clearSession(): void {
+  if (!browser) return;
+  try {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch (e) {
+    console.error('Failed to clear session:', e);
+  }
+}
 
 /**
  * Initialisiert Socket und verbindet mit Stores
@@ -41,16 +82,30 @@ export function initSocketBridge(): void {
   setupEventHandlers(socket);
 }
 
+let currentSessionId: string | null = null;
+
 function setupEventHandlers(socket: AppSocket): void {
   // === Connection Events ===
   socket.on('connect', () => {
     connectionStatus.set('connected');
     socketId.set(socket.id ?? null);
+
+    // Try to restore session on reconnect
+    const savedSession = loadSession();
+    if (savedSession) {
+      console.log('[Socket] Attempting to restore session...');
+      socket.emit('restore-session', { sessionId: savedSession.sessionId });
+    }
   });
 
   socket.on('disconnect', () => {
     connectionStatus.set('disconnected');
     socketId.set(null);
+
+    // Save session for potential reconnect
+    if (currentSessionId) {
+      saveSession(currentSessionId);
+    }
   });
 
   socket.on('connect_error', () => {
@@ -58,8 +113,12 @@ function setupEventHandlers(socket: AppSocket): void {
   });
 
   // === Server Events ===
-  socket.on('connected', (data: { socketId: string; serverTime: number; user: User }) => {
+  socket.on('connected', (data: { socketId: string; serverTime: number; user: User; sessionId: string }) => {
     currentUser.set(data.user);
+    currentSessionId = data.sessionId;
+
+    // Sync stats with server on connect
+    syncStatsWithServer(socket);
   });
 
   socket.on('error', (data: { code: string; message?: string }) => {
@@ -163,8 +222,45 @@ function setupEventHandlers(socket: AppSocket): void {
 
   // === Results Events ===
   socket.on('game-results', (data: GameResultsData) => {
-    results.set(data);
+    // Handle compressed rankings
+    let rankings = data.rankings;
+    if (data.compressedRankings) {
+      try {
+        const decompressed = LZString.decompressFromUTF16(data.compressedRankings);
+        if (decompressed) {
+          rankings = JSON.parse(decompressed);
+          console.log('[Socket] Decompressed gallery with', rankings.length, 'entries');
+        }
+      } catch (e) {
+        console.error('[Socket] Failed to decompress rankings:', e);
+      }
+    }
+
+    // Create the results data with decompressed rankings
+    const resultsData: GameResultsData = {
+      prompt: data.prompt,
+      rankings,
+      totalParticipants: data.totalParticipants,
+    };
+
+    results.set(resultsData);
     game.update((g) => ({ ...g, phase: 'results' }));
+
+    // Record stats for this player
+    // Find our placement in the rankings
+    let myPlacement: number | undefined;
+    currentUser.subscribe((user) => {
+      if (user) {
+        const myResult = rankings.find((r) => r.user.fullName === user.fullName);
+        if (myResult) {
+          myPlacement = myResult.place;
+        }
+      }
+    })();
+
+    if (myPlacement !== undefined) {
+      recordGameResult(myPlacement);
+    }
   });
 
   // === User Events ===
@@ -174,6 +270,51 @@ function setupEventHandlers(socket: AppSocket): void {
 
   socket.on('kicked', (data: { reason: string }) => {
     lastError.set({ code: 'KICKED', message: data.reason });
+    clearSession();
+    currentSessionId = null;
+    resetLobbyState();
+  });
+
+  // === Session Events ===
+  socket.on('session-restored', (data: SessionRestoredData) => {
+    console.log('[Socket] Session restored:', data);
+    clearSession(); // Clear saved session after successful restore
+
+    currentUser.set(data.user);
+    lobby.set({
+      instanceId: data.instanceId,
+      type: 'public', // Will be updated by phase events
+      code: null,
+      isHost: false,
+      players: data.players,
+      isSpectator: data.isSpectator,
+    });
+    game.update((g) => ({
+      ...g,
+      phase: data.phase as GamePhase,
+      prompt: data.prompt ?? g.prompt,
+    }));
+  });
+
+  socket.on('session-restore-failed', (data: { reason: string }) => {
+    console.log('[Socket] Session restore failed:', data.reason);
+    clearSession();
+    currentSessionId = null;
+  });
+
+  socket.on('idle-disconnect', (data: { reason: string }) => {
+    console.log('[Socket] Idle disconnect:', data.reason);
+    lastError.set({ code: 'IDLE_DISCONNECT', message: data.reason });
+    clearSession();
+    currentSessionId = null;
+    resetLobbyState();
+  });
+
+  socket.on('instance-closing', (data: { reason: string }) => {
+    console.log('[Socket] Instance closing:', data.reason);
+    lastError.set({ code: 'INSTANCE_CLOSED', message: `Instance closed: ${data.reason}` });
+    clearSession();
+    currentSessionId = null;
     resetLobbyState();
   });
 }

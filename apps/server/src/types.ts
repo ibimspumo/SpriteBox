@@ -79,7 +79,7 @@ export interface PlayerStats {
 
 // === Socket Events ===
 export interface ServerToClientEvents {
-  connected: (data: { socketId: string; serverTime: number; user: User }) => void;
+  connected: (data: { socketId: string; serverTime: number; user: User; sessionId: string }) => void;
   error: (data: { code: string; message?: string; retryAfter?: number }) => void;
   'lobby-joined': (data: {
     instanceId: string;
@@ -124,8 +124,18 @@ export interface ServerToClientEvents {
     endsAt: number;
   }) => void;
   'finale-vote-received': (data: { success: boolean }) => void;
-  'game-results': (data: { prompt?: string; rankings: RankingEntry[]; totalParticipants: number }) => void;
+  'game-results': (data: { prompt?: string; rankings: RankingEntry[]; compressedRankings?: string; totalParticipants: number }) => void;
   'idle-disconnect': (data: { reason: string }) => void;
+  'session-restored': (data: {
+    instanceId: string;
+    user: User;
+    phase: GamePhase;
+    prompt?: string;
+    players: User[];
+    isSpectator: boolean;
+  }) => void;
+  'session-restore-failed': (data: { reason: string }) => void;
+  'instance-closing': (data: { reason: string }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -141,6 +151,7 @@ export interface ClientToServerEvents {
   'finale-vote': (data: { playerId: string }) => void;
   'sync-stats': (data: PlayerStats) => void;
   'change-name': (data: { name: string }) => void;
+  'restore-session': (data: { sessionId: string }) => void;
 }
 
 // === Hilfstypes ===

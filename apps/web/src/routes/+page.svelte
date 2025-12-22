@@ -50,17 +50,18 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    background: #16213e;
-    border-bottom: 1px solid #0f3460;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
   }
 
   header h1 {
     margin: 0;
     font-size: 1.5rem;
+    color: var(--text-primary);
   }
 
   .user {
-    color: #aaa;
+    color: var(--text-secondary);
     font-size: 0.9rem;
   }
 
@@ -82,13 +83,13 @@
 
   .countdown h2 {
     font-size: 2.5rem;
-    color: #fbbf24;
+    color: var(--warning);
     animation: pulse 1s ease-in-out infinite;
   }
 
   .countdown .prompt {
     font-size: 1.5rem;
-    color: #e94560;
+    color: var(--accent);
   }
 
   @keyframes pulse {

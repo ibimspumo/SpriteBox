@@ -4,7 +4,7 @@ import { browser } from '$app/environment';
 
 // Typen für Events (sollten mit Server übereinstimmen)
 export interface ServerToClientEvents {
-  connected: (data: { socketId: string; serverTime: number; user: User }) => void;
+  connected: (data: { socketId: string; serverTime: number; user: User; sessionId: string }) => void;
   error: (data: { code: string; message?: string }) => void;
   'lobby-joined': (data: LobbyJoinedData) => void;
   'player-joined': (data: { user: User }) => void;
@@ -18,6 +18,10 @@ export interface ServerToClientEvents {
   'game-results': (data: GameResultsData) => void;
   'name-changed': (data: { user: User }) => void;
   'kicked': (data: { reason: string }) => void;
+  'idle-disconnect': (data: { reason: string }) => void;
+  'session-restored': (data: SessionRestoredData) => void;
+  'session-restore-failed': (data: { reason: string }) => void;
+  'instance-closing': (data: { reason: string }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -32,6 +36,17 @@ export interface ClientToServerEvents {
   'submit-drawing': (data: { pixels: string }) => void;
   'vote': (data: { chosenId: string }) => void;
   'finale-vote': (data: { playerId: string }) => void;
+  'sync-stats': (data: { gamesPlayed: number; placements: { 1: number; 2: number; 3: number } }) => void;
+  'restore-session': (data: { sessionId: string }) => void;
+}
+
+export interface SessionRestoredData {
+  instanceId: string;
+  user: User;
+  phase: string;
+  prompt?: string;
+  players: User[];
+  isSpectator: boolean;
 }
 
 // Interfaces
@@ -90,6 +105,7 @@ export interface GameResultsData {
     finalVotes: number;
     elo: number;
   }>;
+  compressedRankings?: string;
   totalParticipants: number;
 }
 
