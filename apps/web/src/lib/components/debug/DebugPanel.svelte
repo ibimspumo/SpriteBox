@@ -285,7 +285,7 @@
         <div class="control-row">
           <label>
             Count:
-            <input type="number" bind:value={botCount} min="1" max="50" />
+            <input type="number" bind:value={botCount} min="1" />
           </label>
           <label>
             Behavior:

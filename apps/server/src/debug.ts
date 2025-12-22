@@ -16,14 +16,14 @@ import {
 import { getVotingState } from './phases.js';
 import { processVote, processFinaleVote, type VotingState } from './voting.js';
 import { generateId, generateDiscriminator, createFullName, log, randomItem, shuffleArray } from './utils.js';
-import { CANVAS, TIMERS } from './constants.js';
+import { CANVAS, TIMERS, MAX_PLAYERS_PER_INSTANCE } from './constants.js';
 
 // === Debug Configuration ===
 export const DEBUG_CONFIG = {
   enabled: process.env.NODE_ENV !== 'production',
   botPrefix: 'Bot_',
   defaultBotCount: 10,
-  maxBots: 100,
+  maxBots: Infinity, // No limit for stress testing
 };
 
 // === Bot Types ===
@@ -125,15 +125,23 @@ class BotController {
   }
 
   /**
-   * Add bots to a specific instance
+   * Add bots to a specific instance (creates new instances when full)
    */
   addBotsToInstance(instance: Instance, count: number, behavior: BotBehavior = 'normal'): Bot[] {
     const addedBots: Bot[] = [];
+    let currentInstance = instance;
 
     for (let i = 0; i < count; i++) {
       if (this.bots.size >= DEBUG_CONFIG.maxBots) {
         log('Debug', `Max bot limit (${DEBUG_CONFIG.maxBots}) reached`);
         break;
+      }
+
+      // Check if current instance is full - create new one if needed
+      if (currentInstance.players.size >= MAX_PLAYERS_PER_INSTANCE) {
+        log('Debug', `Instance ${currentInstance.id} is full (${currentInstance.players.size}/${MAX_PLAYERS_PER_INSTANCE}), creating new instance`);
+        currentInstance = findOrCreatePublicInstance();
+        log('Debug', `New instance created: ${currentInstance.id}`);
       }
 
       const bot = this.createBot(behavior);
@@ -148,26 +156,27 @@ class BotController {
         status: 'connected',
       };
 
-      const result = addPlayerToInstance(instance, player);
+      const result = addPlayerToInstance(currentInstance, player);
 
       if (result.success && !result.spectator) {
-        bot.instanceId = instance.id;
+        bot.instanceId = currentInstance.id;
         addedBots.push(bot);
-        this.setupBotBehavior(bot, instance);
+        this.setupBotBehavior(bot, currentInstance);
 
         // Broadcast to all clients that a new player joined (like real players)
         if (this.io) {
-          this.io.to(instance.id).emit('player-joined', { user: bot.user });
+          this.io.to(currentInstance.id).emit('player-joined', { user: bot.user });
         }
 
-        log('Debug', `Bot ${bot.user.fullName} joined instance ${instance.id}`);
+        log('Debug', `Bot ${bot.user.fullName} joined instance ${currentInstance.id}`);
       } else {
         // Remove bot if couldn't join
         this.bots.delete(bot.id);
       }
     }
 
-    log('Debug', `Added ${addedBots.length} ${behavior} bots to instance ${instance.id}`);
+    const instanceCount = new Set(addedBots.map(b => b.instanceId)).size;
+    log('Debug', `Added ${addedBots.length} ${behavior} bots across ${instanceCount} instance(s)`);
     return addedBots;
   }
 
