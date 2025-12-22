@@ -1,0 +1,11 @@
+node_modules
+apps/*/node_modules
+apps/server/dist
+apps/web/build
+apps/web/.svelte-kit
+.git
+.gitignore
+*.md
+docs/
+.env*
+*.log
