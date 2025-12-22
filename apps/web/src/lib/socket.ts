@@ -199,6 +199,7 @@ export function initSocket(): Socket<ServerToClientEvents, ClientToServerEvents>
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 20000,
+    transports: ['websocket'],  // Skip polling, use WebSocket directly
     auth: {
       browserId: getBrowserFingerprint(),
     },

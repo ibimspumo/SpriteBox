@@ -6,6 +6,7 @@ import type { User, Prompt, LobbyJoinedData, VotingRoundData, FinaleData, GameRe
 export const connectionStatus = writable<'disconnected' | 'connecting' | 'connected'>('disconnected');
 export const socketId = writable<string | null>(null);
 export const globalOnlineCount = writable<number>(0);
+export const sessionBlocked = writable<boolean>(false); // Too many sessions from same browser
 
 // === User State ===
 export const currentUser = writable<User | null>(null);

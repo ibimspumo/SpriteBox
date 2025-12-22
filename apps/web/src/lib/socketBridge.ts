@@ -28,6 +28,7 @@ import {
   hasSubmitted,
   finaleVoted,
   passwordPrompt,
+  sessionBlocked,
   startTimer,
   resetGameState,
   resetLobbyState,
@@ -119,6 +120,7 @@ function setupEventHandlers(socket: AppSocket): void {
   socket.on('connect', () => {
     connectionStatus.set('connected');
     socketId.set(socket.id ?? null);
+    sessionBlocked.set(false); // Clear blocked state on successful connect
 
     // Try to restore session on reconnect (within grace period)
     const savedSession = loadSession();
@@ -148,8 +150,14 @@ function setupEventHandlers(socket: AppSocket): void {
     }
   });
 
-  socket.on('connect_error', () => {
+  socket.on('connect_error', (err) => {
     connectionStatus.set('disconnected');
+
+    // Check if blocked due to too many sessions from same browser
+    if (err.message === 'TOO_MANY_SESSIONS') {
+      sessionBlocked.set(true);
+      console.warn('[Socket] Blocked: Too many sessions from this browser');
+    }
   });
 
   // === Server Events ===
