@@ -19,6 +19,39 @@ let io: Server | null = null;
 // Voting-State pro Instanz speichern
 const votingStates = new Map<string, VotingState>();
 
+// === Phase Timing (Anti-Cheat) ===
+interface PhaseTimings {
+  phaseStartedAt: number;
+  phaseEndsAt: number;
+}
+
+const instanceTimings = new Map<string, PhaseTimings>();
+
+function setPhaseTimings(instanceId: string, duration: number): void {
+  instanceTimings.set(instanceId, {
+    phaseStartedAt: Date.now(),
+    phaseEndsAt: Date.now() + duration,
+  });
+}
+
+/**
+ * Prüft ob eine Aktion im gültigen Zeitfenster liegt
+ */
+export function isWithinPhaseTime(instanceId: string, gracePeriodMs = 2000): boolean {
+  const timings = instanceTimings.get(instanceId);
+  if (!timings) return false;
+
+  const now = Date.now();
+  return now <= timings.phaseEndsAt + gracePeriodMs;
+}
+
+/**
+ * Gibt die Phase-Timings zurück (für Anti-Bot Checks)
+ */
+export function getPhaseTimings(instanceId: string): PhaseTimings | undefined {
+  return instanceTimings.get(instanceId);
+}
+
 export function setPhaseIo(ioInstance: Server): void {
   io = ioInstance;
 }
@@ -113,6 +146,9 @@ function handleDrawing(instance: Instance): void {
   // Submissions zurücksetzen
   instance.submissions = [];
 
+  // Phase-Timing setzen für Anti-Cheat
+  setPhaseTimings(instance.id, TIMERS.DRAWING);
+
   emitToInstance(instance, 'phase-changed', {
     phase: 'drawing',
     prompt: instance.prompt,
@@ -172,6 +208,9 @@ function handleVoting(instance: Instance): void {
  */
 function startVotingRound(instance: Instance, state: VotingState, roundNumber: number): void {
   log('Phase', `Voting round ${roundNumber}/${state.totalRounds}`);
+
+  // Phase-Timing setzen für Anti-Cheat
+  setPhaseTimings(instance.id, TIMERS.VOTING_ROUND);
 
   // Assignments berechnen
   const assignments = prepareVotingRound(instance, state, roundNumber);
@@ -241,6 +280,9 @@ function handleFinale(instance: Instance): void {
     transitionTo(instance, 'results');
     return;
   }
+
+  // Phase-Timing setzen für Anti-Cheat
+  setPhaseTimings(instance.id, TIMERS.FINALE);
 
   const finalistCount = calculateFinalistCount(instance.submissions.length);
 

@@ -13,10 +13,12 @@ import {
   startGameManually,
 } from './instance.js';
 import { generateId, generateDiscriminator, createFullName, log } from './utils.js';
-import { MIN_PLAYERS_TO_START, CANVAS } from './constants.js';
-import { PixelSchema, VoteSchema, FinaleVoteSchema, validate, validateMinPixels } from './validation.js';
-import { getVotingState } from './phases.js';
+import { MIN_PLAYERS_TO_START, CANVAS, DOS } from './constants.js';
+import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, validate, validateMinPixels } from './validation.js';
+import { getVotingState, isWithinPhaseTime, getPhaseTimings } from './phases.js';
 import { processVote, processFinaleVote } from './voting.js';
+import { checkRateLimit, checkConnectionRateLimit } from './rateLimit.js';
+import { checkMultiAccount, removeSocketFingerprint } from './fingerprint.js';
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -27,15 +29,100 @@ const GUEST_NAMES = [
   'Creator', 'Designer', 'Drawer', 'Crafter', 'Maker',
 ];
 
+// === DoS Protection: Connection Tracking ===
+const connectionsPerIP = new Map<string, Set<string>>();
+let totalConnections = 0;
+
+/**
+ * Extrahiert Client-IP aus Socket (unterstützt Proxies)
+ */
+function getClientIP(socket: TypedSocket): string {
+  const forwarded = socket.handshake.headers['x-forwarded-for'];
+  if (forwarded) {
+    const ips = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+    return ips.split(',')[0].trim();
+  }
+  return socket.handshake.address;
+}
+
 export function setupSocketHandlers(io: TypedServer): void {
   // IO-Instanz für Instance-Manager verfügbar machen
   setIoInstance(io);
 
+  // === Middleware: Verbindungslimits prüfen ===
+  io.use((socket, next) => {
+    const ip = getClientIP(socket as TypedSocket);
+
+    // IP Rate-Limit (Verbindungsversuche)
+    if (!checkConnectionRateLimit(ip)) {
+      return next(new Error('TOO_MANY_CONNECTIONS'));
+    }
+
+    // Globales Limit
+    if (totalConnections >= DOS.MAX_TOTAL_CONNECTIONS) {
+      return next(new Error('SERVER_FULL'));
+    }
+
+    // Per-IP Limit
+    const ipConns = connectionsPerIP.get(ip) || new Set();
+    if (ipConns.size >= DOS.MAX_CONNECTIONS_PER_IP) {
+      return next(new Error('TOO_MANY_CONNECTIONS'));
+    }
+
+    // Multi-Account Check
+    socket.data.ip = ip;
+    const multiCheck = checkMultiAccount(socket as TypedSocket);
+    if (!multiCheck.allowed) {
+      return next(new Error('TOO_MANY_SESSIONS'));
+    }
+
+    if (multiCheck.warning) {
+      socket.data.multiAccountWarning = true;
+    }
+
+    // Tracken
+    ipConns.add(socket.id);
+    connectionsPerIP.set(ip, ipConns);
+    totalConnections++;
+
+    next();
+  });
+
   io.on('connection', (socket: TypedSocket) => {
-    log('Socket', `Connected: ${socket.id}`);
+    log('Socket', `Connected: ${socket.id} from ${socket.data.ip}`);
 
     // Spieler initialisieren
     const player = initializePlayer(socket);
+
+    // === Middleware für alle Events: Rate-Limiting ===
+    socket.use((packet, next) => {
+      const [event] = packet;
+
+      // Globales Event-Rate-Limit
+      if (!checkRateLimit(socket, 'global')) {
+        return next(new Error('RATE_LIMITED'));
+      }
+
+      // Event-spezifisches Rate-Limit
+      if (!checkRateLimit(socket, event)) {
+        return next(new Error('RATE_LIMITED'));
+      }
+
+      next();
+    });
+
+    // === Idle-Timeout ===
+    let lastActivity = Date.now();
+    socket.onAny(() => {
+      lastActivity = Date.now();
+    });
+
+    const idleCheck = setInterval(() => {
+      if (Date.now() - lastActivity > DOS.IDLE_TIMEOUT) {
+        socket.emit('idle-disconnect', { reason: 'Inactivity' });
+        socket.disconnect(true);
+      }
+    }, 60_000);
 
     // Willkommens-Event
     socket.emit('connected', {
@@ -51,6 +138,24 @@ export function setupSocketHandlers(io: TypedServer): void {
 
     // Disconnect
     socket.on('disconnect', (reason) => {
+      clearInterval(idleCheck);
+
+      // Connection Tracking cleanup
+      const ip = socket.data.ip;
+      if (ip) {
+        const ipConns = connectionsPerIP.get(ip);
+        if (ipConns) {
+          ipConns.delete(socket.id);
+          if (ipConns.size === 0) {
+            connectionsPerIP.delete(ip);
+          }
+        }
+      }
+      totalConnections--;
+
+      // Fingerprint cleanup
+      removeSocketFingerprint(socket);
+
       handleDisconnect(socket, player, reason);
     });
   });
@@ -200,26 +305,22 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
     log('Lobby', `${player.user.fullName} joined private room ${data.code}`);
   });
 
-  // Namen ändern
+  // Namen ändern (mit strikter Validierung)
   socket.on('change-name', (data) => {
-    if (!data?.name || typeof data.name !== 'string') {
-      socket.emit('error', { code: 'INVALID_NAME', message: 'Invalid name' });
+    // Validiere mit Zod-Schema (inkl. XSS-Prävention)
+    const validation = validate(UsernameSchema, data);
+    if (!validation.success) {
+      socket.emit('error', { code: 'INVALID_NAME', message: validation.error });
       return;
     }
 
-    const sanitized = data.name.trim().slice(0, 20);
-    if (sanitized.length === 0) {
-      socket.emit('error', { code: 'INVALID_NAME', message: 'Name cannot be empty' });
-      return;
-    }
-
-    player.user.displayName = sanitized;
-    player.user.fullName = createFullName(sanitized, player.user.discriminator);
+    player.user.displayName = validation.data.name;
+    player.user.fullName = createFullName(validation.data.name, player.user.discriminator);
 
     socket.emit('name-changed', { user: player.user });
 
     // Andere in der Instanz informieren
-    if (socket.data.instanceId) {
+    if (socket.data.instanceId && socket.data.instanceId !== 'pending') {
       socket.to(socket.data.instanceId).emit('player-updated', {
         playerId: player.id,
         user: player.user,
@@ -344,10 +445,10 @@ function registerHostHandlers(socket: TypedSocket, io: TypedServer, player: Play
 }
 
 function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Player): void {
-  // Submit Drawing Handler
+  // Submit Drawing Handler (mit Anti-Cheat)
   socket.on('submit-drawing', (data: unknown) => {
     const instanceId = socket.data.instanceId;
-    if (!instanceId) {
+    if (!instanceId || instanceId === 'pending') {
       socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
       return;
     }
@@ -361,6 +462,20 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
     // Phase prüfen
     if (instance.phase !== 'drawing') {
       socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in drawing phase' });
+      return;
+    }
+
+    // Timing prüfen (inkl. Grace Period)
+    if (!isWithinPhaseTime(instanceId)) {
+      socket.emit('error', { code: 'TIME_EXPIRED', message: 'Submission time expired' });
+      return;
+    }
+
+    // Anti-Bot: Minimum Zeichenzeit (mindestens 3 Sekunden)
+    const MIN_DRAW_TIME = 3000;
+    const timings = getPhaseTimings(instanceId);
+    if (timings && Date.now() - timings.phaseStartedAt < MIN_DRAW_TIME) {
+      socket.emit('error', { code: 'TOO_FAST', message: 'Submitted too quickly' });
       return;
     }
 
@@ -387,7 +502,7 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
       return;
     }
 
-    // Bereits submitted?
+    // Bereits submitted? (Anti-Doppel-Submit)
     const alreadySubmitted = instance.submissions.some((s) => s.playerId === player.id);
     if (alreadySubmitted) {
       socket.emit('error', { code: 'ALREADY_SUBMITTED', message: 'You already submitted' });
@@ -415,10 +530,10 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
     });
   });
 
-  // Vote Handler
+  // Vote Handler (mit Anti-Cheat)
   socket.on('vote', (data: unknown) => {
     const instanceId = socket.data.instanceId;
-    if (!instanceId) {
+    if (!instanceId || instanceId === 'pending') {
       socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
       return;
     }
@@ -435,6 +550,12 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
       return;
     }
 
+    // Timing prüfen (inkl. Grace Period)
+    if (!isWithinPhaseTime(instanceId)) {
+      socket.emit('error', { code: 'TIME_EXPIRED', message: 'Vote time expired' });
+      return;
+    }
+
     // Validierung
     const validation = validate(VoteSchema, data);
     if (!validation.success) {
@@ -442,10 +563,28 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
       return;
     }
 
+    // Anti-Cheat: Kann nicht für sich selbst voten
+    if (validation.data.chosenId === player.id) {
+      socket.emit('error', { code: 'CANNOT_VOTE_SELF', message: 'Cannot vote for yourself' });
+      return;
+    }
+
     // Voting-State holen
     const state = getVotingState(instanceId);
     if (!state) {
       socket.emit('error', { code: 'VOTING_NOT_ACTIVE', message: 'Voting not active' });
+      return;
+    }
+
+    // Anti-Cheat: Target muss im Assignment sein
+    const assignment = state.assignments.find((a) => a.voterId === player.id);
+    if (!assignment) {
+      socket.emit('error', { code: 'NO_ASSIGNMENT', message: 'No voting assignment found' });
+      return;
+    }
+
+    if (validation.data.chosenId !== assignment.imageA && validation.data.chosenId !== assignment.imageB) {
+      socket.emit('error', { code: 'INVALID_TARGET', message: 'Invalid vote target' });
       return;
     }
 
@@ -465,10 +604,10 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
     log('Vote', `${player.user.fullName} voted for ${validation.data.chosenId}`);
   });
 
-  // Finale-Vote Handler
+  // Finale-Vote Handler (mit Anti-Cheat)
   socket.on('finale-vote', (data: unknown) => {
     const instanceId = socket.data.instanceId;
-    if (!instanceId) {
+    if (!instanceId || instanceId === 'pending') {
       socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
       return;
     }
@@ -479,6 +618,12 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
       return;
     }
 
+    // Timing prüfen (inkl. Grace Period)
+    if (!isWithinPhaseTime(instanceId)) {
+      socket.emit('error', { code: 'TIME_EXPIRED', message: 'Finale vote time expired' });
+      return;
+    }
+
     // Validierung
     const validation = validate(FinaleVoteSchema, data);
     if (!validation.success) {
@@ -486,9 +631,21 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
       return;
     }
 
+    // Anti-Cheat: Kann nicht für sich selbst voten
+    if (validation.data.playerId === player.id) {
+      socket.emit('error', { code: 'CANNOT_VOTE_SELF', message: 'Cannot vote for yourself' });
+      return;
+    }
+
     const state = getVotingState(instanceId);
     if (!state) {
       socket.emit('error', { code: 'VOTING_NOT_ACTIVE', message: 'Finale not active' });
+      return;
+    }
+
+    // Anti-Cheat: Target muss ein Finalist sein
+    if (!state.finalists.some((f) => f.playerId === validation.data.playerId)) {
+      socket.emit('error', { code: 'INVALID_TARGET', message: 'Invalid finalist' });
       return;
     }
 

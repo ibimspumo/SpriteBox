@@ -80,7 +80,7 @@ export interface PlayerStats {
 // === Socket Events ===
 export interface ServerToClientEvents {
   connected: (data: { socketId: string; serverTime: number; user: User }) => void;
-  error: (data: { code: string; message?: string }) => void;
+  error: (data: { code: string; message?: string; retryAfter?: number }) => void;
   'lobby-joined': (data: {
     instanceId: string;
     type: InstanceType;
@@ -125,6 +125,7 @@ export interface ServerToClientEvents {
   }) => void;
   'finale-vote-received': (data: { success: boolean }) => void;
   'game-results': (data: { prompt?: string; rankings: RankingEntry[]; totalParticipants: number }) => void;
+  'idle-disconnect': (data: { reason: string }) => void;
 }
 
 export interface ClientToServerEvents {
