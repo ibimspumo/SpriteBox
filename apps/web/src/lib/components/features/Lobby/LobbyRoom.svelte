@@ -2,6 +2,7 @@
 <script lang="ts">
   import { lobby, currentUser, currentGameModeInfo } from '$lib/stores';
   import { leaveLobby, hostStartGame, hostChangePassword } from '$lib/socketBridge';
+  import { getPrivateRoomUrl } from '$lib/modeRoutes';
   import { Button, Input } from '../../atoms';
   import { PlayerList } from '../../organisms';
   import { Timer } from '../../utility';
@@ -21,7 +22,10 @@
 
   function getRoomShareUrl(): string {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    return $lobby.code ? `${baseUrl}?room=${$lobby.code}` : baseUrl;
+    if ($lobby.code && $lobby.gameMode) {
+      return `${baseUrl}${getPrivateRoomUrl($lobby.gameMode, $lobby.code)}`;
+    }
+    return baseUrl;
   }
 
   async function handleShareRoom() {

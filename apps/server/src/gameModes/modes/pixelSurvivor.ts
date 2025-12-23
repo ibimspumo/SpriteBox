@@ -1,0 +1,86 @@
+// apps/server/src/gameModes/modes/pixelSurvivor.ts
+
+import type { GameModeConfig } from '../types.js';
+
+/**
+ * Pixel Survivor - A single-player roguelike survival game.
+ *
+ * Players draw on an 8x8 pixel grid to survive 30 days of challenges.
+ * Character stats are determined by the pixel art drawn for the character.
+ * Events require drawing solutions that are analyzed geometrically.
+ *
+ * Player count: 1 (single-player only)
+ * Phases: survivor-menu → survivor-character → (day loop) → survivor-gameover/victory
+ *
+ * This mode runs primarily client-side with LocalStorage persistence.
+ * The server only provides mode registration for consistency.
+ */
+export const pixelSurvivorMode: GameModeConfig = {
+  id: 'pixel-survivor',
+  displayName: 'Pixel Survivor',
+  i18nKey: 'gameModes.pixelSurvivor',
+
+  players: {
+    min: 1,
+    max: 1,
+    privateMin: 1,
+  },
+
+  // Survivor phases (mostly client-managed)
+  phases: [
+    'survivor-menu',
+    'survivor-character',
+    'survivor-day-start',
+    'survivor-event',
+    'survivor-drawing',
+    'survivor-result',
+    'survivor-levelup',
+    'survivor-gameover',
+    'survivor-victory',
+  ],
+
+  timers: {
+    lobby: null, // No lobby
+    countdown: null, // No countdown
+    drawing: 60_000, // 60s per drawing challenge
+    votingRound: null, // No voting
+    finale: null, // No finale
+    results: null, // No timed results
+    reconnectGrace: 0, // Single-player, no reconnect
+    // Survivor-specific timers (handled client-side)
+    characterCreation: 120_000, // 2 minutes
+    dayStart: 3_000, // 3 seconds
+    eventIntro: 5_000, // 5 seconds
+    eventResult: 5_000, // 5 seconds
+    levelUp: 30_000, // 30 seconds
+  },
+
+  lobby: {
+    type: 'none', // No lobby system
+    autoStartThreshold: 1,
+    showTimer: false,
+    allowLateJoin: false,
+    allowSpectators: false,
+  },
+
+  voting: null, // No voting - geometric analysis instead
+
+  canvas: {
+    width: 8,
+    height: 8,
+    minPixelsSet: 1,
+    backgroundColor: '1', // White
+  },
+
+  rooms: {
+    allowPublic: false, // Single-player only
+    allowPrivate: false, // No rooms needed
+    requirePassword: false,
+    roomCodeLength: 0,
+  },
+
+  compression: {
+    enabled: false, // Single-player, no gallery
+    threshold: 999,
+  },
+};

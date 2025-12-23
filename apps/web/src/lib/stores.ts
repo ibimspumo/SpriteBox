@@ -70,7 +70,32 @@ export const passwordPrompt = writable<PasswordPromptState>({
 });
 
 // === Game State ===
-export type GamePhase = 'idle' | 'lobby' | 'countdown' | 'drawing' | 'voting' | 'finale' | 'results' | 'memorize' | 'copycat-result' | 'copycat-rematch' | 'guessing' | 'reveal' | 'pixelguesser-results';
+export type GamePhase =
+  | 'idle'
+  | 'lobby'
+  | 'countdown'
+  | 'drawing'
+  | 'voting'
+  | 'finale'
+  | 'results'
+  // CopyCat mode
+  | 'memorize'
+  | 'copycat-result'
+  | 'copycat-rematch'
+  // PixelGuesser mode
+  | 'guessing'
+  | 'reveal'
+  | 'pixelguesser-results'
+  // PixelSurvivor mode (single-player roguelike)
+  | 'survivor-menu'
+  | 'survivor-character'
+  | 'survivor-day-start'
+  | 'survivor-event'
+  | 'survivor-drawing'
+  | 'survivor-result'
+  | 'survivor-levelup'
+  | 'survivor-gameover'
+  | 'survivor-victory';
 
 export interface GameState {
   phase: GamePhase;

@@ -23,8 +23,9 @@ export class PrivateLobbyStrategy implements LobbyStrategy {
   }
 
   canJoin(instance: Instance, _player: Player): JoinResult {
-    // Check if full
-    if (instance.players.size >= this.config.players.max) {
+    // Check if full (use privateMax if available)
+    const maxPlayers = this.config.players.privateMax ?? this.config.players.max;
+    if (instance.players.size >= maxPlayers) {
       return { success: false, spectator: false, error: 'Room is full' };
     }
 
@@ -47,7 +48,7 @@ export class PrivateLobbyStrategy implements LobbyStrategy {
 
   getAutoStartThreshold(_instance: Instance): number {
     // Not used for private instances, but return max to prevent accidental starts
-    return this.config.players.max;
+    return this.config.players.privateMax ?? this.config.players.max;
   }
 
   shouldStartTimer(_instance: Instance): LobbyTimerConfig {
@@ -86,7 +87,7 @@ export class PrivateLobbyStrategy implements LobbyStrategy {
   }
 
   getMaxPlayers(_instance: Instance): number {
-    return this.config.players.max;
+    return this.config.players.privateMax ?? this.config.players.max;
   }
 
   getLobbyTimeout(_instance: Instance): number {

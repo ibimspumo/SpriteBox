@@ -22,6 +22,8 @@ export interface Translations {
 		backToHome: string;
 		backToModes: string;
 		differentMode: string;
+		alpha: string;
+		gotIt: string;
 	};
 
 	// Connection states
@@ -196,6 +198,8 @@ export interface Translations {
 		copyCatDesc: string;
 		pixelGuesser: string;
 		pixelGuesserDesc: string;
+		pixelSurvivor: string;
+		pixelSurvivorDesc: string;
 		duel: string;
 		duelDesc: string;
 		soloPractice: string;
@@ -293,6 +297,10 @@ export interface Translations {
 			name: string;
 			description: string;
 		};
+		survivor: {
+			name: string;
+			description: string;
+		};
 	};
 
 	// Stats
@@ -308,5 +316,253 @@ export interface Translations {
 		totalStats: string;
 		modeStats: string;
 		noStatsYet: string;
+	};
+
+	// Pixel Survivor mode
+	pixelSurvivor: {
+		// Menu
+		title: string;
+		subtitle: string;
+		newRun: string;
+		continueRun: string;
+		statistics: string;
+		howToPlay: string;
+		abandonWarning: string;
+		runs: string;
+		wins: string;
+		bestDayLabel: string;
+		// Character Creation
+		createCharacter: string;
+		drawYourCharacter: string;
+		previewStats: string;
+		randomize: string;
+		clear: string;
+		startRun: string;
+		minPixelsHint: string;
+		characterName: string;
+		defaultName: string;
+		// Stats (full names for legend)
+		hp: string;
+		attack: string;
+		defense: string;
+		speed: string;
+		luck: string;
+		element: string;
+		trait: string;
+		pixels: string;
+		effect: string;
+		// Stat abbreviations (for compact display)
+		statAbbr: {
+			hp: string;
+			attack: string;
+			defense: string;
+			speed: string;
+			luck: string;
+		};
+		// Elements
+		elements: {
+			fire: string;
+			water: string;
+			earth: string;
+			air: string;
+			dark: string;
+			light: string;
+			neutral: string;
+		};
+		// Traits
+		traits: {
+			perfectionist: string;
+			chaotic: string;
+			bulky: string;
+			minimalist: string;
+			creative: string;
+			focused: string;
+			intellectual: string;
+			grounded: string;
+			balanced: string;
+		};
+		// Rarities
+		rarities: {
+			common: string;
+			uncommon: string;
+			rare: string;
+			legendary: string;
+		};
+		// Gameplay
+		day: string;
+		dayOf: string;
+		level: string;
+		food: string;
+		gold: string;
+		materials: string;
+		// Events
+		eventCategories: {
+			combat: string;
+			survival: string;
+			exploration: string;
+			social: string;
+			mystery: string;
+			boss: string;
+		};
+		// Drawing
+		drawSolution: string;
+		hint: string;
+		submit: string;
+		analyzing: string;
+		// Results
+		success: string;
+		failure: string;
+		xpGained: string;
+		goldGained: string;
+		damageTaken: string;
+		continue: string;
+		match: string;
+		// Food bonuses
+		foragedFood: string;
+		cookedMeal: string;
+		// Level Up
+		levelUp: string;
+		chooseUpgrade: string;
+		reroll: string;
+		// Game Over
+		gameOver: string;
+		survived: string;
+		finalScore: string;
+		newHighscore: string;
+		tryAgain: string;
+		backToMenu: string;
+		// Victory
+		victory: string;
+		congratulations: string;
+		youSurvived: string;
+		// Boss Battle
+		bossTitle: string;
+		bossSubtitle: string;
+		drawWeapon: string;
+		bossHp: string;
+		yourHp: string;
+		attackBoss: string;
+		flee: string;
+		bossDefeated: string;
+		youFled: string;
+		// Starvation
+		starving: string;
+		noFood: string;
+		// Category Names
+		categories: {
+			weapon: string;
+			shield: string;
+			shelter: string;
+			fire: string;
+			water: string;
+			food: string;
+			tool: string;
+			trap: string;
+			bridge: string;
+			boat: string;
+			rope: string;
+			light: string;
+			armor: string;
+			potion: string;
+			distraction: string;
+			unknown: string;
+		};
+		// Soft Hints
+		hints: {
+			// Negative hints (what's wrong)
+			needsMoreWidth: string;
+			needsMoreHeight: string;
+			tooTall: string;
+			tooWide: string;
+			needsHollow: string;
+			tooDense: string;
+			tooHollow: string;
+			needsWarmColors: string;
+			needsCoolColors: string;
+			needsPointy: string;
+			needsYellow: string;
+			needsNaturalColors: string;
+			needsDenser: string;
+			needsMorePixels: string;
+			moveDown: string;
+			// Positive hints (what's good)
+			lookingSharp: string;
+			goodWidth: string;
+			goodHeight: string;
+			goodSize: string;
+			goodColors: string;
+			goodHollow: string;
+			goodPosition: string;
+			goodDensity: string;
+			goodSpread: string;
+			goodShape: string;
+			niceAndFlat: string;
+			sturdyLooking: string;
+		};
+		// Result Explanation
+		resultExplanation: {
+			detectedAs: string;
+			expectedCategory: string;
+			whatWasWrong: string;
+			howToFix: string;
+			conditionMet: string;
+			conditionMissing: string;
+		};
+		// Category Requirements
+		requirements: {
+			minWidth: string;
+			maxHeight: string;
+			minHeight: string;
+			isHollow: string;
+			isPointy: string;
+			isFlat: string;
+			warmColors: string;
+			coolColors: string;
+			highDensity: string;
+			lowDensity: string;
+		};
+		// UI Labels
+		validSolutions: string;
+		currentlyDetected: string;
+		noValidShape: string;
+		// Tutorial / How to Play
+		tutorial: {
+			goal: string;
+			goalText: string;
+			character: string;
+			characterText: string;
+			characterStats: {
+				morePixels: string;
+				asymmetric: string;
+				bulky: string;
+				spreadOut: string;
+				manyColors: string;
+			};
+			events: string;
+			eventsText: string;
+			eventCategories: {
+				combat: string;
+				survival: string;
+				exploration: string;
+				social: string;
+			};
+			drawingTips: string;
+			drawingTipsList: {
+				analyzeShape: string;
+				tallThin: string;
+				wideHollow: string;
+				warmColors: string;
+				coolColors: string;
+			};
+			resources: string;
+			resourcesList: {
+				hp: string;
+				food: string;
+				gold: string;
+				xp: string;
+			};
+			victory: string;
+			victoryText: string;
+		};
 	};
 }

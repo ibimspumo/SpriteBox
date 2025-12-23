@@ -20,6 +20,12 @@ export interface GameModeTimers {
   // PixelGuesser mode timers
   guessing?: number | null;
   reveal?: number | null;
+  // PixelSurvivor mode timers
+  characterCreation?: number | null;
+  dayStart?: number | null;
+  eventIntro?: number | null;
+  eventResult?: number | null;
+  levelUp?: number | null;
 }
 
 /**
@@ -32,6 +38,8 @@ export interface PlayerLimits {
   max: number;
   /** Minimum players for private rooms (optional, defaults to min) */
   privateMin?: number;
+  /** Maximum players for private rooms (optional, defaults to max) */
+  privateMax?: number;
 }
 
 /**
@@ -40,6 +48,8 @@ export interface PlayerLimits {
 export interface LobbyConfig {
   /** How the game starts */
   type: 'auto-start' | 'host-start' | 'instant' | 'none';
+  /** How the game starts in private rooms (optional, defaults to type) */
+  privateType?: 'auto-start' | 'host-start' | 'instant' | 'none';
   /** For auto-start: player count threshold to start timer */
   autoStartThreshold?: number;
   /** Show countdown timer in lobby */

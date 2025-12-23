@@ -12,6 +12,7 @@ SpriteBox supports multiple game modes, each with its own phase flow:
 | `pixel-battle` | Classic mode: draw prompts, vote on artwork | 5-100 |
 | `copy-cat` | Memory mode: recreate a reference image | 2 (1v1) |
 | `pixel-guesser` | Pictionary mode: one draws, others guess | 2-20 |
+| `pixel-survivor` | Roguelike survival: draw to survive 30 days | 1 (solo) |
 
 ## Game Phases (Pixel Battle)
 
@@ -307,3 +308,106 @@ Pixel Guesser is a Pictionary-style game where one player draws while others gue
 **Position Bonus**: 1st: +20, 2nd: +10, 3rd: +5
 
 **Artist Bonus**: 20% of total points earned by guessers
+
+## Pixel Survivor Mode
+
+Pixel Survivor is a single-player roguelike where you draw to survive 30 days of challenges.
+
+### Core Concept
+
+- **Draw your character**: Stats (HP, Attack, Defense, Speed, Luck) determined by pixel art properties
+- **Draw to survive**: Each event requires a drawn solution analyzed geometrically
+- **Roguelike progression**: Permadeath, upgrades on level-up, 30-day runs
+- **No AI recognition**: Pure geometric analysis (shape, color, density)
+
+### Pixel Survivor Phase Flow
+
+```text
+  MENU                      CHARACTER (120s)         DAY START (3s)
+  ┌─────────────┐           ┌─────────────┐          ┌─────────────┐
+  │  New Run /  │  Start    │  Draw Your  │          │  Day X      │
+  │  Continue / │ ─────────►│  Survivor   │ ────────►│  Resource   │
+  │  Stats      │           │  Stats Gen  │          │  Update     │
+  └─────────────┘           └─────────────┘          └─────────────┘
+                                                            │
+       ┌────────────────────────────────────────────────────┘
+       │
+       ▼
+  EVENT (5s)                DRAWING (60s)            RESULT (5s)
+  ┌─────────────┐           ┌─────────────┐          ┌─────────────┐
+  │  Random     │           │  Draw       │          │  Success or │
+  │  Challenge  │ ─────────►│  Solution   │ ────────►│  Failure    │
+  │  + Hint     │           │             │          │  +Rewards   │
+  └─────────────┘           └─────────────┘          └─────────────┘
+       │                                                    │
+       │                         ┌──────────────────────────┘
+       │                         │
+       │                         ▼
+       │                    LEVEL UP? (30s)          GAME OVER/VICTORY
+       │                    ┌─────────────┐          ┌─────────────┐
+       │      HP > 0        │  Choose 1   │  Day 30  │  Score      │
+       └────────────────────│  of 3       │ ────────►│  Stats      │
+         Next Day           │  Upgrades   │  or HP=0 │  Highscore  │
+                            └─────────────┘          └─────────────┘
+```
+
+### Pixel Survivor Phases
+
+| Phase | Duration | Description |
+|-------|----------|-------------|
+| Menu | - | New run, continue, or view statistics |
+| Character | 120 seconds | Draw character, stats calculated from design |
+| Day Start | 3 seconds | Show day number, update resources |
+| Event | 5 seconds | Display random challenge with hint |
+| Drawing | 60 seconds | Draw solution to the event |
+| Result | 5 seconds | Show success/failure, rewards/damage |
+| Level Up | 30 seconds | Choose 1 of 3 random upgrades |
+| Game Over | - | Show score if HP reaches 0 |
+| Victory | - | Show score if survived 30 days |
+
+### Character Stats from Drawing
+
+Character pixel art is analyzed to generate stats:
+
+| Property | Affects | Example |
+|----------|---------|---------|
+| Pixel count | Max HP | More pixels = more HP (50-150) |
+| Asymmetry | Attack | Asymmetric = aggressive (20-100) |
+| Symmetry + Compactness | Defense | Symmetric = stable (20-100) |
+| Low density | Speed | Sparse = light/fast (20-100) |
+| Color variety | Luck | More colors = luckier (10-50) |
+| Dominant color | Element | Red=Fire, Blue=Water, etc. |
+
+### Drawing Recognition
+
+Drawings are categorized by geometric properties, not AI recognition:
+
+| Category | Detection Criteria |
+|----------|-------------------|
+| Weapon | Tall (aspect ratio ≥2.5), thin (width ≤2) |
+| Shield | Wide, solid, compact, dense (>0.7) |
+| Fire | Warm colors (red/yellow/orange), scattered |
+| Shelter | Hollow, large (≥4x4) |
+| Bridge | Horizontal, flat (height ≤2), long (width ≥5) |
+| Boat | Hollow, bottom position |
+| Trap | Pointy, low position |
+
+### Event Types
+
+- **Combat**: Fight creatures (wolf, bear, bandits)
+- **Survival**: Survive nature (cold, hunger, storms)
+- **Exploration**: Navigate terrain (rivers, cliffs, caves)
+- **Social**: NPC interactions (merchants, travelers)
+- **Mystery**: Puzzles and choices
+
+### Win/Lose Conditions
+
+- **Win**: Survive 30 days OR defeat Final Boss on Day 30
+- **Lose**: HP reaches 0 (permadeath)
+- **Score**: Days survived × Level × Monsters killed
+
+### Technical Notes
+
+- **Single-player**: Runs client-side with LocalStorage persistence
+- **No server rooms**: Mode registration only for consistency
+- **No voting**: Geometric analysis replaces player voting

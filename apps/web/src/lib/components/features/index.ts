@@ -11,3 +11,18 @@ export { Memorize, CopyCatResult, CopyCatRematch } from './CopyCat';
 
 // PixelGuesser mode components
 export { Guessing, Reveal, FinalResults } from './PixelGuesser';
+
+// PixelSurvivor mode components (single-player roguelike)
+export {
+  SurvivorMenu,
+  CharacterCreation,
+  DayStart,
+  SurvivorEvent,
+  SurvivorResult,
+  LevelUp,
+  BossBattle,
+  GameOver,
+  Victory,
+  SurvivorStatistics,
+  HowToPlay,
+} from './PixelSurvivor';

@@ -45,6 +45,7 @@ export { GameModeRegistry, gameModes } from './registry.js';
 export { pixelBattleMode } from './modes/pixelBattle.js';
 export { copyCatMode } from './modes/copyCat.js';
 export { pixelGuesserMode } from './modes/pixelGuesser.js';
+export { pixelSurvivorMode } from './modes/pixelSurvivor.js';
 
 // Re-export helpers
 export {
@@ -70,6 +71,7 @@ import { gameModes } from './registry.js';
 import { pixelBattleMode } from './modes/pixelBattle.js';
 import { copyCatMode } from './modes/copyCat.js';
 import { pixelGuesserMode } from './modes/pixelGuesser.js';
+import { pixelSurvivorMode } from './modes/pixelSurvivor.js';
 import { log } from '../utils.js';
 
 /**
@@ -85,6 +87,9 @@ export function initializeGameModes(): void {
 
   // Register Pixel Guesser mode
   gameModes.register(pixelGuesserMode);
+
+  // Register Pixel Survivor mode (single-player roguelike)
+  gameModes.register(pixelSurvivorMode);
 
   // Set pixel-battle as the default
   gameModes.setDefault('pixel-battle');

@@ -22,8 +22,9 @@ export const pixelGuesserMode: GameModeConfig = {
 
   players: {
     min: 2,
-    max: 20,
+    max: 5,
     privateMin: 2,
+    privateMax: 20,
   },
 
   // Note: 'guessing' phase combines drawing (by artist) and guessing (by others)
@@ -43,6 +44,7 @@ export const pixelGuesserMode: GameModeConfig = {
 
   lobby: {
     type: 'auto-start',
+    privateType: 'host-start', // Private rooms: host must start manually
     autoStartThreshold: 2,
     showTimer: true,
     allowLateJoin: false, // Can't join mid-game

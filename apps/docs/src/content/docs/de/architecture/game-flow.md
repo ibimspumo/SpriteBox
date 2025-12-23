@@ -12,6 +12,7 @@ SpriteBox unterstützt mehrere Spielmodi mit unterschiedlichem Ablauf:
 | `pixel-battle` | Klassisch: Prompts zeichnen, Kunstwerke bewerten | 5-100 |
 | `copy-cat` | Memory: Referenzbild nachzeichnen | 2 (1v1) |
 | `pixel-guesser` | Pictionary: Einer zeichnet, andere raten | 2-20 |
+| `pixel-survivor` | Roguelike: Zeichne um 30 Tage zu überleben | 1 (Solo) |
 
 ## Phasen-Überblick (Pixel Battle)
 
@@ -201,6 +202,109 @@ Pixel Guesser ist ein Pictionary-artiges Spiel, bei dem ein Spieler zeichnet wä
 **Positions-Bonus**: 1.: +20, 2.: +10, 3.: +5
 
 **Künstler-Bonus**: 20% der Gesamtpunkte der Rater
+
+## Pixel Survivor Modus
+
+Pixel Survivor ist ein Einzelspieler-Roguelike, bei dem du zeichnest um 30 Tage zu überleben.
+
+### Kernkonzept
+
+- **Zeichne deinen Charakter**: Stats (HP, Angriff, Verteidigung, Tempo, Glück) werden durch Pixelkunst-Eigenschaften bestimmt
+- **Zeichne zum Überleben**: Jedes Event erfordert eine gezeichnete Lösung, die geometrisch analysiert wird
+- **Roguelike-Fortschritt**: Permadeath, Upgrades beim Level-Up, 30-Tage-Runs
+- **Keine KI-Erkennung**: Reine geometrische Analyse (Form, Farbe, Dichte)
+
+### Pixel Survivor Phasenablauf
+
+```text
+  MENÜ                       CHARAKTER (120s)         TAG START (3s)
+  ┌─────────────┐            ┌─────────────┐          ┌─────────────┐
+  │  Neuer Run/ │  Start     │  Zeichne    │          │  Tag X      │
+  │  Fortsetzen/│ ──────────►│  Survivor   │ ────────►│  Ressourcen │
+  │  Statistik  │            │  Stats Gen  │          │  Update     │
+  └─────────────┘            └─────────────┘          └─────────────┘
+                                                             │
+       ┌─────────────────────────────────────────────────────┘
+       │
+       ▼
+  EVENT (5s)                 ZEICHNEN (60s)           ERGEBNIS (5s)
+  ┌─────────────┐            ┌─────────────┐          ┌─────────────┐
+  │  Zufällige  │            │  Zeichne    │          │  Erfolg oder│
+  │  Heraus-    │ ──────────►│  Lösung     │ ────────►│  Misserfolg │
+  │  forderung  │            │             │          │  +Belohnung │
+  └─────────────┘            └─────────────┘          └─────────────┘
+       │                                                     │
+       │                          ┌──────────────────────────┘
+       │                          │
+       │                          ▼
+       │                     LEVEL UP? (30s)          GAME OVER/SIEG
+       │                     ┌─────────────┐          ┌─────────────┐
+       │      HP > 0         │  Wähle 1    │  Tag 30  │  Punktzahl  │
+       └─────────────────────│  von 3      │ ────────►│  Statistik  │
+          Nächster Tag       │  Upgrades   │  /HP=0   │  Highscore  │
+                             └─────────────┘          └─────────────┘
+```
+
+### Pixel Survivor Phasen
+
+| Phase | Dauer | Beschreibung |
+|-------|-------|--------------|
+| Menü | - | Neuer Run, Fortsetzen oder Statistiken |
+| Charakter | 120 Sekunden | Charakter zeichnen, Stats aus Design berechnet |
+| Tag Start | 3 Sekunden | Tagnummer zeigen, Ressourcen aktualisieren |
+| Event | 5 Sekunden | Zufällige Herausforderung mit Hinweis |
+| Zeichnen | 60 Sekunden | Lösung für das Event zeichnen |
+| Ergebnis | 5 Sekunden | Erfolg/Misserfolg, Belohnungen/Schaden |
+| Level Up | 30 Sekunden | 1 von 3 zufälligen Upgrades wählen |
+| Game Over | - | Punktzahl zeigen wenn HP = 0 |
+| Sieg | - | Punktzahl zeigen wenn 30 Tage überlebt |
+
+### Charakter-Stats aus Zeichnung
+
+Die Charakter-Pixelkunst wird analysiert um Stats zu generieren:
+
+| Eigenschaft | Beeinflusst | Beispiel |
+|-------------|-------------|----------|
+| Pixelanzahl | Max HP | Mehr Pixel = mehr HP (50-150) |
+| Asymmetrie | Angriff | Asymmetrisch = aggressiv (20-100) |
+| Symmetrie + Kompaktheit | Verteidigung | Symmetrisch = stabil (20-100) |
+| Geringe Dichte | Tempo | Spärlich = leicht/schnell (20-100) |
+| Farbvielfalt | Glück | Mehr Farben = mehr Glück (10-50) |
+| Dominante Farbe | Element | Rot=Feuer, Blau=Wasser, etc. |
+
+### Zeichnungserkennung
+
+Zeichnungen werden nach geometrischen Eigenschaften kategorisiert, nicht per KI:
+
+| Kategorie | Erkennungskriterien |
+|-----------|---------------------|
+| Waffe | Hoch (Seitenverhältnis ≥2.5), dünn (Breite ≤2) |
+| Schild | Breit, solide, kompakt, dicht (>0.7) |
+| Feuer | Warme Farben (Rot/Gelb/Orange), verstreut |
+| Unterschlupf | Hohl, groß (≥4x4) |
+| Brücke | Horizontal, flach (Höhe ≤2), lang (Breite ≥5) |
+| Boot | Hohl, untere Position |
+| Falle | Spitz, tiefe Position |
+
+### Event-Typen
+
+- **Kampf**: Kämpfe gegen Kreaturen (Wolf, Bär, Banditen)
+- **Überleben**: Überlebe die Natur (Kälte, Hunger, Stürme)
+- **Erkundung**: Navigiere Terrain (Flüsse, Klippen, Höhlen)
+- **Sozial**: NPC-Interaktionen (Händler, Reisende)
+- **Mysterium**: Rätsel und Entscheidungen
+
+### Gewinn-/Verlustbedingungen
+
+- **Gewinn**: 30 Tage überleben ODER Endboss an Tag 30 besiegen
+- **Verlust**: HP erreicht 0 (Permadeath)
+- **Punktzahl**: Überlebte Tage × Level × Getötete Monster
+
+### Technische Hinweise
+
+- **Einzelspieler**: Läuft clientseitig mit LocalStorage-Persistenz
+- **Keine Server-Räume**: Nur Modus-Registrierung für Konsistenz
+- **Keine Abstimmung**: Geometrische Analyse ersetzt Spieler-Voting
 
 ## Nächste Schritte
 

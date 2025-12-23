@@ -52,17 +52,24 @@
     <div class="mode-icon">{modeIcon()}</div>
 
     <div class="mode-header">
-      <h3 class="mode-name">
-        {#if mode.i18nKey === 'gameModes.pixelBattle'}
-          {$t.modeSelection.classic.name}
-        {:else if mode.i18nKey === 'gameModes.copyCat'}
-          {$t.modeSelection.copycat.name}
-        {:else if mode.i18nKey === 'gameModes.pixelGuesser'}
-          {$t.modeSelection.pixelguesser.name}
-        {:else}
-          {mode.displayName}
+      <div class="mode-title-row">
+        <h3 class="mode-name">
+          {#if mode.i18nKey === 'gameModes.pixelBattle'}
+            {$t.modeSelection.classic.name}
+          {:else if mode.i18nKey === 'gameModes.copyCat'}
+            {$t.modeSelection.copycat.name}
+          {:else if mode.i18nKey === 'gameModes.pixelGuesser'}
+            {$t.modeSelection.pixelguesser.name}
+          {:else if mode.i18nKey === 'gameModes.pixelSurvivor'}
+            {$t.modeSelection.survivor.name}
+          {:else}
+            {mode.displayName}
+          {/if}
+        </h3>
+        {#if mode.i18nKey === 'gameModes.pixelSurvivor'}
+          <Badge variant="warning" size="sm" text={$t.common.alpha} />
         {/if}
-      </h3>
+      </div>
       <Badge
         variant={playerCount > 0 ? 'success' : 'default'}
         size="sm"
@@ -77,6 +84,8 @@
         {$t.modeSelection.copycat.description}
       {:else if mode.i18nKey === 'gameModes.pixelGuesser'}
         {$t.modeSelection.pixelguesser.description}
+      {:else if mode.i18nKey === 'gameModes.pixelSurvivor'}
+        {$t.modeSelection.survivor.description}
       {:else}
         {mode.displayName}
       {/if}
@@ -112,6 +121,12 @@
   .mode-header {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .mode-title-row {
+    display: flex;
     align-items: center;
     gap: var(--space-2);
   }

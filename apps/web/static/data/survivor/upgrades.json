@@ -1,0 +1,245 @@
+{
+  "$schema": "./upgrades.schema.json",
+  "upgrades": [
+    {
+      "id": "U01",
+      "name": "Tough Skin",
+      "nameDE": "Zähe Haut",
+      "description": "+15 Max HP",
+      "descriptionDE": "+15 Maximale LP",
+      "rarity": "common",
+      "maxStacks": 5,
+      "effect": { "type": "stat", "stat": "maxHp", "value": 15, "isPercent": false }
+    },
+    {
+      "id": "U02",
+      "name": "Iron Muscles",
+      "nameDE": "Eiserne Muskeln",
+      "description": "+8 Attack",
+      "descriptionDE": "+8 Angriff",
+      "rarity": "common",
+      "maxStacks": 5,
+      "effect": { "type": "stat", "stat": "attack", "value": 8, "isPercent": false }
+    },
+    {
+      "id": "U03",
+      "name": "Stone Wall",
+      "nameDE": "Steinmauer",
+      "description": "+8 Defense",
+      "descriptionDE": "+8 Verteidigung",
+      "rarity": "common",
+      "maxStacks": 5,
+      "effect": { "type": "stat", "stat": "defense", "value": 8, "isPercent": false }
+    },
+    {
+      "id": "U04",
+      "name": "Quick Feet",
+      "nameDE": "Schnelle Füße",
+      "description": "+10 Speed",
+      "descriptionDE": "+10 Tempo",
+      "rarity": "common",
+      "maxStacks": 5,
+      "effect": { "type": "stat", "stat": "speed", "value": 10, "isPercent": false }
+    },
+    {
+      "id": "U05",
+      "name": "Lucky Charm",
+      "nameDE": "Glücksbringer",
+      "description": "+5 Luck",
+      "descriptionDE": "+5 Glück",
+      "rarity": "common",
+      "maxStacks": 5,
+      "effect": { "type": "stat", "stat": "luck", "value": 5, "isPercent": false }
+    },
+    {
+      "id": "U06",
+      "name": "Vitality",
+      "nameDE": "Vitalität",
+      "description": "+10% Max HP",
+      "descriptionDE": "+10% Maximale LP",
+      "rarity": "uncommon",
+      "maxStacks": 3,
+      "effect": { "type": "stat", "stat": "maxHp", "value": 10, "isPercent": true }
+    },
+    {
+      "id": "U07",
+      "name": "Strength",
+      "nameDE": "Stärke",
+      "description": "+10% Attack",
+      "descriptionDE": "+10% Angriff",
+      "rarity": "uncommon",
+      "maxStacks": 3,
+      "effect": { "type": "stat", "stat": "attack", "value": 10, "isPercent": true }
+    },
+    {
+      "id": "U08",
+      "name": "Fortitude",
+      "nameDE": "Standhaftigkeit",
+      "description": "+10% Defense",
+      "descriptionDE": "+10% Verteidigung",
+      "rarity": "uncommon",
+      "maxStacks": 3,
+      "effect": { "type": "stat", "stat": "defense", "value": 10, "isPercent": true }
+    },
+    {
+      "id": "U16",
+      "name": "Weaponmaster",
+      "nameDE": "Waffenmeister",
+      "description": "+15% Weapon effectiveness",
+      "descriptionDE": "+15% Waffenwirksamkeit",
+      "rarity": "common",
+      "maxStacks": 3,
+      "effect": { "type": "category_boost", "category": "weapon", "value": 15 }
+    },
+    {
+      "id": "U17",
+      "name": "Fire Starter",
+      "nameDE": "Feueranzünder",
+      "description": "+15% Fire effectiveness",
+      "descriptionDE": "+15% Feuerwirksamkeit",
+      "rarity": "common",
+      "maxStacks": 3,
+      "effect": { "type": "category_boost", "category": "fire", "value": 15 }
+    },
+    {
+      "id": "U18",
+      "name": "Architect",
+      "nameDE": "Architekt",
+      "description": "+15% Shelter effectiveness",
+      "descriptionDE": "+15% Unterschlupfwirksamkeit",
+      "rarity": "common",
+      "maxStacks": 3,
+      "effect": { "type": "category_boost", "category": "shelter", "value": 15 }
+    },
+    {
+      "id": "U19",
+      "name": "Trapsmith",
+      "nameDE": "Fallenbauer",
+      "description": "+15% Trap effectiveness",
+      "descriptionDE": "+15% Fallenwirksamkeit",
+      "rarity": "common",
+      "maxStacks": 3,
+      "effect": { "type": "category_boost", "category": "trap", "value": 15 }
+    },
+    {
+      "id": "U20",
+      "name": "Shipwright",
+      "nameDE": "Schiffsbauer",
+      "description": "+20% Boat/Bridge effectiveness",
+      "descriptionDE": "+20% Boot/Brückenwirksamkeit",
+      "rarity": "uncommon",
+      "maxStacks": 2,
+      "effect": { "type": "category_boost", "category": "boat", "value": 20 }
+    },
+    {
+      "id": "U21",
+      "name": "Pyromancer",
+      "nameDE": "Pyromant",
+      "description": "+25% Fire effectiveness",
+      "descriptionDE": "+25% Feuerwirksamkeit",
+      "rarity": "uncommon",
+      "maxStacks": 2,
+      "effect": { "type": "category_boost", "category": "fire", "value": 25 }
+    },
+    {
+      "id": "U28",
+      "name": "Second Wind",
+      "nameDE": "Zweiter Atem",
+      "description": "20% heal after surviving event",
+      "descriptionDE": "20% Heilung nach überlebtem Event",
+      "rarity": "common",
+      "maxStacks": 3,
+      "effect": { "type": "special", "specialId": "second_wind" }
+    },
+    {
+      "id": "U29",
+      "name": "Scavenger",
+      "nameDE": "Sammler",
+      "description": "+25% resource drops",
+      "descriptionDE": "+25% Ressourcenfunde",
+      "rarity": "common",
+      "maxStacks": 3,
+      "effect": { "type": "special", "specialId": "scavenger" }
+    },
+    {
+      "id": "U30",
+      "name": "Thick Skin",
+      "nameDE": "Dickes Fell",
+      "description": "-3 damage from all sources",
+      "descriptionDE": "-3 Schaden aus allen Quellen",
+      "rarity": "common",
+      "maxStacks": 3,
+      "effect": { "type": "special", "specialId": "thick_skin" }
+    },
+    {
+      "id": "U35",
+      "name": "Regeneration",
+      "nameDE": "Regeneration",
+      "description": "Heal 5 HP per day",
+      "descriptionDE": "Heile 5 LP pro Tag",
+      "rarity": "rare",
+      "maxStacks": 2,
+      "effect": { "type": "heal", "value": 5 }
+    },
+    {
+      "id": "U36",
+      "name": "Dodge Master",
+      "nameDE": "Ausweichmeister",
+      "description": "15% chance to avoid damage",
+      "descriptionDE": "15% Chance Schaden zu vermeiden",
+      "rarity": "rare",
+      "maxStacks": 2,
+      "effect": { "type": "special", "specialId": "dodge" }
+    },
+    {
+      "id": "U11",
+      "name": "Giant's Blood",
+      "nameDE": "Riesenblut",
+      "description": "+50 Max HP",
+      "descriptionDE": "+50 Maximale LP",
+      "rarity": "rare",
+      "maxStacks": 2,
+      "effect": { "type": "stat", "stat": "maxHp", "value": 50, "isPercent": false }
+    },
+    {
+      "id": "U15",
+      "name": "Golden Touch",
+      "nameDE": "Goldene Berührung",
+      "description": "+25 All Stats",
+      "descriptionDE": "+25 auf alle Werte",
+      "rarity": "legendary",
+      "maxStacks": 1,
+      "effect": { "type": "special", "specialId": "golden_touch" }
+    },
+    {
+      "id": "U27",
+      "name": "Universal Craft",
+      "nameDE": "Universalhandwerk",
+      "description": "+25% ALL drawing categories",
+      "descriptionDE": "+25% auf ALLE Zeichnungskategorien",
+      "rarity": "legendary",
+      "maxStacks": 1,
+      "effect": { "type": "special", "specialId": "universal_craft" }
+    },
+    {
+      "id": "U39",
+      "name": "Phoenix",
+      "nameDE": "Phönix",
+      "description": "Survive death once per run with 50% HP",
+      "descriptionDE": "Überlebe einmal pro Lauf mit 50% LP",
+      "rarity": "legendary",
+      "maxStacks": 1,
+      "effect": { "type": "special", "specialId": "phoenix" }
+    },
+    {
+      "id": "U41",
+      "name": "Perfectionist",
+      "nameDE": "Perfektionist",
+      "description": "Perfect solutions give 2x rewards",
+      "descriptionDE": "Perfekte Lösungen geben 2x Belohnungen",
+      "rarity": "legendary",
+      "maxStacks": 1,
+      "effect": { "type": "special", "specialId": "perfectionist_upgrade" }
+    }
+  ]
+}

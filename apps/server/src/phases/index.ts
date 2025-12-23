@@ -13,12 +13,14 @@ import { gameModes } from '../gameModes/index.js';
 import { StandardPhaseManager } from './strategies/StandardPhaseManager.js';
 import { CopyCatPhaseManager } from './strategies/CopyCatPhaseManager.js';
 import { PixelGuesserPhaseManager } from './strategies/PixelGuesserPhaseManager.js';
+import { PixelSurvivorPhaseManager } from './strategies/PixelSurvivorPhaseManager.js';
 
 // Re-export types
 export type { PhaseManager } from './types.js';
 export { StandardPhaseManager } from './strategies/StandardPhaseManager.js';
 export { CopyCatPhaseManager } from './strategies/CopyCatPhaseManager.js';
 export { PixelGuesserPhaseManager } from './strategies/PixelGuesserPhaseManager.js';
+export { PixelSurvivorPhaseManager } from './strategies/PixelSurvivorPhaseManager.js';
 
 // Cache PhaseManagers by gameMode ID (they're stateless, so we can reuse them)
 const phaseManagerCache = new Map<string, PhaseManager>();
@@ -50,6 +52,9 @@ export function getPhaseManagerForMode(gameModeId: string): PhaseManager {
       break;
     case 'pixel-guesser':
       manager = new PixelGuesserPhaseManager(config);
+      break;
+    case 'pixel-survivor':
+      manager = new PixelSurvivorPhaseManager(config);
       break;
     default:
       manager = new StandardPhaseManager(config);

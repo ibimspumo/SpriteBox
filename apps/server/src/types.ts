@@ -32,7 +32,17 @@ export type GamePhase =
   | 'copycat-rematch'
   // PixelGuesser mode phases
   | 'guessing'
-  | 'reveal';
+  | 'reveal'
+  // PixelSurvivor mode phases (single-player roguelike)
+  | 'survivor-menu'
+  | 'survivor-character'
+  | 'survivor-day-start'
+  | 'survivor-event'
+  | 'survivor-drawing'
+  | 'survivor-result'
+  | 'survivor-levelup'
+  | 'survivor-gameover'
+  | 'survivor-victory';
 
 export interface Instance {
   id: string;
