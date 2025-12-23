@@ -35,6 +35,8 @@ All real-time communication uses Socket.io. Events follow the pattern: `noun-ver
 | `vote` | `{ chosenId: string }` | Vote for image in matchup |
 | `finale-vote` | `{ playerId: string }` | Vote for finalist |
 | `copycat-rematch-vote` | `{ wantsRematch: boolean }` | CopyCat mode: vote for rematch |
+| `pixelguesser-draw` | `{ pixels: string }` | PixelGuesser: artist sends drawing update |
+| `pixelguesser-guess` | `{ guess: string }` | PixelGuesser: player submits a guess |
 
 ### User Management
 
@@ -178,6 +180,74 @@ CopyCat is a 1v1 memory-based game mode with unique phases.
   winner: 'you' | 'opponent' | 'draw';
   player: { user: User; accuracy: number };
   opponent: { user: User; accuracy: number };
+}
+```
+
+### PixelGuesser Mode Events
+
+PixelGuesser is a Pictionary-style game where one player draws while others guess.
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `pixelguesser-round-start` | See below | New round started |
+| `pixelguesser-drawing-update` | `{ pixels: string }` | Artist's canvas updated |
+| `pixelguesser-guess-result` | `{ correct, guess, message? }` | Result of player's guess |
+| `pixelguesser-correct-guess` | See below | Someone guessed correctly |
+| `pixelguesser-reveal` | See below | Round ended, answer revealed |
+| `pixelguesser-final-results` | See below | Game over, final rankings |
+
+**`pixelguesser-round-start` payload:**
+
+```typescript
+{
+  round: number;
+  totalRounds: number;
+  artistId: string;
+  artistUser: User;
+  isYouArtist: boolean;
+  secretPrompt?: string;          // Only sent to artist
+  secretPromptIndices?: PromptIndices;
+  duration: number;
+  endsAt: number;
+}
+```
+
+**`pixelguesser-correct-guess` payload:**
+
+```typescript
+{
+  playerId: string;
+  user: User;
+  points: number;
+  timeMs: number;                 // How fast they guessed
+  position: number;               // 1st, 2nd, 3rd...
+  remainingGuessers: number;
+}
+```
+
+**`pixelguesser-reveal` payload:**
+
+```typescript
+{
+  secretPrompt: string;
+  secretPromptIndices?: PromptIndices;
+  artistId: string;
+  artistUser: User;
+  artistPixels: string;
+  scores: PixelGuesserScoreEntry[];
+  duration: number;
+  endsAt: number;
+}
+```
+
+**`pixelguesser-final-results` payload:**
+
+```typescript
+{
+  rankings: PixelGuesserScoreEntry[];
+  totalRounds: number;
+  duration: number;
+  endsAt: number;
 }
 ```
 

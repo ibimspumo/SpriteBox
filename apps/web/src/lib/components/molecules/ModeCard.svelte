@@ -57,6 +57,8 @@
           {$t.modeSelection.classic.name}
         {:else if mode.i18nKey === 'gameModes.copyCat'}
           {$t.modeSelection.copycat.name}
+        {:else if mode.i18nKey === 'gameModes.pixelGuesser'}
+          {$t.modeSelection.pixelguesser.name}
         {:else}
           {mode.displayName}
         {/if}
@@ -73,6 +75,8 @@
         {$t.modeSelection.classic.description}
       {:else if mode.i18nKey === 'gameModes.copyCat'}
         {$t.modeSelection.copycat.description}
+      {:else if mode.i18nKey === 'gameModes.pixelGuesser'}
+        {$t.modeSelection.pixelguesser.description}
       {:else}
         {mode.displayName}
       {/if}

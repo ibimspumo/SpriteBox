@@ -29,7 +29,10 @@ export type GamePhase =
   // CopyCat mode phases
   | 'memorize'
   | 'copycat-result'
-  | 'copycat-rematch';
+  | 'copycat-rematch'
+  // PixelGuesser mode phases
+  | 'guessing'
+  | 'reveal';
 
 export interface Instance {
   id: string;
@@ -52,6 +55,8 @@ export interface Instance {
   phaseTimer?: NodeJS.Timeout;
   // CopyCat mode fields
   copyCat?: CopyCatState;
+  // PixelGuesser mode fields
+  pixelGuesser?: PixelGuesserState;
 }
 
 // === CopyCat Mode Types ===
@@ -70,6 +75,39 @@ export interface CopyCatPlayerResult {
   matchingPixels: number;   // Count of matching pixels
   totalPixels: number;      // Total pixels (64)
   submitTime: number;       // Timestamp for tie-breaking
+}
+
+// === PixelGuesser Mode Types ===
+export interface PixelGuesserState {
+  currentRound: number;           // Current round (1-based)
+  totalRounds: number;            // Total rounds (= number of players)
+  artistOrder: string[];          // Player IDs in drawing order
+  artistId: string;               // Current artist's player ID
+  secretPrompt: string;           // The word to draw (English)
+  secretPromptDe: string;         // The word to draw (German) - for multilingual matching
+  secretPromptIndices?: PromptIndices; // For localization
+  currentDrawing: string;         // Artist's current pixel data (streamed live)
+  guesses: Map<string, PixelGuesserGuess[]>; // playerId -> their guesses
+  correctGuessers: string[];      // Player IDs who guessed correctly (in order)
+  scores: Map<string, number>;    // playerId -> total score
+  roundStartTime: number;         // When drawing started (for time-based scoring)
+  roundEnded: boolean;            // Whether round ended early (all guessed)
+}
+
+export interface PixelGuesserGuess {
+  text: string;                   // The guess text
+  timestamp: number;              // When guessed
+  correct: boolean;               // Whether it was correct
+}
+
+export interface PixelGuesserScoreEntry {
+  playerId: string;
+  user: User;
+  score: number;
+  roundScore: number;             // Points earned this round
+  wasArtist: boolean;
+  guessedCorrectly: boolean;
+  guessTime?: number;             // Time in ms to guess (if correct)
 }
 
 // === Submission ===
@@ -249,6 +287,50 @@ export interface ServerToClientEvents {
   'lobby-timer-cancelled': (data: Record<string, never>) => void;
   'player-disconnected': (data: { playerId: string; user: User; timestamp: number }) => void;
   'player-reconnected': (data: { playerId: string; user: User; timestamp: number }) => void;
+  // PixelGuesser mode events
+  'pixelguesser-round-start': (data: {
+    round: number;
+    totalRounds: number;
+    artistId: string;
+    artistUser: User;
+    isYouArtist: boolean;
+    secretPrompt?: string;           // Only sent to artist
+    secretPromptIndices?: PromptIndices; // Only sent to artist
+    duration: number;
+    endsAt: number;
+  }) => void;
+  'pixelguesser-drawing-update': (data: {
+    pixels: string;                   // Current canvas state
+  }) => void;
+  'pixelguesser-guess-result': (data: {
+    correct: boolean;
+    guess: string;
+    message?: string;                 // "Close!" hint
+  }) => void;
+  'pixelguesser-correct-guess': (data: {
+    playerId: string;
+    user: User;
+    points: number;
+    timeMs: number;                   // How fast they guessed
+    position: number;                 // 1st, 2nd, 3rd...
+    remainingGuessers: number;
+  }) => void;
+  'pixelguesser-reveal': (data: {
+    secretPrompt: string;
+    secretPromptIndices?: PromptIndices;
+    artistId: string;
+    artistUser: User;
+    artistPixels: string;
+    scores: PixelGuesserScoreEntry[];
+    duration: number;
+    endsAt: number;
+  }) => void;
+  'pixelguesser-final-results': (data: {
+    rankings: PixelGuesserScoreEntry[];
+    totalRounds: number;
+    duration: number;
+    endsAt: number;
+  }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -270,6 +352,9 @@ export interface ClientToServerEvents {
   'copycat-rematch-vote': (data: { wantsRematch: boolean }) => void;
   'view-mode': (data: { gameMode: string }) => void;
   'leave-mode': () => void;
+  // PixelGuesser mode events
+  'pixelguesser-draw': (data: { pixels: string }) => void;
+  'pixelguesser-guess': (data: { guess: string }) => void;
 }
 
 // === Helper types ===
@@ -352,6 +437,26 @@ export type PhaseState =
       phase: 'copycat-rematch';
       timer?: PhaseTimer;
       votes: { playerId: string; wantsRematch: boolean }[];
+    }
+  // PixelGuesser mode phases
+  | {
+      phase: 'guessing';
+      timer?: PhaseTimer;
+      round: number;
+      totalRounds: number;
+      artistId: string;
+      isYouArtist: boolean;
+      secretPrompt?: string;          // Only for artist
+      currentDrawing: string;
+      hasGuessedCorrectly: boolean;
+      correctGuessers: { playerId: string; user: User; position: number }[];
+    }
+  | {
+      phase: 'reveal';
+      timer?: PhaseTimer;
+      secretPrompt: string;
+      artistPixels: string;
+      scores: PixelGuesserScoreEntry[];
     };
 
 export interface CopyCatResultEntry {

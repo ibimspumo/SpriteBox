@@ -70,7 +70,7 @@ export const passwordPrompt = writable<PasswordPromptState>({
 });
 
 // === Game State ===
-export type GamePhase = 'idle' | 'lobby' | 'countdown' | 'drawing' | 'voting' | 'finale' | 'results' | 'memorize' | 'copycat-result' | 'copycat-rematch';
+export type GamePhase = 'idle' | 'lobby' | 'countdown' | 'drawing' | 'voting' | 'finale' | 'results' | 'memorize' | 'copycat-result' | 'copycat-rematch' | 'guessing' | 'reveal' | 'pixelguesser-results';
 
 export interface GameState {
   phase: GamePhase;
@@ -230,6 +230,7 @@ export function resetLobbyState(): void {
   passwordPrompt.set({ show: false, roomCode: null, error: null });
   resetGameState();
   resetCopyCatState();
+  resetPixelGuesserState();
 }
 
 // === CopyCat Mode State ===
@@ -277,5 +278,74 @@ export function resetCopyCatState(): void {
     rematchVotes: [],
     rematchResult: null,
     hasVotedRematch: false,
+  });
+}
+
+// === PixelGuesser Mode State ===
+export interface PixelGuesserScoreEntry {
+  playerId: string;
+  user: User;
+  score: number;
+  roundScore: number;
+  wasArtist: boolean;
+  guessedCorrectly: boolean;
+  guessTime?: number;
+}
+
+export interface PixelGuesserCorrectGuess {
+  playerId: string;
+  user: User;
+  points: number;
+  timeMs: number;
+  position: number;
+}
+
+export interface PixelGuesserState {
+  round: number;
+  totalRounds: number;
+  artistId: string | null;
+  artistUser: User | null;
+  isYouArtist: boolean;
+  secretPrompt: string | null;
+  secretPromptIndices: PromptIndices | null;
+  currentDrawing: string;
+  guesses: string[];
+  hasGuessedCorrectly: boolean;
+  correctGuessers: PixelGuesserCorrectGuess[];
+  scores: PixelGuesserScoreEntry[];
+  lastGuessResult: { correct: boolean; close: boolean; message?: string } | null;
+}
+
+export const pixelGuesser = writable<PixelGuesserState>({
+  round: 0,
+  totalRounds: 0,
+  artistId: null,
+  artistUser: null,
+  isYouArtist: false,
+  secretPrompt: null,
+  secretPromptIndices: null,
+  currentDrawing: '1'.repeat(64),
+  guesses: [],
+  hasGuessedCorrectly: false,
+  correctGuessers: [],
+  scores: [],
+  lastGuessResult: null,
+});
+
+export function resetPixelGuesserState(): void {
+  pixelGuesser.set({
+    round: 0,
+    totalRounds: 0,
+    artistId: null,
+    artistUser: null,
+    isYouArtist: false,
+    secretPrompt: null,
+    secretPromptIndices: null,
+    currentDrawing: '1'.repeat(64),
+    guesses: [],
+    hasGuessedCorrectly: false,
+    correctGuessers: [],
+    scores: [],
+    lastGuessResult: null,
   });
 }

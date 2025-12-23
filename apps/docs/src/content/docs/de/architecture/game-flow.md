@@ -11,6 +11,7 @@ SpriteBox unterstützt mehrere Spielmodi mit unterschiedlichem Ablauf:
 |-------|--------------|-------------|
 | `pixel-battle` | Klassisch: Prompts zeichnen, Kunstwerke bewerten | 5-100 |
 | `copy-cat` | Memory: Referenzbild nachzeichnen | 2 (1v1) |
+| `pixel-guesser` | Pictionary: Einer zeichnet, andere raten | 2-20 |
 
 ## Phasen-Überblick (Pixel Battle)
 
@@ -144,6 +145,62 @@ genauigkeit = (übereinstimmendePixel / gesamtPixel) × 100
 // Höhere Genauigkeit gewinnt
 // Bei Gleichstand: schnellere Einreichung gewinnt
 ```
+
+## Pixel Guesser Modus
+
+Pixel Guesser ist ein Pictionary-artiges Spiel, bei dem ein Spieler zeichnet während andere raten.
+
+### Pixel Guesser Phasenablauf
+
+```text
+  LOBBY                    COUNTDOWN (3s)           GUESSING (45s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  2-20       │  Auto    │   Nächste   │          │  Künstler   │
+  │  Spieler    │ ───────► │   Runde     │ ───────► │  zeichnet   │
+  │  treten bei │  start   │   beginnt   │          │  Andere raten│
+  └─────────────┘          └─────────────┘          └─────────────┘
+                                                           │
+       ┌───────────────────────────────────────────────────┘
+       │
+       ▼
+  REVEAL (5s)              NÄCHSTE RUNDE?           RESULTS (15s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  Lösung +   │   Mehr   │  Zurück zu  │   Spiel  │  Finale     │
+  │  Punkte     │ ───────► │  Countdown  │ ───────► │  Rangliste  │
+  │             │  Runden  │             │   vorbei │             │
+  └─────────────┘          └─────────────┘          └─────────────┘
+```
+
+### Pixel Guesser Phasen
+
+| Phase | Dauer | Beschreibung |
+|-------|-------|--------------|
+| Lobby | Bis 2+ Spieler | Auto-Start bei Schwellenwert |
+| Countdown | 3 Sekunden | Vorbereitung auf nächste Runde |
+| Guessing | 45 Sekunden | Künstler zeichnet, andere raten das Wort |
+| Reveal | 5 Sekunden | Lösung und Rundenpunkte anzeigen |
+| Results | 15 Sekunden | Finale Rangliste nach allen Runden |
+
+### So funktioniert's
+
+1. **Künstler-Rotation**: Jeder Spieler ist einmal der Künstler
+2. **Geheimes Prompt**: Künstler sieht ein Wort zum Zeichnen (lokalisiert EN/DE)
+3. **Live-Zeichnen**: Canvas-Updates werden in Echtzeit gestreamt
+4. **Raten**: Spieler tippen Vermutungen, werden gegen beide Sprachen geprüft
+5. **Punkte**: Schnellere richtige Antworten = mehr Punkte
+
+### Punktesystem
+
+| Zeit zum Raten | Punkte |
+|----------------|--------|
+| Unter 10s | 100 + Positions-Bonus |
+| Unter 20s | 75 + Positions-Bonus |
+| Unter 30s | 50 + Positions-Bonus |
+| Über 30s | 25 + Positions-Bonus |
+
+**Positions-Bonus**: 1.: +20, 2.: +10, 3.: +5
+
+**Künstler-Bonus**: 20% der Gesamtpunkte der Rater
 
 ## Nächste Schritte
 

@@ -194,6 +194,8 @@ export interface Translations {
 		pixelBattleDesc: string;
 		copyCat: string;
 		copyCatDesc: string;
+		pixelGuesser: string;
+		pixelGuesserDesc: string;
 		duel: string;
 		duelDesc: string;
 		soloPractice: string;
@@ -228,6 +230,33 @@ export interface Translations {
 		declined: string;
 	};
 
+	// PixelGuesser mode
+	pixelGuesser: {
+		title: string;
+		description: string;
+		round: string;
+		artist: string;
+		youAreArtist: string;
+		drawThisWord: string;
+		guessTheWord: string;
+		enterGuess: string;
+		guessPlaceholder: string;
+		correct: string;
+		close: string;
+		wrong: string;
+		alreadyGuessed: string;
+		waitingForReveal: string;
+		theWordWas: string;
+		score: string;
+		points: string;
+		position: string;
+		guessedIn: string;
+		artistBonus: string;
+		noOneGuessed: string;
+		finalResults: string;
+		totalScore: string;
+	};
+
 	// Landing page
 	landing: {
 		heroTitle: string;
@@ -257,6 +286,10 @@ export interface Translations {
 			description: string;
 		};
 		copycat: {
+			name: string;
+			description: string;
+		};
+		pixelguesser: {
 			name: string;
 			description: string;
 		};

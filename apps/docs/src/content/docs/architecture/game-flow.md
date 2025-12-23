@@ -11,6 +11,7 @@ SpriteBox supports multiple game modes, each with its own phase flow:
 |------|-------------|--------------|
 | `pixel-battle` | Classic mode: draw prompts, vote on artwork | 5-100 |
 | `copy-cat` | Memory mode: recreate a reference image | 2 (1v1) |
+| `pixel-guesser` | Pictionary mode: one draws, others guess | 2-20 |
 
 ## Game Phases (Pixel Battle)
 
@@ -250,3 +251,59 @@ accuracy = (matchingPixels / totalPixels) × 100
 // Higher accuracy wins
 // Tie: faster submission wins
 ```
+
+## Pixel Guesser Mode
+
+Pixel Guesser is a Pictionary-style game where one player draws while others guess.
+
+### Pixel Guesser Phase Flow
+
+```text
+  LOBBY                    COUNTDOWN (3s)           GUESSING (45s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  2-20       │  Auto    │   Next      │          │  Artist     │
+  │  Players    │ ───────► │   Round     │ ───────► │  Draws Live │
+  │  Join       │  start   │   Starts    │          │  Others Guess│
+  └─────────────┘          └─────────────┘          └─────────────┘
+                                                           │
+       ┌───────────────────────────────────────────────────┘
+       │
+       ▼
+  REVEAL (5s)              NEXT ROUND?              RESULTS (15s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  Correct    │   More   │  Back to    │   Game   │  Final      │
+  │  Answer +   │ ───────► │  Countdown  │ ───────► │  Rankings   │
+  │  Scores     │  rounds  │             │   over   │             │
+  └─────────────┘          └─────────────┘          └─────────────┘
+```
+
+### Pixel Guesser Phases
+
+| Phase | Duration | Description |
+|-------|----------|-------------|
+| Lobby | Until 2+ players | Auto-start when threshold reached |
+| Countdown | 3 seconds | Prepare for next round |
+| Guessing | 45 seconds | Artist draws, others guess the word |
+| Reveal | 5 seconds | Show correct answer and round scores |
+| Results | 15 seconds | Final rankings after all rounds |
+
+### How It Works
+
+1. **Artist Rotation**: Each player takes a turn as the artist
+2. **Secret Prompt**: Artist sees a word to draw (localized EN/DE)
+3. **Live Drawing**: Canvas updates stream to guessers in real-time
+4. **Guessing**: Players type guesses, matched against both languages
+5. **Scoring**: Faster correct guesses earn more points
+
+### Scoring System
+
+| Time to Guess | Points |
+|---------------|--------|
+| Under 10s | 100 + position bonus |
+| Under 20s | 75 + position bonus |
+| Under 30s | 50 + position bonus |
+| Over 30s | 25 + position bonus |
+
+**Position Bonus**: 1st: +20, 2nd: +10, 3rd: +5
+
+**Artist Bonus**: 20% of total points earned by guessers

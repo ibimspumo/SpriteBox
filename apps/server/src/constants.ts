@@ -66,6 +66,8 @@ export const RATE_LIMITS = {
   CREATE_ROOM: { windowMs: 60_000, maxRequests: 3 },
   JOIN_ROOM: { windowMs: 10_000, maxRequests: 5 },
   CHANGE_NAME: { windowMs: 60_000, maxRequests: 5 },
+  // PixelGuesser events
+  PIXELGUESSER: { windowMs: 1_000, maxRequests: 100 }, // Drawing updates (very high frequency - 64 pixels possible)
 } as const;
 
 // === DoS Protection ===

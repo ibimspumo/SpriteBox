@@ -40,6 +40,8 @@ import {
   selectedGameMode,
   defaultGameMode,
   copyCat,
+  pixelGuesser,
+  resetPixelGuesserState,
   type GamePhase,
 } from './stores';
 import { recordGameResult, addGameToHistory } from './stats';
@@ -657,6 +659,152 @@ function setupEventHandlers(socket: AppSocket): void {
     }));
     // Phase transition will happen via phase-changed event
   });
+
+  // === PixelGuesser Mode Events ===
+  socket.on('pixelguesser-round-start', (data: {
+    round: number;
+    totalRounds: number;
+    artistId: string;
+    artistUser: { displayName: string; discriminator: string; fullName: string };
+    isYouArtist: boolean;
+    secretPrompt?: string;
+    secretPromptIndices?: { prefixIdx: number | null; subjectIdx: number; suffixIdx: number | null };
+    duration: number;
+    endsAt: number;
+  }) => {
+    console.log('[Socket] PixelGuesser round start:', data.round, '/', data.totalRounds, 'Artist:', data.artistUser.displayName);
+    pixelGuesser.update((pg) => ({
+      ...pg,
+      round: data.round,
+      totalRounds: data.totalRounds,
+      artistId: data.artistId,
+      artistUser: data.artistUser,
+      isYouArtist: data.isYouArtist,
+      secretPrompt: data.secretPrompt ?? null,
+      secretPromptIndices: data.secretPromptIndices ?? null,
+      currentDrawing: '1'.repeat(64),
+      guesses: [],
+      hasGuessedCorrectly: false,
+      correctGuessers: [],
+      lastGuessResult: null,
+    }));
+    startTimer(data.duration, data.endsAt);
+    game.update((g) => ({ ...g, phase: 'guessing' }));
+  });
+
+  socket.on('pixelguesser-drawing-update', (data: { pixels: string }) => {
+    // Update the current drawing (for guessers watching the artist draw)
+    pixelGuesser.update((pg) => ({
+      ...pg,
+      currentDrawing: data.pixels,
+    }));
+  });
+
+  socket.on('pixelguesser-guess-result', (data: { correct: boolean; guess: string; message?: string }) => {
+    console.log('[Socket] PixelGuesser guess result:', data);
+    pixelGuesser.update((pg) => ({
+      ...pg,
+      guesses: [...pg.guesses, data.guess],
+      hasGuessedCorrectly: data.correct || pg.hasGuessedCorrectly,
+      lastGuessResult: { correct: data.correct, close: !!data.message, message: data.message },
+    }));
+  });
+
+  socket.on('pixelguesser-correct-guess', (data: {
+    playerId: string;
+    user: { displayName: string; discriminator: string; fullName: string };
+    points: number;
+    timeMs: number;
+    position: number;
+    remainingGuessers: number;
+  }) => {
+    console.log('[Socket] PixelGuesser correct guess:', data.user.displayName, '+', data.points, 'points');
+    pixelGuesser.update((pg) => ({
+      ...pg,
+      correctGuessers: [...pg.correctGuessers, {
+        playerId: data.playerId,
+        user: data.user,
+        points: data.points,
+        timeMs: data.timeMs,
+        position: data.position,
+      }],
+    }));
+  });
+
+  socket.on('pixelguesser-reveal', (data: {
+    secretPrompt: string;
+    secretPromptIndices?: { prefixIdx: number | null; subjectIdx: number; suffixIdx: number | null };
+    artistId: string;
+    artistUser: { displayName: string; discriminator: string; fullName: string };
+    artistPixels: string;
+    scores: Array<{
+      playerId: string;
+      user: { displayName: string; discriminator: string; fullName: string };
+      score: number;
+      roundScore: number;
+      wasArtist: boolean;
+      guessedCorrectly: boolean;
+      guessTime?: number;
+    }>;
+    duration: number;
+    endsAt: number;
+  }) => {
+    console.log('[Socket] PixelGuesser reveal:', data.secretPrompt);
+    pixelGuesser.update((pg) => ({
+      ...pg,
+      secretPrompt: data.secretPrompt,
+      secretPromptIndices: data.secretPromptIndices ?? null,
+      currentDrawing: data.artistPixels,
+      scores: data.scores,
+    }));
+    startTimer(data.duration, data.endsAt);
+    game.update((g) => ({ ...g, phase: 'reveal' }));
+  });
+
+  socket.on('pixelguesser-final-results', (data: {
+    rankings: Array<{
+      playerId: string;
+      user: { displayName: string; discriminator: string; fullName: string };
+      score: number;
+      roundScore: number;
+      wasArtist: boolean;
+      guessedCorrectly: boolean;
+      guessTime?: number;
+    }>;
+    totalRounds: number;
+    duration: number;
+    endsAt: number;
+  }) => {
+    console.log('[Socket] PixelGuesser final results');
+    pixelGuesser.update((pg) => ({
+      ...pg,
+      scores: data.rankings,
+    }));
+    startTimer(data.duration, data.endsAt);
+    game.update((g) => ({ ...g, phase: 'results' }));
+
+    // Record stats for PixelGuesser
+    const user = get(currentUser);
+    if (user) {
+      const myResult = data.rankings.find((r) => r.user.fullName === user.fullName);
+      if (myResult) {
+        const placement = data.rankings.indexOf(myResult) + 1;
+        recordGameResult('pixel-guesser', placement);
+        addGameToHistory({
+          gameMode: 'pixel-guesser',
+          placement,
+          totalPlayers: data.rankings.length,
+          prompt: `Score: ${myResult.score}`,
+          pixels: '', // PixelGuesser doesn't have a single player drawing
+        });
+      }
+    }
+
+    // Reset PixelGuesser state after showing results
+    setTimeout(() => {
+      resetPixelGuesserState();
+    }, data.duration);
+  });
 }
 
 // === Action Functions ===
@@ -729,4 +877,13 @@ export function returnToLobby(): void {
     // Join public queue (default)
     getSocket()?.emit('join-public');
   }
+}
+
+// === PixelGuesser Action Functions ===
+export function pixelGuesserDraw(pixels: string): void {
+  getSocket()?.emit('pixelguesser-draw', { pixels });
+}
+
+export function pixelGuesserGuess(guess: string): void {
+  getSocket()?.emit('pixelguesser-guess', { guess });
 }

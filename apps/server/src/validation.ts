@@ -119,6 +119,35 @@ export const CopyCatRematchVoteSchema = z.object({
 });
 
 /**
+ * PixelGuesser drawing update validation
+ */
+export const PixelGuesserDrawSchema = z.object({
+  pixels: z
+    .string()
+    .min(1, 'Cannot be empty')
+    .max(CANVAS.TOTAL_PIXELS, `Max ${CANVAS.TOTAL_PIXELS} characters`)
+    .regex(/^[0-9A-Fa-f]+$/, 'Only hex characters allowed')
+    .transform((s) => s.toUpperCase()),
+});
+
+/**
+ * PixelGuesser guess validation
+ */
+export const PixelGuesserGuessSchema = z.object({
+  guess: z
+    .string()
+    .min(1, 'Cannot be empty')
+    .max(50, 'Max 50 characters')
+    .transform((s) => s.trim())
+    .refine((s) => s.length > 0, 'Cannot be empty after trim')
+    .refine(
+      (s) => !XSS_PATTERNS.some((p) => p.test(s)),
+      'Invalid characters'
+    )
+    .transform(escapeHtml),
+});
+
+/**
  * Helper function: Validate with schema
  */
 export function validate<T>(

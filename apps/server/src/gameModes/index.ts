@@ -44,6 +44,7 @@ export { GameModeRegistry, gameModes } from './registry.js';
 // Re-export modes
 export { pixelBattleMode } from './modes/pixelBattle.js';
 export { copyCatMode } from './modes/copyCat.js';
+export { pixelGuesserMode } from './modes/pixelGuesser.js';
 
 // Re-export helpers
 export {
@@ -68,6 +69,7 @@ export {
 import { gameModes } from './registry.js';
 import { pixelBattleMode } from './modes/pixelBattle.js';
 import { copyCatMode } from './modes/copyCat.js';
+import { pixelGuesserMode } from './modes/pixelGuesser.js';
 import { log } from '../utils.js';
 
 /**
@@ -80,6 +82,9 @@ export function initializeGameModes(): void {
 
   // Register CopyCat mode
   gameModes.register(copyCatMode);
+
+  // Register Pixel Guesser mode
+  gameModes.register(pixelGuesserMode);
 
   // Set pixel-battle as the default
   gameModes.setDefault('pixel-battle');

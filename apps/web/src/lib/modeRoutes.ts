@@ -7,6 +7,7 @@
 export const MODE_SLUGS: Record<string, string> = {
   classic: 'pixel-battle',
   copycat: 'copy-cat',
+  guesser: 'pixel-guesser',
 } as const;
 
 /**
@@ -15,6 +16,7 @@ export const MODE_SLUGS: Record<string, string> = {
 export const SLUG_FROM_MODE: Record<string, string> = {
   'pixel-battle': 'classic',
   'copy-cat': 'copycat',
+  'pixel-guesser': 'guesser',
 } as const;
 
 /**

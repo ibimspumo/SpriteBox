@@ -28,6 +28,20 @@ import {
   recordRematchVote,
   getRematchVotes,
 } from './copycat.js';
+import {
+  initializePixelGuesserState,
+  advanceToNextRound,
+  updateDrawing,
+  processGuess,
+  allGuessersCorrect,
+  endRound,
+  getRoundScores,
+  getFinalRankings,
+  getGameState,
+  getCurrentDrawing,
+  cleanupPixelGuesserState,
+  isPixelGuesserMode,
+} from './pixelGuesser.js';
 
 // IO instance (set by index.ts)
 let io: Server | null = null;
@@ -146,6 +160,15 @@ export function startGame(instance: Instance): void {
     return;
   }
 
+  // PixelGuesser mode has different initialization
+  if (instance.gameMode === 'pixel-guesser') {
+    // Initialize PixelGuesser state (artist order, scores, etc.)
+    initializePixelGuesserState(instance);
+    // Start countdown for first round
+    transitionTo(instance, 'countdown');
+    return;
+  }
+
   // Standard mode: Generate prompt indices for client-side localization
   instance.promptIndices = generatePromptIndices();
   // Also generate the English text for server logging
@@ -196,6 +219,13 @@ export function transitionTo(instance: Instance, phase: GamePhase): void {
     case 'copycat-rematch':
       handleCopyCatRematch(instance);
       break;
+    // PixelGuesser mode phases
+    case 'guessing':
+      handleGuessing(instance);
+      break;
+    case 'reveal':
+      handleReveal(instance);
+      break;
   }
 }
 
@@ -231,6 +261,11 @@ function handleCountdown(instance: Instance): void {
     // CopyCat mode goes to memorize phase after countdown
     if (instance.gameMode === 'copy-cat') {
       transitionTo(instance, 'memorize');
+    } else if (instance.gameMode === 'pixel-guesser') {
+      // PixelGuesser: go to guessing phase
+      // Note: Round is already set up by initializePixelGuesserState (round 1)
+      // or advanceToNextRound (rounds 2+), so just transition
+      transitionTo(instance, 'guessing');
     } else {
       transitionTo(instance, 'drawing');
     }
@@ -877,4 +912,294 @@ function emitToInstance(instance: Instance, event: string, data: unknown): void 
   if (io) {
     io.to(instance.id).emit(event, data);
   }
+}
+
+// === PixelGuesser Mode Phases ===
+
+/**
+ * Guessing phase for PixelGuesser mode
+ * Artist draws live while others try to guess the word
+ */
+function handleGuessing(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('guessing') ?? 45_000;
+
+  const state = instance.pixelGuesser;
+  if (!state) {
+    log('Phase', 'No PixelGuesser state, skipping to results');
+    transitionTo(instance, 'results');
+    return;
+  }
+
+  // Set phase timing for anti-cheat
+  setPhaseTimings(instance.id, duration);
+
+  const endsAt = Date.now() + duration;
+  const gameState = getGameState(instance);
+
+  if (!gameState) {
+    log('Phase', 'Failed to get game state');
+    transitionTo(instance, 'results');
+    return;
+  }
+
+  // Send phase change to all
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'guessing',
+    round: gameState.currentRound,
+    totalRounds: gameState.totalRounds,
+    duration,
+    endsAt,
+  });
+
+  // Send round start event with role-specific data
+  for (const [playerId, player] of instance.players) {
+    const isArtist = playerId === gameState.artistId;
+
+    if (io) {
+      io.to(player.socketId).emit('pixelguesser-round-start', {
+        round: gameState.currentRound,
+        totalRounds: gameState.totalRounds,
+        artistId: gameState.artistId,
+        artistUser: gameState.artistUser,
+        isYouArtist: isArtist,
+        // Only send prompt to artist
+        secretPrompt: isArtist ? gameState.secretPrompt : undefined,
+        secretPromptIndices: isArtist ? gameState.secretPromptIndices : undefined,
+        duration,
+        endsAt,
+      });
+    }
+  }
+
+  log(
+    'Phase',
+    `PixelGuesser round ${gameState.currentRound}/${gameState.totalRounds} started, artist: ${gameState.artistId}`
+  );
+
+  instance.phaseTimer = setTimeout(() => {
+    endGuessingPhase(instance);
+  }, duration);
+}
+
+/**
+ * Ends the guessing phase
+ */
+function endGuessingPhase(instance: Instance): void {
+  // End the round and calculate artist bonus
+  endRound(instance);
+
+  log('Phase', `PixelGuesser guessing ended for ${instance.id}`);
+  transitionTo(instance, 'reveal');
+}
+
+/**
+ * Reveal phase for PixelGuesser mode
+ * Shows the correct answer and round scores
+ */
+function handleReveal(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('reveal') ?? 5_000;
+
+  const state = instance.pixelGuesser;
+  if (!state) {
+    log('Phase', 'No PixelGuesser state in reveal, skipping to results');
+    transitionTo(instance, 'results');
+    return;
+  }
+
+  const scores = getRoundScores(instance);
+  const artist = instance.players.get(state.artistId);
+
+  const endsAt = Date.now() + duration;
+
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'reveal',
+    duration,
+    endsAt,
+  });
+
+  emitToInstance(instance, 'pixelguesser-reveal', {
+    secretPrompt: state.secretPrompt,
+    secretPromptIndices: state.secretPromptIndices,
+    artistId: state.artistId,
+    artistUser: artist?.user || { displayName: 'Unknown', discriminator: '0000', fullName: 'Unknown#0000' },
+    artistPixels: state.currentDrawing,
+    scores,
+    duration,
+    endsAt,
+  });
+
+  log('Phase', `PixelGuesser reveal: "${state.secretPrompt}", ${state.correctGuessers.length} correct guesses`);
+
+  instance.phaseTimer = setTimeout(() => {
+    // Check if there are more rounds
+    const hasMoreRounds = advanceToNextRound(instance);
+
+    if (hasMoreRounds) {
+      // Go to countdown for next round
+      transitionTo(instance, 'countdown');
+    } else {
+      // Game over - show final results
+      handlePixelGuesserResults(instance);
+    }
+  }, duration);
+}
+
+/**
+ * Final results for PixelGuesser mode
+ */
+function handlePixelGuesserResults(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('results') ?? 15_000;
+
+  const state = instance.pixelGuesser;
+  const rankings = getFinalRankings(instance);
+
+  instance.phase = 'results';
+
+  const endsAt = Date.now() + duration;
+
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'results',
+    duration,
+    endsAt,
+  });
+
+  emitToInstance(instance, 'pixelguesser-final-results', {
+    rankings,
+    totalRounds: state?.totalRounds || 0,
+    duration,
+    endsAt,
+  });
+
+  log('Phase', `PixelGuesser final results: winner ${rankings[0]?.playerId || 'none'}`);
+
+  // Clean up PixelGuesser state
+  cleanupPixelGuesserState(instance);
+
+  // Return spectators to players for next game
+  for (const [id, spectator] of instance.spectators) {
+    instance.players.set(id, spectator);
+  }
+  instance.spectators.clear();
+
+  instance.phaseTimer = setTimeout(() => {
+    resetForNextRound(instance);
+  }, duration);
+}
+
+/**
+ * Handle drawing update from artist
+ * Called from socket handler
+ */
+export function handlePixelGuesserDrawUpdate(
+  instance: Instance,
+  playerId: string,
+  pixels: string
+): { success: boolean; error?: string } {
+  if (!isPixelGuesserMode(instance)) {
+    return { success: false, error: 'Not a PixelGuesser game' };
+  }
+
+  if (instance.phase !== 'guessing') {
+    return { success: false, error: 'Not in guessing phase' };
+  }
+
+  const updated = updateDrawing(instance, playerId, pixels);
+  if (!updated) {
+    return { success: false, error: 'Failed to update drawing' };
+  }
+
+  // Broadcast the drawing update to all OTHER players (not the artist)
+  const drawing = getCurrentDrawing(instance);
+  if (drawing && io) {
+    for (const [pid, player] of instance.players) {
+      if (pid !== playerId) {
+        io.to(player.socketId).emit('pixelguesser-drawing-update', {
+          pixels: drawing,
+        });
+      }
+    }
+  }
+
+  return { success: true };
+}
+
+/**
+ * Handle guess from a player
+ * Called from socket handler
+ */
+export function handlePixelGuesserGuess(
+  instance: Instance,
+  playerId: string,
+  guessText: string
+): {
+  success: boolean;
+  correct: boolean;
+  close: boolean;
+  points: number;
+  error?: string;
+} {
+  if (!isPixelGuesserMode(instance)) {
+    return { success: false, correct: false, close: false, points: 0, error: 'Not a PixelGuesser game' };
+  }
+
+  if (instance.phase !== 'guessing') {
+    return { success: false, correct: false, close: false, points: 0, error: 'Not in guessing phase' };
+  }
+
+  const result = processGuess(instance, playerId, guessText);
+
+  if (!result.success) {
+    return {
+      success: false,
+      correct: false,
+      close: false,
+      points: 0,
+      error: result.alreadyGuessed ? 'Already guessed correctly' : 'Failed to process guess',
+    };
+  }
+
+  // Send result back to the guesser
+  const player = instance.players.get(playerId);
+  if (player && io) {
+    io.to(player.socketId).emit('pixelguesser-guess-result', {
+      correct: result.correct,
+      guess: guessText,
+      message: result.close ? 'Close!' : undefined,
+    });
+  }
+
+  // If correct, broadcast to all players
+  if (result.correct) {
+    const guesser = instance.players.get(playerId);
+    const state = instance.pixelGuesser;
+    const remainingGuessers = state
+      ? instance.players.size - 1 - state.correctGuessers.length
+      : 0;
+
+    emitToInstance(instance, 'pixelguesser-correct-guess', {
+      playerId,
+      user: guesser?.user || { displayName: 'Unknown', discriminator: '0000', fullName: 'Unknown#0000' },
+      points: result.points,
+      timeMs: result.timeMs,
+      position: result.position,
+      remainingGuessers,
+    });
+
+    // Check if all guessers have guessed correctly
+    if (allGuessersCorrect(instance)) {
+      log('Phase', 'All guessers correct, ending guessing phase early');
+      clearTimeout(instance.phaseTimer);
+      endGuessingPhase(instance);
+    }
+  }
+
+  return {
+    success: true,
+    correct: result.correct,
+    close: result.close,
+    points: result.points,
+  };
 }

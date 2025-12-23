@@ -38,8 +38,8 @@ import { getMemoryInfo } from './serverConfig.js';
 import { generateId, generateDiscriminator, createFullName, log } from './utils.js';
 import { MIN_PLAYERS_TO_START, CANVAS, DOS, TIMERS } from './constants.js';
 import { gameModes } from './gameModes/index.js';
-import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, CopyCatRematchVoteSchema, validate, validateMinPixels } from './validation.js';
-import { getVotingState, isWithinPhaseTime, getPhaseTimings, checkAndTriggerEarlyVotingEnd, checkAndTriggerEarlyFinaleEnd, handleCopyCatSubmission, handleCopyCatRematchVote } from './phases.js';
+import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, CopyCatRematchVoteSchema, PixelGuesserDrawSchema, PixelGuesserGuessSchema, validate, validateMinPixels } from './validation.js';
+import { getVotingState, isWithinPhaseTime, getPhaseTimings, checkAndTriggerEarlyVotingEnd, checkAndTriggerEarlyFinaleEnd, handleCopyCatSubmission, handleCopyCatRematchVote, handlePixelGuesserDrawUpdate, handlePixelGuesserGuess } from './phases.js';
 import { processVote, processFinaleVote } from './voting.js';
 import { checkRateLimit, checkConnectionRateLimit } from './rateLimit.js';
 import { checkMultiAccount, removeSocketFingerprint, isBrowserInInstance, trackBrowserInInstance, untrackBrowserFromInstance } from './fingerprint.js';
@@ -1128,6 +1128,83 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
 
     handleCopyCatRematchVote(instance, player.id, wantsRematch);
     log('CopyCat', `${player.user.fullName} voted for rematch: ${wantsRematch}`);
+  });
+
+  // PixelGuesser: Artist draws (live updates)
+  socket.on('pixelguesser-draw', (data: unknown) => {
+    const instanceId = socket.data.instanceId;
+    if (!instanceId || instanceId === 'pending') {
+      return; // Silently ignore - high frequency event
+    }
+
+    const instance = findInstance(instanceId);
+    if (!instance || instance.gameMode !== 'pixel-guesser' || instance.phase !== 'guessing') {
+      return; // Silently ignore
+    }
+
+    // Rate limit (higher limit for drawing updates)
+    if (!checkRateLimit(socket, 'pixelguesser-draw')) {
+      return; // Silently ignore rate limit
+    }
+
+    // Validate
+    const validation = validate(PixelGuesserDrawSchema, data);
+    if (!validation.success) {
+      return; // Silently ignore invalid data
+    }
+
+    // Process drawing update
+    handlePixelGuesserDrawUpdate(instance, player.id, validation.data.pixels);
+  });
+
+  // PixelGuesser: Player guesses
+  socket.on('pixelguesser-guess', (data: unknown) => {
+    const instanceId = socket.data.instanceId;
+    if (!instanceId || instanceId === 'pending') {
+      socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
+      return;
+    }
+
+    const instance = findInstance(instanceId);
+    if (!instance || instance.gameMode !== 'pixel-guesser') {
+      socket.emit('error', { code: 'WRONG_MODE', message: 'Not in PixelGuesser mode' });
+      return;
+    }
+
+    if (instance.phase !== 'guessing') {
+      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in guessing phase' });
+      return;
+    }
+
+    // Rate limit check
+    if (!checkRateLimit(socket, 'pixelguesser-guess')) {
+      socket.emit('error', { code: 'RATE_LIMITED', message: 'Too many guesses' });
+      return;
+    }
+
+    // Check timing
+    if (!isWithinPhaseTime(instanceId)) {
+      socket.emit('error', { code: 'TIME_EXPIRED', message: 'Guessing time expired' });
+      return;
+    }
+
+    // Validate
+    const validation = validate(PixelGuesserGuessSchema, data);
+    if (!validation.success) {
+      socket.emit('error', { code: 'INVALID_GUESS', message: validation.error });
+      return;
+    }
+
+    // Only active players can guess
+    if (!instance.players.has(player.id)) {
+      socket.emit('error', { code: 'NOT_ACTIVE_PLAYER', message: 'Only active players can guess' });
+      return;
+    }
+
+    const result = handlePixelGuesserGuess(instance, player.id, validation.data.guess);
+    if (!result.success && result.error) {
+      socket.emit('error', { code: 'GUESS_FAILED', message: result.error });
+    }
   });
 
   // Session restoration (for reconnects)

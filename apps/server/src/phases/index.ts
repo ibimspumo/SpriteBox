@@ -12,11 +12,13 @@ import type { PhaseManager } from './types.js';
 import { gameModes } from '../gameModes/index.js';
 import { StandardPhaseManager } from './strategies/StandardPhaseManager.js';
 import { CopyCatPhaseManager } from './strategies/CopyCatPhaseManager.js';
+import { PixelGuesserPhaseManager } from './strategies/PixelGuesserPhaseManager.js';
 
 // Re-export types
 export type { PhaseManager } from './types.js';
 export { StandardPhaseManager } from './strategies/StandardPhaseManager.js';
 export { CopyCatPhaseManager } from './strategies/CopyCatPhaseManager.js';
+export { PixelGuesserPhaseManager } from './strategies/PixelGuesserPhaseManager.js';
 
 // Cache PhaseManagers by gameMode ID (they're stateless, so we can reuse them)
 const phaseManagerCache = new Map<string, PhaseManager>();
@@ -45,6 +47,9 @@ export function getPhaseManagerForMode(gameModeId: string): PhaseManager {
   switch (gameModeId) {
     case 'copy-cat':
       manager = new CopyCatPhaseManager(config);
+      break;
+    case 'pixel-guesser':
+      manager = new PixelGuesserPhaseManager(config);
       break;
     default:
       manager = new StandardPhaseManager(config);

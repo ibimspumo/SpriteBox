@@ -37,6 +37,13 @@ export interface ServerToClientEvents {
   'copycat-rematch-prompt': (data: { duration: number; endsAt: number }) => void;
   'copycat-rematch-vote': (data: { playerId: string; wantsRematch: boolean }) => void;
   'copycat-rematch-result': (data: { rematch: boolean; reason: 'both-yes' | 'declined' | 'timeout' }) => void;
+  // PixelGuesser mode events
+  'pixelguesser-round-start': (data: PixelGuesserRoundStartData) => void;
+  'pixelguesser-drawing-update': (data: { pixels: string }) => void;
+  'pixelguesser-guess-result': (data: { correct: boolean; guess: string; message?: string }) => void;
+  'pixelguesser-correct-guess': (data: PixelGuesserCorrectGuessData) => void;
+  'pixelguesser-reveal': (data: PixelGuesserRevealData) => void;
+  'pixelguesser-final-results': (data: PixelGuesserFinalResultsData) => void;
 }
 
 // Persistent stats per game mode
@@ -67,6 +74,56 @@ export interface CopyCatResultsData {
   endsAt: number;
 }
 
+// PixelGuesser mode types
+export interface PixelGuesserScoreEntry {
+  playerId: string;
+  user: User;
+  score: number;
+  roundScore: number;
+  wasArtist: boolean;
+  guessedCorrectly: boolean;
+  guessTime?: number;
+}
+
+export interface PixelGuesserRoundStartData {
+  round: number;
+  totalRounds: number;
+  artistId: string;
+  artistUser: User;
+  isYouArtist: boolean;
+  secretPrompt?: string;
+  secretPromptIndices?: PromptIndices;
+  duration: number;
+  endsAt: number;
+}
+
+export interface PixelGuesserCorrectGuessData {
+  playerId: string;
+  user: User;
+  points: number;
+  timeMs: number;
+  position: number;
+  remainingGuessers: number;
+}
+
+export interface PixelGuesserRevealData {
+  secretPrompt: string;
+  secretPromptIndices?: PromptIndices;
+  artistId: string;
+  artistUser: User;
+  artistPixels: string;
+  scores: PixelGuesserScoreEntry[];
+  duration: number;
+  endsAt: number;
+}
+
+export interface PixelGuesserFinalResultsData {
+  rankings: PixelGuesserScoreEntry[];
+  totalRounds: number;
+  duration: number;
+  endsAt: number;
+}
+
 export interface ClientToServerEvents {
   ping: (callback: (time: number) => void) => void;
   'join-public': (data?: { gameMode?: string }) => void;
@@ -85,6 +142,9 @@ export interface ClientToServerEvents {
   'copycat-rematch-vote': (data: { wantsRematch: boolean }) => void;
   'view-mode': (data: { gameMode: string }) => void;
   'leave-mode': () => void;
+  // PixelGuesser mode events
+  'pixelguesser-draw': (data: { pixels: string }) => void;
+  'pixelguesser-guess': (data: { guess: string }) => void;
 }
 
 export interface SessionRestoredData {

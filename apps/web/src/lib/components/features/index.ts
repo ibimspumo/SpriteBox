@@ -8,3 +8,6 @@ export { default as Landing } from './Landing.svelte';
 
 // CopyCat mode components
 export { Memorize, CopyCatResult, CopyCatRematch } from './CopyCat';
+
+// PixelGuesser mode components
+export { Guessing, Reveal, FinalResults } from './PixelGuesser';

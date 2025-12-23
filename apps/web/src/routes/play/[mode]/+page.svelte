@@ -5,9 +5,10 @@
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
   import { getModeFromSlug } from '$lib/modeRoutes';
-  import { game, selectedGameMode } from '$lib/stores';
+  import { game, selectedGameMode, lobby } from '$lib/stores';
   import { emitViewMode, emitLeaveMode } from '$lib/socket';
-  import { Lobby, Drawing, Voting, Finale, Results, Memorize, CopyCatResult, CopyCatRematch } from '$lib/components/features';
+  import { leaveLobby } from '$lib/socketBridge';
+  import { Lobby, Drawing, Voting, Finale, Results, Memorize, CopyCatResult, CopyCatRematch, Guessing, Reveal, FinalResults } from '$lib/components/features';
   import { Timer } from '$lib/components/utility';
   import { PromptDisplay } from '$lib/components/molecules';
 
@@ -46,6 +47,15 @@
       goto('/play');
     }
   });
+
+  // If server restored a session with wrong game mode, leave that game
+  // URL is the source of truth - if URL says guesser, we should be in guesser
+  $effect(() => {
+    if (gameModeId && $lobby.instanceId && $lobby.gameMode && $lobby.gameMode !== gameModeId) {
+      console.log(`[Mode] URL mode (${gameModeId}) != lobby mode (${$lobby.gameMode}), leaving wrong game`);
+      leaveLobby();
+    }
+  });
 </script>
 
 {#if gameModeId}
@@ -73,6 +83,12 @@
         <CopyCatResult />
       {:else if $game.phase === 'copycat-rematch'}
         <CopyCatRematch />
+      {:else if $game.phase === 'guessing'}
+        <Guessing />
+      {:else if $game.phase === 'reveal'}
+        <Reveal />
+      {:else if $game.phase === 'pixelguesser-results'}
+        <FinalResults />
       {/if}
     </div>
   </div>

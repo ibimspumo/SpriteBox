@@ -17,6 +17,9 @@ export interface GameModeTimers {
   // CopyCat mode timers
   memorize?: number | null;
   copycatResult?: number | null;
+  // PixelGuesser mode timers
+  guessing?: number | null;
+  reveal?: number | null;
 }
 
 /**

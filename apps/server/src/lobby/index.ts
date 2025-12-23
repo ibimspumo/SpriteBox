@@ -66,6 +66,13 @@ export function getLobbyStrategyFor(
   // CopyCat mode uses its own strategy for both public and private
   if (gameModeId === 'copy-cat') {
     strategy = new CopyCatLobbyStrategy(config);
+  } else if (gameModeId === 'pixel-guesser') {
+    // PixelGuesser uses standard strategies (auto-start with threshold)
+    if (instanceType === 'private') {
+      strategy = new PrivateLobbyStrategy(config);
+    } else {
+      strategy = new StandardLobbyStrategy(config);
+    }
   } else if (instanceType === 'private') {
     strategy = new PrivateLobbyStrategy(config);
   } else {

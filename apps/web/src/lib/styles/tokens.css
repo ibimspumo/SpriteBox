@@ -227,6 +227,11 @@ img[src*="logo"],
   50% { transform: translateY(-4px); }
 }
 
+@keyframes scaleBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
 /* ===== Utility Classes ===== */
 .text-brand { color: var(--color-brand); }
 .text-accent { color: var(--color-accent); }

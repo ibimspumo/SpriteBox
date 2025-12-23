@@ -171,6 +171,8 @@ export const en: Translations = {
 		pixelBattleDesc: 'Draw 8×8 pixel art, vote on others, climb the Elo rankings',
 		copyCat: 'CopyCat',
 		copyCatDesc: 'Memorize and recreate - highest accuracy wins!',
+		pixelGuesser: 'Pixel Guesser',
+		pixelGuesserDesc: 'Draw and guess - Pictionary with pixels!',
 		duel: '1v1 Duel',
 		duelDesc: 'Challenge a friend to a pixel art duel',
 		soloPractice: 'Solo Practice',
@@ -204,6 +206,32 @@ export const en: Translations = {
 		declined: 'Declined',
 	},
 
+	pixelGuesser: {
+		title: 'Pixel Guesser',
+		description: 'One player draws, others guess!',
+		round: 'Round',
+		artist: 'Artist',
+		youAreArtist: "You're the Artist!",
+		drawThisWord: 'Draw:',
+		guessTheWord: 'Guess the word!',
+		enterGuess: 'Enter your guess',
+		guessPlaceholder: 'Type your guess...',
+		correct: 'Correct!',
+		close: 'Close!',
+		wrong: 'Wrong, try again!',
+		alreadyGuessed: 'Already guessed correctly!',
+		waitingForReveal: 'Waiting for reveal...',
+		theWordWas: 'The word was:',
+		score: 'Score',
+		points: 'pts',
+		position: '{{position}}',
+		guessedIn: 'Guessed in {{time}}s',
+		artistBonus: 'Artist bonus',
+		noOneGuessed: 'No one guessed correctly',
+		finalResults: 'Final Results',
+		totalScore: 'Total Score',
+	},
+
 	landing: {
 		heroTitle: 'Pixel Art Games',
 		heroSubtitle: 'Draw. Compete. Have Fun.',
@@ -232,6 +260,10 @@ export const en: Translations = {
 		copycat: {
 			name: 'CopyCat',
 			description: '1v1 memory duel - highest accuracy wins',
+		},
+		pixelguesser: {
+			name: 'Pixel Guesser',
+			description: 'Draw and guess - Pictionary with pixels!',
 		},
 	},
 
