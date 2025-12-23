@@ -1,0 +1,50 @@
+/* SpriteBox Documentation Custom Styles */
+
+:root {
+  /* Match SpriteBox brand colors */
+  --sl-color-accent-low: #1a1a2e;
+  --sl-color-accent: #6366f1;
+  --sl-color-accent-high: #818cf8;
+
+  /* Text colors */
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #f8fafc;
+  --sl-color-gray-2: #e2e8f0;
+  --sl-color-gray-3: #cbd5e1;
+  --sl-color-gray-4: #94a3b8;
+  --sl-color-gray-5: #64748b;
+  --sl-color-gray-6: #475569;
+
+  /* Font - use Pixelify Sans if available */
+  --sl-font: 'Pixelify Sans', system-ui, sans-serif;
+}
+
+/* Dark mode adjustments */
+:root[data-theme='dark'] {
+  --sl-color-bg: #0f0f1a;
+  --sl-color-bg-nav: #16162a;
+  --sl-color-bg-sidebar: #12121f;
+  --sl-color-hairline-light: #2a2a4a;
+  --sl-color-hairline: #3a3a5a;
+}
+
+/* Logo styling */
+.site-title img {
+  image-rendering: pixelated;
+}
+
+/* Code blocks - pixel art style */
+pre {
+  border-radius: 8px !important;
+}
+
+/* Links */
+a {
+  text-decoration-thickness: 2px;
+}
+
+/* Pixel-art inspired callout borders */
+.starlight-aside {
+  border-radius: 8px;
+  border-width: 2px;
+}

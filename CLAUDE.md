@@ -1,4 +1,5 @@
 # CLAUDE.md
+We are in the Year 2025
 
 This file provides context for AI assistants working on this codebase.
 
