@@ -162,4 +162,23 @@ export const en: Translations = {
 	colorPalette: {
 		title: 'COLOR PALETTE',
 	},
+
+	landing: {
+		heroTitle: 'Pixel Art Battles',
+		heroSubtitle: 'Draw. Vote. Win.',
+		tryIt: 'Try it out!',
+		startPlaying: 'Start Playing',
+		featureDrawTitle: 'Draw',
+		featureDrawDesc: '8×8 pixel art in 30 seconds',
+		featureVoteTitle: 'Vote',
+		featureVoteDesc: 'Pick the best art each round',
+		featureWinTitle: 'Win',
+		featureWinDesc: 'Climb the Elo rankings',
+		drawingTime: 'Drawing',
+		votingRounds: 'Voting',
+		quickMatches: 'Matches',
+		seconds: '30s',
+		perRound: '5s/round',
+		underMinutes: '<3 min',
+	},
 };

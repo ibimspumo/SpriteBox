@@ -184,4 +184,24 @@ export interface Translations {
 	colorPalette: {
 		title: string;
 	};
+
+	// Landing page
+	landing: {
+		heroTitle: string;
+		heroSubtitle: string;
+		tryIt: string;
+		startPlaying: string;
+		featureDrawTitle: string;
+		featureDrawDesc: string;
+		featureVoteTitle: string;
+		featureVoteDesc: string;
+		featureWinTitle: string;
+		featureWinDesc: string;
+		drawingTime: string;
+		votingRounds: string;
+		quickMatches: string;
+		seconds: string;
+		perRound: string;
+		underMinutes: string;
+	};
 }

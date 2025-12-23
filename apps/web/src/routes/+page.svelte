@@ -1,12 +1,21 @@
 <!-- apps/web/src/routes/+page.svelte -->
 <script lang="ts">
-  import { game, sessionBlocked, idleWarning } from '$lib/stores';
+  import { game, sessionBlocked, idleWarning, lobby } from '$lib/stores';
   import { getSocket } from '$lib/socket';
   import { t } from '$lib/i18n';
-  import { Lobby, Drawing, Voting, Finale, Results } from '$lib/components/features';
+  import { Lobby, Drawing, Voting, Finale, Results, Landing } from '$lib/components/features';
   import { Timer } from '$lib/components/utility';
   import { PromptDisplay } from '$lib/components/molecules';
   import { Button } from '$lib/components/atoms';
+
+  let showLanding = $state(true);
+
+  // Auto-hide landing if user is already in a game/lobby
+  let shouldShowLanding = $derived(showLanding && !$lobby.instanceId && $game.phase === 'idle');
+
+  function handleEnterGame() {
+    showLanding = false;
+  }
 
   function handleStillHere() {
     // Send ping to reset idle timer
@@ -41,6 +50,8 @@
         <Button variant="secondary" onclick={() => window.location.reload()}>{$t.sessionBlocked.tryAgain}</Button>
       </div>
     </div>
+  {:else if shouldShowLanding}
+    <Landing onEnterGame={handleEnterGame} />
   {:else}
     <div class="game-container">
       {#if $game.phase === 'idle' || $game.phase === 'lobby'}

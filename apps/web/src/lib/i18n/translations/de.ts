@@ -162,4 +162,23 @@ export const de: Translations = {
 	colorPalette: {
 		title: 'FARBPALETTE',
 	},
+
+	landing: {
+		heroTitle: 'Pixel Art Battles',
+		heroSubtitle: 'Zeichnen. Voten. Gewinnen.',
+		tryIt: 'Probier es aus!',
+		startPlaying: 'Jetzt Spielen',
+		featureDrawTitle: 'Zeichnen',
+		featureDrawDesc: '8×8 Pixel Art in 30 Sekunden',
+		featureVoteTitle: 'Voten',
+		featureVoteDesc: 'Wähle die beste Kunst jeder Runde',
+		featureWinTitle: 'Gewinnen',
+		featureWinDesc: 'Steige im Elo-Ranking auf',
+		drawingTime: 'Zeichnen',
+		votingRounds: 'Voting',
+		quickMatches: 'Matches',
+		seconds: '30s',
+		perRound: '5s/Runde',
+		underMinutes: '<3 Min',
+	},
 };
