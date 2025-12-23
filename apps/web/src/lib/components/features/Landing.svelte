@@ -1,17 +1,17 @@
 <!-- Landing Page - SpriteBox Introduction -->
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/atoms';
+  import { Button, OnlineBadge } from '$lib/components/atoms';
   import { DemoCanvas } from '$lib/components/utility';
+  import { globalOnlineCount } from '$lib/stores';
   import { onMount } from 'svelte';
 
-  interface Props {
-    onEnterGame: () => void;
-  }
-
-  let { onEnterGame }: Props = $props();
-
   let mounted = $state(false);
+
+  function handleStartPlaying() {
+    goto('/play');
+  }
 
   onMount(() => {
     // Trigger entrance animations
@@ -53,6 +53,13 @@
 
   <!-- Main Content -->
   <div class="hero">
+    <!-- Player Count Badge -->
+    {#if $globalOnlineCount > 0}
+      <div class="online-badge-wrapper">
+        <OnlineBadge count={$globalOnlineCount} label={$t.modeSelection.players} />
+      </div>
+    {/if}
+
     <!-- Logo -->
     <div class="logo-container">
       <img src="/logo.png" alt="SpriteBox" class="logo" />
@@ -91,7 +98,7 @@
 
     <!-- CTA Button -->
     <div class="cta-container">
-      <Button variant="primary" size="lg" onclick={onEnterGame}>
+      <Button variant="primary" size="lg" onclick={handleStartPlaying}>
         {$t.landing.startPlaying}
       </Button>
     </div>
@@ -335,6 +342,17 @@
     50% {
       box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
     }
+  }
+
+  .online-badge-wrapper {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .mounted .online-badge-wrapper {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   /* Scroll hint */

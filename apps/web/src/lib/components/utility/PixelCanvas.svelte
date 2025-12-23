@@ -8,9 +8,11 @@
     readonly?: boolean;
     pixelData?: string | null;
     size?: number;
+    editable?: boolean;
+    onchange?: (pixels: string) => void;
   }
 
-  let { readonly = false, pixelData = null, size = 256 }: Props = $props();
+  let { readonly = false, pixelData = null, size = 256, editable = false, onchange }: Props = $props();
 
   const GRID_SIZE = 8;
   let cellSize = $derived(size / GRID_SIZE);
@@ -31,12 +33,22 @@
   }
 
   function setPixel(x: number, y: number): void {
-    if (readonly || pixelData) return;
+    // Allow editing if: not readonly AND (no external pixelData OR editable mode with callback)
+    const canEdit = !readonly && (!pixelData || (editable && onchange));
+    if (!canEdit) return;
 
     const index = getPixelIndex(x, y);
     const newPixels = displayPixels.split('');
     newPixels[index] = indexToHexChar($selectedColor);
-    pixels.set(newPixels.join(''));
+    const result = newPixels.join('');
+
+    if (pixelData && editable && onchange) {
+      // External control mode - notify parent via callback
+      onchange(result);
+    } else {
+      // Store mode
+      pixels.set(result);
+    }
   }
 
   function getCoordsFromEvent(e: PointerEvent): { x: number; y: number } | null {
@@ -53,7 +65,8 @@
   }
 
   function handlePointerDown(e: PointerEvent): void {
-    if (readonly || pixelData) return;
+    const canEdit = !readonly && (!pixelData || (editable && onchange));
+    if (!canEdit) return;
     e.preventDefault();
     isDrawing = true;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -65,7 +78,8 @@
   }
 
   function handlePointerMove(e: PointerEvent): void {
-    if (!isDrawing || readonly || pixelData) return;
+    const canEdit = !readonly && (!pixelData || (editable && onchange));
+    if (!isDrawing || !canEdit) return;
 
     const coords = getCoordsFromEvent(e);
     if (coords) {
@@ -85,7 +99,8 @@
   }
 
   function handleKeyDown(e: KeyboardEvent): void {
-    if (readonly || pixelData) return;
+    const canEdit = !readonly && (!pixelData || (editable && onchange));
+    if (!canEdit) return;
 
     switch (e.key) {
       case 'ArrowUp':
@@ -112,8 +127,9 @@
     }
   }
 
-  // Derived value for aria-label
-  let ariaLabel = $derived(readonly || pixelData ? $t.accessibility.pixelCanvasReadonly : $t.accessibility.pixelCanvas);
+  // Derived values for accessibility
+  let canEdit = $derived(!readonly && (!pixelData || (editable && onchange)));
+  let ariaLabel = $derived(canEdit ? $t.accessibility.pixelCanvas : $t.accessibility.pixelCanvasReadonly);
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -132,12 +148,12 @@
   onblur={() => (isFocused = false)}
   role="application"
   aria-label={ariaLabel}
-  tabindex={readonly || pixelData ? -1 : 0}
+  tabindex={canEdit ? 0 : -1}
 >
   {#each Array(GRID_SIZE * GRID_SIZE) as _, i}
     {@const x = i % GRID_SIZE}
     {@const y = Math.floor(i / GRID_SIZE)}
-    {@const isSelected = !readonly && !pixelData && isFocused && x === selectedX && y === selectedY}
+    {@const isSelected = canEdit && isFocused && x === selectedX && y === selectedY}
     <div
       class="pixel"
       class:selected={isSelected}

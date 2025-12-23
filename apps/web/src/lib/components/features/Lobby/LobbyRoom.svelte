@@ -1,6 +1,6 @@
 <!-- LobbyRoom - In-lobby view with players and host controls - Pixel Art Style -->
 <script lang="ts">
-  import { lobby, currentUser } from '$lib/stores';
+  import { lobby, currentUser, currentGameModeInfo } from '$lib/stores';
   import { leaveLobby, hostStartGame, hostChangePassword } from '$lib/socketBridge';
   import { Button, Input } from '../../atoms';
   import { PlayerList } from '../../organisms';
@@ -10,6 +10,14 @@
   let showPasswordSettings = $state(false);
   let newPassword = $state('');
   let showCopiedToast = $state(false);
+
+  // Get minimum players for current game mode (use privateMin for private rooms if available)
+  let minPlayers = $derived(
+    $lobby.type === 'private' && $currentGameModeInfo.players.privateMin
+      ? $currentGameModeInfo.players.privateMin
+      : $currentGameModeInfo.players.min
+  );
+  let playersNeeded = $derived(Math.max(0, minPlayers - $lobby.players.length));
 
   function getRoomShareUrl(): string {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
@@ -120,16 +128,16 @@
         size="lg"
         fullWidth
         onclick={hostStartGame}
-        disabled={$lobby.players.length < 5}
+        disabled={$lobby.players.length < minPlayers}
       >
         {$t.lobbyRoom.startGame}
       </Button>
 
-      {#if $lobby.players.length < 5}
+      {#if playersNeeded > 0}
         <p class="waiting-info">
-          {5 - $lobby.players.length === 1
-            ? $t.lobbyRoom.needMorePlayer.replace('{{count}}', String(5 - $lobby.players.length))
-            : $t.lobbyRoom.needMorePlayers.replace('{{count}}', String(5 - $lobby.players.length))
+          {playersNeeded === 1
+            ? $t.lobbyRoom.needMorePlayer.replace('{{count}}', String(playersNeeded))
+            : $t.lobbyRoom.needMorePlayers.replace('{{count}}', String(playersNeeded))
           }
         </p>
       {/if}
@@ -168,12 +176,12 @@
 
     {:else if $lobby.type === 'public'}
       <!-- Public Lobby Status -->
-      {#if $lobby.players.length < 5}
+      {#if playersNeeded > 0}
         <div class="status-message waiting">
           <span class="status-dot"></span>
-          {5 - $lobby.players.length === 1
-            ? $t.lobbyRoom.waitingForPlayer.replace('{{count}}', String(5 - $lobby.players.length))
-            : $t.lobbyRoom.waitingForPlayers.replace('{{count}}', String(5 - $lobby.players.length))
+          {playersNeeded === 1
+            ? $t.lobbyRoom.waitingForPlayer.replace('{{count}}', String(playersNeeded))
+            : $t.lobbyRoom.waitingForPlayers.replace('{{count}}', String(playersNeeded))
           }
         </div>
       {:else}

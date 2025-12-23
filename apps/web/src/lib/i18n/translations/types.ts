@@ -19,6 +19,9 @@ export interface Translations {
 		you: string;
 		anonymous: string;
 		linkCopied: string;
+		backToHome: string;
+		backToModes: string;
+		differentMode: string;
 	};
 
 	// Connection states
@@ -189,11 +192,40 @@ export interface Translations {
 	gameModes: {
 		pixelBattle: string;
 		pixelBattleDesc: string;
+		copyCat: string;
+		copyCatDesc: string;
 		duel: string;
 		duelDesc: string;
 		soloPractice: string;
 		soloPracticeDesc: string;
 		selectMode: string;
+	};
+
+	// CopyCat mode
+	copyCat: {
+		memorize: string;
+		memorizeDesc: string;
+		drawFromMemory: string;
+		accuracy: string;
+		matchingPixels: string;
+		winner: string;
+		draw: string;
+		youWon: string;
+		youLost: string;
+		waitingForOpponent: string;
+		referenceImage: string;
+		// Rematch
+		playAgain: string;
+		rematchQuestion: string;
+		yesRematch: string;
+		noThanks: string;
+		rematchAccepted: string;
+		startingNewRound: string;
+		backToLobby: string;
+		opponentDeclined: string;
+		rematchTimeout: string;
+		wantsRematch: string;
+		declined: string;
 	};
 
 	// Landing page
@@ -222,5 +254,35 @@ export interface Translations {
 		pixelCanvasReadonly: string;
 		closeModal: string;
 		shareRoom: string;
+	};
+
+	// Mode selection page
+	modeSelection: {
+		title: string;
+		playersActive: string;
+		players: string;
+		classic: {
+			name: string;
+			description: string;
+		};
+		copycat: {
+			name: string;
+			description: string;
+		};
+	};
+
+	// Stats
+	stats: {
+		title: string;
+		gamesPlayed: string;
+		wins: string;
+		top3: string;
+		winRate: string;
+		currentStreak: string;
+		bestStreak: string;
+		bestAccuracy: string;
+		totalStats: string;
+		modeStats: string;
+		noStatsYet: string;
 	};
 }

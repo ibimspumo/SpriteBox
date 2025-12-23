@@ -3,3 +3,5 @@ export { default as PromptDisplay } from './PromptDisplay.svelte';
 export { default as StatItem } from './StatItem.svelte';
 export { default as PasswordInput } from './PasswordInput.svelte';
 export { default as UsernameEditor } from './UsernameEditor.svelte';
+export { default as GameModeSelector } from './GameModeSelector.svelte';
+export { default as ModeCard } from './ModeCard.svelte';

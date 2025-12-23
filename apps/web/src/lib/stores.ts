@@ -8,6 +8,7 @@ import { currentLanguage } from './i18n';
 export const connectionStatus = writable<'disconnected' | 'connecting' | 'connected'>('disconnected');
 export const socketId = writable<string | null>(null);
 export const globalOnlineCount = writable<number>(0);
+export const onlineCountByMode = writable<Record<string, number>>({});
 export const sessionBlocked = writable<boolean>(false); // Too many sessions from same browser
 export const idleWarning = writable<{ show: boolean; timeLeft: number }>({ show: false, timeLeft: 0 });
 
@@ -69,7 +70,7 @@ export const passwordPrompt = writable<PasswordPromptState>({
 });
 
 // === Game State ===
-export type GamePhase = 'idle' | 'lobby' | 'countdown' | 'drawing' | 'voting' | 'finale' | 'results';
+export type GamePhase = 'idle' | 'lobby' | 'countdown' | 'drawing' | 'voting' | 'finale' | 'results' | 'memorize' | 'copycat-result' | 'copycat-rematch';
 
 export interface GameState {
   phase: GamePhase;
@@ -97,6 +98,29 @@ export const localizedPrompt = derived(
     if (!$game.promptIndices) return null;
     return localizePrompt($game.promptIndices);
   }
+);
+
+// === Current Game Mode Info ===
+// Returns the current lobby's game mode info with player requirements
+export const currentGameModeInfo = derived(
+  [lobby, availableGameModes],
+  ([$lobby, $modes]) => {
+    const mode = $modes.find(m => m.id === $lobby.gameMode);
+    // Default fallback for pixel-battle
+    return mode ?? {
+      id: 'pixel-battle',
+      displayName: 'Pixel Battle',
+      i18nKey: 'pixelBattle',
+      players: { min: 5, max: 100 }
+    };
+  }
+);
+
+// === Current Mode Online Count ===
+// Returns the player count for the currently selected game mode
+export const currentModeOnlineCount = derived(
+  [onlineCountByMode, selectedGameMode],
+  ([$byMode, $mode]) => $byMode[$mode] ?? 0
 );
 
 // === Drawing State ===
@@ -205,4 +229,53 @@ export function resetLobbyState(): void {
   });
   passwordPrompt.set({ show: false, roomCode: null, error: null });
   resetGameState();
+  resetCopyCatState();
+}
+
+// === CopyCat Mode State ===
+export interface CopyCatResultEntry {
+  playerId: string;
+  user: User;
+  pixels: string;
+  accuracy: number;
+  matchingPixels: number;
+  submitTime: number;
+}
+
+export interface CopyCatRematchVote {
+  playerId: string;
+  wantsRematch: boolean;
+}
+
+export interface CopyCatState {
+  referenceImage: string | null;
+  results: CopyCatResultEntry[];
+  winner: CopyCatResultEntry | null;
+  isDraw: boolean;
+  // Rematch state
+  rematchVotes: CopyCatRematchVote[];
+  rematchResult: { rematch: boolean; reason: 'both-yes' | 'declined' | 'timeout' } | null;
+  hasVotedRematch: boolean;
+}
+
+export const copyCat = writable<CopyCatState>({
+  referenceImage: null,
+  results: [],
+  winner: null,
+  isDraw: false,
+  rematchVotes: [],
+  rematchResult: null,
+  hasVotedRematch: false,
+});
+
+export function resetCopyCatState(): void {
+  copyCat.set({
+    referenceImage: null,
+    results: [],
+    winner: null,
+    isDraw: false,
+    rematchVotes: [],
+    rematchResult: null,
+    hasVotedRematch: false,
+  });
 }

@@ -112,6 +112,13 @@ export const StatsSchema = z.object({
 });
 
 /**
+ * CopyCat rematch vote validation
+ */
+export const CopyCatRematchVoteSchema = z.object({
+  wantsRematch: z.boolean(),
+});
+
+/**
  * Helper function: Validate with schema
  */
 export function validate<T>(

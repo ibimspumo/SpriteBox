@@ -5,3 +5,4 @@ export { default as Badge } from './Badge.svelte';
 export { default as ProgressBar } from './ProgressBar.svelte';
 export { default as Icon } from './Icon.svelte';
 export { default as LanguageToggle } from './LanguageToggle.svelte';
+export { default as OnlineBadge } from './OnlineBadge.svelte';

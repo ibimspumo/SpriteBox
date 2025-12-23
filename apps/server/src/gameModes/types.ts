@@ -14,6 +14,9 @@ export interface GameModeTimers {
   finale: number | null;
   results: number | null;
   reconnectGrace: number;
+  // CopyCat mode timers
+  memorize?: number | null;
+  copycatResult?: number | null;
 }
 
 /**

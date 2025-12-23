@@ -19,6 +19,7 @@ import {
   connectionStatus,
   socketId,
   globalOnlineCount,
+  onlineCountByMode,
   currentUser,
   lobby,
   game,
@@ -38,9 +39,10 @@ import {
   availableGameModes,
   selectedGameMode,
   defaultGameMode,
+  copyCat,
   type GamePhase,
 } from './stores';
-import { recordGameResult, syncStatsWithServer } from './stats';
+import { recordGameResult, addGameToHistory } from './stats';
 
 const SESSION_STORAGE_KEY = 'spritebox-session';
 const USER_STORAGE_KEY = 'spritebox-user';
@@ -83,24 +85,27 @@ function clearSession(): void {
 }
 
 // User persistence (survives page reloads)
+// Only save displayName - discriminator is always randomly generated
 function saveUser(user: User): void {
   if (!browser) return;
   try {
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify({
       displayName: user.displayName,
-      discriminator: user.discriminator,
+      // Note: discriminator is NOT saved - it's always random per session
     }));
   } catch (e) {
     console.error('Failed to save user:', e);
   }
 }
 
-function loadUser(): { displayName: string; discriminator: string } | null {
+function loadUser(): { displayName: string } | null {
   if (!browser) return null;
   try {
     const stored = localStorage.getItem(USER_STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      // Return only displayName (discriminator might exist in old data, ignore it)
+      return { displayName: parsed.displayName };
     }
   } catch (e) {
     console.error('Failed to load user:', e);
@@ -135,12 +140,12 @@ function setupEventHandlers(socket: AppSocket): void {
       socket.emit('restore-session', { sessionId: savedSession.sessionId });
     } else {
       // No active session, but try to restore saved username
+      // Note: Only displayName is restored - discriminator is always new
       const savedUser = loadUser();
       if (savedUser) {
         console.log('[Socket] Restoring saved username:', savedUser.displayName);
         socket.emit('restore-user', {
           displayName: savedUser.displayName,
-          discriminator: savedUser.discriminator,
         });
       }
     }
@@ -174,8 +179,7 @@ function setupEventHandlers(socket: AppSocket): void {
     // Save user for persistence across reloads
     saveUser(data.user);
 
-    // Sync stats with server on connect
-    syncStatsWithServer(socket);
+    // Note: Stats are stored client-side only in localStorage
 
     // Check for room code in URL and auto-join
     if (browser) {
@@ -195,9 +199,12 @@ function setupEventHandlers(socket: AppSocket): void {
     console.error('[Socket Error]', data);
   });
 
-  // === Online Count (global player count) ===
-  socket.on('online-count', (data: { count: number }) => {
-    globalOnlineCount.set(data.count);
+  // === Online Count (global + per game mode) ===
+  socket.on('online-count', (data: { count: number; total?: number; byMode?: Record<string, number> }) => {
+    globalOnlineCount.set(data.total ?? data.count);
+    if (data.byMode) {
+      onlineCountByMode.set(data.byMode);
+    }
   });
 
   // === Game Modes ===
@@ -410,12 +417,30 @@ function setupEventHandlers(socket: AppSocket): void {
     results.set(resultsData);
     game.update((g) => ({ ...g, phase: 'results' }));
 
-    // Record stats for this player
+    // Record stats and history for this player
     const user = get(currentUser);
-    if (user) {
+    const currentLobby = get(lobby);
+    if (user && currentLobby.gameMode) {
       const myResult = rankings.find((r) => r.user.fullName === user.fullName);
       if (myResult) {
-        recordGameResult(myResult.place);
+        // Update aggregate stats
+        recordGameResult(currentLobby.gameMode, myResult.place);
+
+        // Build prompt text from indices if available
+        let promptText: string | undefined;
+        if (data.prompt) {
+          const parts = [data.prompt.prefix, data.prompt.subject, data.prompt.suffix].filter(Boolean);
+          promptText = parts.join(' ');
+        }
+
+        // Save to game history with drawing
+        addGameToHistory({
+          gameMode: currentLobby.gameMode,
+          placement: myResult.place,
+          totalPlayers: data.totalParticipants,
+          pixels: myResult.pixels,
+          prompt: promptText,
+        });
       }
     }
   });
@@ -425,6 +450,9 @@ function setupEventHandlers(socket: AppSocket): void {
     currentUser.set(data.user);
     saveUser(data.user);
   });
+
+  // Note: Stats are stored client-side in localStorage only
+  // No server sync needed - client is source of truth
 
   socket.on('kicked', (data: { reason: string }) => {
     lastError.set({ code: 'KICKED', message: data.reason });
@@ -531,15 +559,114 @@ function setupEventHandlers(socket: AppSocket): void {
     console.log('[Socket] Password changed:', data.hasPassword);
     lobby.update((l) => ({ ...l, hasPassword: data.hasPassword }));
   });
+
+  // === CopyCat Mode Events ===
+  socket.on('copycat-reference', (data: { referenceImage: string; duration: number; endsAt: number }) => {
+    console.log('[Socket] CopyCat reference image received');
+    copyCat.update((c) => ({ ...c, referenceImage: data.referenceImage }));
+    startTimer(data.duration, data.endsAt);
+    game.update((g) => ({ ...g, phase: 'memorize' }));
+  });
+
+  socket.on('copycat-results', (data: {
+    referenceImage: string | null;
+    results: Array<{
+      playerId: string;
+      user: { displayName: string; discriminator: string; fullName: string };
+      pixels: string;
+      accuracy: number;
+      matchingPixels: number;
+      submitTime: number;
+    }>;
+    winner: {
+      playerId: string;
+      user: { displayName: string; discriminator: string; fullName: string };
+      pixels: string;
+      accuracy: number;
+      matchingPixels: number;
+      submitTime: number;
+    } | null;
+    isDraw: boolean;
+    duration: number;
+    endsAt: number;
+  }) => {
+    console.log('[Socket] CopyCat results received');
+    copyCat.set({
+      referenceImage: data.referenceImage,
+      results: data.results,
+      winner: data.winner,
+      isDraw: data.isDraw,
+      rematchVotes: [],
+      rematchResult: null,
+      hasVotedRematch: false,
+    });
+    startTimer(data.duration, data.endsAt);
+    game.update((g) => ({ ...g, phase: 'copycat-result' }));
+
+    // Record stats and history for CopyCat
+    const user = get(currentUser);
+    if (user) {
+      const myResult = data.results.find((r) => r.user.fullName === user.fullName);
+      if (myResult) {
+        // Determine placement (1 = winner, 2 = loser, or both 1 if draw)
+        const isWinner = data.winner?.user.fullName === user.fullName;
+        const placement = data.isDraw ? 1 : (isWinner ? 1 : 2);
+
+        // Update aggregate stats with accuracy
+        recordGameResult('copy-cat', placement, { accuracy: myResult.accuracy });
+
+        // Save to game history with drawing
+        addGameToHistory({
+          gameMode: 'copy-cat',
+          placement,
+          totalPlayers: data.results.length,
+          pixels: myResult.pixels,
+          prompt: `Accuracy: ${myResult.accuracy.toFixed(1)}%`,
+        });
+      }
+    }
+  });
+
+  // === CopyCat Rematch Events ===
+  socket.on('copycat-rematch-prompt', (data: { duration: number; endsAt: number }) => {
+    console.log('[Socket] CopyCat rematch prompt');
+    copyCat.update((c) => ({
+      ...c,
+      rematchVotes: [],
+      rematchResult: null,
+      hasVotedRematch: false,
+    }));
+    startTimer(data.duration, data.endsAt);
+    game.update((g) => ({ ...g, phase: 'copycat-rematch' }));
+  });
+
+  socket.on('copycat-rematch-vote', (data: { playerId: string; wantsRematch: boolean }) => {
+    console.log('[Socket] CopyCat rematch vote:', data);
+    copyCat.update((c) => ({
+      ...c,
+      rematchVotes: [...c.rematchVotes.filter(v => v.playerId !== data.playerId), data],
+    }));
+  });
+
+  socket.on('copycat-rematch-result', (data: { rematch: boolean; reason: 'both-yes' | 'declined' | 'timeout' }) => {
+    console.log('[Socket] CopyCat rematch result:', data);
+    copyCat.update((c) => ({
+      ...c,
+      rematchResult: data,
+    }));
+    // Phase transition will happen via phase-changed event
+  });
 }
 
 // === Action Functions ===
-export function joinPublicGame(): void {
-  getSocket()?.emit('join-public');
+export function joinPublicGame(gameMode?: string): void {
+  const mode = gameMode ?? get(selectedGameMode);
+  getSocket()?.emit('join-public', { gameMode: mode });
 }
 
-export function createPrivateRoom(password?: string): void {
-  getSocket()?.emit('create-room', password ? { password } : undefined);
+export function createPrivateRoom(password?: string, gameMode?: string): void {
+  const mode = gameMode ?? get(selectedGameMode);
+  getSocket()?.emit('create-room', { password, gameMode: mode });
 }
 
 export function joinPrivateRoom(code: string, password?: string): void {
@@ -574,6 +701,11 @@ export function vote(chosenId: string): void {
 export function finaleVote(playerId: string): void {
   getSocket()?.emit('finale-vote', { playerId });
   finaleVoted.set(true);
+}
+
+export function copyCatRematchVote(wantsRematch: boolean): void {
+  getSocket()?.emit('copycat-rematch-vote', { wantsRematch });
+  copyCat.update((c) => ({ ...c, hasVotedRematch: true }));
 }
 
 /**

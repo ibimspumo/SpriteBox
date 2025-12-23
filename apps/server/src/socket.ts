@@ -16,6 +16,9 @@ import {
   handlePlayerReconnect,
   verifyRoomPassword,
   changeRoomPassword,
+  getPlayerCountsByMode,
+  addModeViewer,
+  removeModeViewer,
 } from './instance.js';
 import {
   isPasswordBlocked,
@@ -35,8 +38,8 @@ import { getMemoryInfo } from './serverConfig.js';
 import { generateId, generateDiscriminator, createFullName, log } from './utils.js';
 import { MIN_PLAYERS_TO_START, CANVAS, DOS, TIMERS } from './constants.js';
 import { gameModes } from './gameModes/index.js';
-import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, validate, validateMinPixels } from './validation.js';
-import { getVotingState, isWithinPhaseTime, getPhaseTimings, checkAndTriggerEarlyVotingEnd, checkAndTriggerEarlyFinaleEnd } from './phases.js';
+import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, CopyCatRematchVoteSchema, validate, validateMinPixels } from './validation.js';
+import { getVotingState, isWithinPhaseTime, getPhaseTimings, checkAndTriggerEarlyVotingEnd, checkAndTriggerEarlyFinaleEnd, handleCopyCatSubmission, handleCopyCatRematchVote } from './phases.js';
 import { processVote, processFinaleVote } from './voting.js';
 import { checkRateLimit, checkConnectionRateLimit } from './rateLimit.js';
 import { checkMultiAccount, removeSocketFingerprint, isBrowserInInstance, trackBrowserInInstance, untrackBrowserFromInstance } from './fingerprint.js';
@@ -147,9 +150,13 @@ export function setupSocketHandlers(io: TypedServer): void {
   // Start periodic session cleanup (every 5 minutes)
   setInterval(cleanupExpiredSessions, 5 * 60 * 1000);
 
-  // Broadcast online count every 5 seconds
+  // Broadcast online count every 5 seconds (total + per game mode)
   setInterval(() => {
-    io.emit('online-count', { count: totalConnections });
+    io.emit('online-count', {
+      count: totalConnections,
+      total: totalConnections,
+      byMode: getPlayerCountsByMode(),
+    });
   }, 5000);
 
   // === Middleware: Check connection limits ===
@@ -281,6 +288,9 @@ export function setupSocketHandlers(io: TypedServer): void {
       }
       totalConnections--;
 
+      // Mode viewer cleanup
+      removeModeViewer(socket.id);
+
       // Fingerprint cleanup
       removeSocketFingerprint(socket);
 
@@ -298,6 +308,9 @@ function initializePlayer(socket: TypedSocket): Player {
     discriminator,
     fullName: createFullName(displayName, discriminator),
   };
+
+  // Note: User data is persisted client-side in localStorage
+  // Server just accepts client data on restore-user event
 
   const player: Player = {
     id: generateId(),
@@ -319,8 +332,23 @@ function initializePlayer(socket: TypedSocket): Player {
 }
 
 function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Player): void {
+  // Track mode page viewing (for online count before joining lobby)
+  socket.on('view-mode', (data) => {
+    if (!data?.gameMode || typeof data.gameMode !== 'string') {
+      return;
+    }
+    // Only track if not already in a game
+    if (!socket.data.instanceId) {
+      addModeViewer(socket.id, data.gameMode);
+    }
+  });
+
+  socket.on('leave-mode', () => {
+    removeModeViewer(socket.id);
+  });
+
   // Join public game
-  socket.on('join-public', () => {
+  socket.on('join-public', (data) => {
     if (socket.data.instanceId) {
       socket.emit('error', { code: 'ALREADY_IN_GAME', message: 'Already in a game' });
       return;
@@ -352,7 +380,9 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
     // Prevent race condition by setting pending state immediately
     socket.data.instanceId = 'pending';
 
-    const instance = findOrCreatePublicInstance();
+    // Get game mode from request (default to pixel-battle)
+    const gameMode = data?.gameMode ?? gameModes.getDefaultId();
+    const instance = findOrCreatePublicInstance(gameMode);
 
     // Check if this browser is already in this instance (prevent duplicate tabs)
     if (isBrowserInInstance(socket.data.browserId, instance.id)) {
@@ -368,6 +398,9 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       socket.emit('error', { code: 'JOIN_FAILED', message: result.error });
       return;
     }
+
+    // Remove from mode viewers (now in lobby, counted separately)
+    removeModeViewer(socket.id);
 
     // Track browser in this instance
     trackBrowserInInstance(socket.data.browserId, instance.id, socket.id);
@@ -437,6 +470,7 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
     try {
       const { code, instance, hasPassword } = await createPrivateRoom(player, {
         password: data?.password,
+        gameMode: data?.gameMode,
       });
       addPlayerToInstance(instance, player);
 
@@ -546,6 +580,9 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       return;
     }
 
+    // Remove from mode viewers (now in lobby, counted separately)
+    removeModeViewer(socket.id);
+
     // Track browser in this instance
     trackBrowserInInstance(socket.data.browserId, instance.id, socket.id);
 
@@ -609,6 +646,7 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
   });
 
   // Restore user from localStorage (persisted username across page reloads)
+  // Only displayName is stored client-side - discriminator is always random per session
   socket.on('restore-user', (data) => {
     if (!data?.displayName || typeof data.displayName !== 'string') {
       return; // Silently ignore invalid data
@@ -620,17 +658,12 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       return; // Silently ignore invalid names
     }
 
-    // Validate discriminator format (4 digits)
-    if (!data.discriminator || !/^\d{4}$/.test(data.discriminator)) {
-      return; // Silently ignore invalid discriminator
-    }
-
-    // Restore the user's name and discriminator
+    // Only restore displayName - discriminator stays random (generated at connect)
+    // This prevents name+discriminator collisions when users reconnect
     player.user.displayName = validation.data.name;
-    player.user.discriminator = data.discriminator;
-    player.user.fullName = createFullName(validation.data.name, data.discriminator);
+    player.user.fullName = createFullName(validation.data.name, player.user.discriminator);
 
-    // Send updated user back to client
+    // Send updated user back to client (with server-generated discriminator)
     socket.emit('connected', {
       socketId: socket.id,
       serverTime: Date.now(),
@@ -638,7 +671,7 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       sessionId: player.sessionId,
     });
 
-    log('User', `${player.id} restored user: ${player.user.fullName}`);
+    log('User', `${player.id} restored displayName from client: ${player.user.fullName}`);
   });
 
   // Lobby verlassen
@@ -870,7 +903,30 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
       return;
     }
 
-    // Save submission
+    // CopyCat mode has special submission handling
+    if (instance.gameMode === 'copy-cat') {
+      const copyCatResult = handleCopyCatSubmission(instance, player.id, validation.data.pixels);
+      if (!copyCatResult.success) {
+        socket.emit('error', { code: 'SUBMIT_FAILED', message: copyCatResult.error });
+        return;
+      }
+
+      socket.emit('submission-received', {
+        success: true,
+        submissionCount: instance.submissions.length,
+      });
+
+      log('CopyCat', `${player.user.fullName} submitted drawing`);
+
+      // Inform everyone how many submitted
+      io.to(instance.id).emit('submission-count', {
+        count: instance.submissions.length,
+        total: instance.players.size,
+      });
+      return;
+    }
+
+    // Standard mode: Save submission
     instance.submissions.push({
       playerId: player.id,
       pixels: validation.data.pixels,
@@ -1029,10 +1085,49 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
     checkAndTriggerEarlyFinaleEnd(instanceId, instance, totalVoters);
   });
 
-  // Stats Sync (validates and stores stats from client)
-  socket.on('sync-stats', () => {
-    // Stats are stored locally on the client, this is just for display to others
-    log('Stats', `${player.user.fullName} synced stats`);
+  // CopyCat Rematch Vote
+  socket.on('copycat-rematch-vote', (data: unknown) => {
+    const instanceId = socket.data.instanceId;
+    if (!instanceId || instanceId === 'pending') {
+      socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
+      return;
+    }
+
+    const instance = findInstance(instanceId);
+    if (!instance || instance.phase !== 'copycat-rematch') {
+      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in rematch phase' });
+      return;
+    }
+
+    // Rate limit check
+    if (!checkRateLimit(socket, 'copycat-rematch-vote')) {
+      socket.emit('error', { code: 'RATE_LIMITED', message: 'Too many requests' });
+      return;
+    }
+
+    // Check timing
+    if (!isWithinPhaseTime(instanceId)) {
+      socket.emit('error', { code: 'TIME_EXPIRED', message: 'Rematch vote time expired' });
+      return;
+    }
+
+    // Validate with Zod schema
+    const validation = validate(CopyCatRematchVoteSchema, data);
+    if (!validation.success) {
+      socket.emit('error', { code: 'INVALID_VOTE', message: validation.error });
+      return;
+    }
+
+    const wantsRematch = validation.data.wantsRematch;
+
+    // Only active players can vote
+    if (!instance.players.has(player.id)) {
+      socket.emit('error', { code: 'NOT_ACTIVE_PLAYER', message: 'Only active players can vote' });
+      return;
+    }
+
+    handleCopyCatRematchVote(instance, player.id, wantsRematch);
+    log('CopyCat', `${player.user.fullName} voted for rematch: ${wantsRematch}`);
   });
 
   // Session restoration (for reconnects)

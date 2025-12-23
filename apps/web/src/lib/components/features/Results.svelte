@@ -1,5 +1,7 @@
 <!-- Results Feature Component -->
 <script lang="ts">
+  import { goto } from '$app/navigation';
+  import { onMount, onDestroy } from 'svelte';
   import { results, currentUser, localizedResultsPrompt } from '$lib/stores';
   import { returnToLobby } from '$lib/socketBridge';
   import { t } from '$lib/i18n';
@@ -10,6 +12,40 @@
 
   const medals = ['🥇', '🥈', '🥉'];
   let medalLabels = $derived([$t.results.firstPlace, $t.results.secondPlace, $t.results.thirdPlace]);
+
+  // Auto-redirect to /play after 30 seconds of inactivity
+  const REDIRECT_DELAY = 30000;
+  let redirectTimer: ReturnType<typeof setTimeout> | null = null;
+  let interacted = $state(false);
+
+  function resetRedirectTimer() {
+    if (redirectTimer) clearTimeout(redirectTimer);
+    if (!interacted) {
+      redirectTimer = setTimeout(() => {
+        goto('/play');
+      }, REDIRECT_DELAY);
+    }
+  }
+
+  function handlePlayAgain() {
+    interacted = true;
+    if (redirectTimer) clearTimeout(redirectTimer);
+    returnToLobby();
+  }
+
+  function handleDifferentMode() {
+    interacted = true;
+    if (redirectTimer) clearTimeout(redirectTimer);
+    goto('/play');
+  }
+
+  onMount(() => {
+    resetRedirectTimer();
+  });
+
+  onDestroy(() => {
+    if (redirectTimer) clearTimeout(redirectTimer);
+  });
 </script>
 
 <div class="results">
@@ -19,12 +55,17 @@
       <PromptDisplay prompt={$localizedResultsPrompt} label={$t.results.prompt} size="md" centered />
     </header>
 
-    <!-- Next Round Notice (moved higher) -->
+    <!-- Next Round Actions -->
     <div class="next-round-section">
       <p class="next-round-text">{$t.results.nextRoundStarting}</p>
-      <Button variant="primary" onclick={returnToLobby}>
-        {$t.results.returnToLobby}
-      </Button>
+      <div class="action-buttons">
+        <Button variant="primary" onclick={handlePlayAgain}>
+          {$t.results.returnToLobby}
+        </Button>
+        <Button variant="secondary" onclick={handleDifferentMode}>
+          {$t.common.differentMode}
+        </Button>
+      </div>
     </div>
 
     <div class="podium">
@@ -402,6 +443,13 @@
     margin: 0;
     text-align: center;
     animation: pulse 2s ease-in-out infinite;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   /* ===== Animations ===== */

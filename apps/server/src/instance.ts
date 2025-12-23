@@ -24,6 +24,12 @@ const disconnectedPlayers = new Map<string, {
 const instances = new Map<string, Instance>();
 const privateRooms = new Map<string, Instance>(); // code -> instance
 
+// Track player counts by game mode
+const playerCountByMode = new Map<string, number>();
+
+// Track mode page viewers (socket ID -> game mode)
+const modeViewers = new Map<string, string>();
+
 // Socket.io instance for broadcasting
 let ioInstance: Server | null = null;
 
@@ -228,6 +234,10 @@ export function addPlayerToInstance(instance: Instance, player: Player): {
   instance.players.set(player.id, player);
   instance.lastActivity = Date.now();
 
+  // Update player count for this game mode
+  const currentCount = playerCountByMode.get(instance.gameMode) ?? 0;
+  playerCountByMode.set(instance.gameMode, currentCount + 1);
+
   log('Instance', `Player ${player.id} joined instance ${instance.id}`);
 
   // Notify strategy of player join
@@ -246,9 +256,18 @@ export function addPlayerToInstance(instance: Instance, player: Player): {
 export function removePlayerFromInstance(instance: Instance, playerId: string): void {
   const lobbyStrategy = getLobbyStrategy(instance);
 
+  // Check if player was active (not spectator) before removing
+  const wasActivePlayer = instance.players.has(playerId);
+
   instance.players.delete(playerId);
   instance.spectators.delete(playerId);
   instance.lastActivity = Date.now();
+
+  // Update player count for this game mode (only for active players)
+  if (wasActivePlayer) {
+    const currentCount = playerCountByMode.get(instance.gameMode) ?? 1;
+    playerCountByMode.set(instance.gameMode, Math.max(0, currentCount - 1));
+  }
 
   log('Instance', `Player ${playerId} left instance ${instance.id}`);
 
@@ -434,6 +453,47 @@ export function getInstanceStats(): {
     private: privateCount,
     totalPlayers,
   };
+}
+
+/**
+ * Returns player counts grouped by game mode (includes lobby players + page viewers)
+ */
+export function getPlayerCountsByMode(): Record<string, number> {
+  const result: Record<string, number> = {};
+
+  // Add players in instances
+  for (const [mode, count] of playerCountByMode) {
+    result[mode] = count;
+  }
+
+  // Add mode page viewers (not yet in a lobby)
+  for (const mode of modeViewers.values()) {
+    result[mode] = (result[mode] ?? 0) + 1;
+  }
+
+  return result;
+}
+
+/**
+ * Tracks a socket viewing a game mode page
+ */
+export function addModeViewer(socketId: string, gameMode: string): void {
+  // Remove from previous mode if any
+  modeViewers.delete(socketId);
+  // Add to new mode
+  modeViewers.set(socketId, gameMode);
+  log('ModeViewer', `Socket ${socketId} viewing ${gameMode}`);
+}
+
+/**
+ * Removes a socket from mode viewers
+ */
+export function removeModeViewer(socketId: string): void {
+  const mode = modeViewers.get(socketId);
+  if (mode) {
+    modeViewers.delete(socketId);
+    log('ModeViewer', `Socket ${socketId} left ${mode}`);
+  }
 }
 
 /**

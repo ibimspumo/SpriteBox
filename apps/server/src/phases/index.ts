@@ -11,10 +11,12 @@ import type { Instance } from '../types.js';
 import type { PhaseManager } from './types.js';
 import { gameModes } from '../gameModes/index.js';
 import { StandardPhaseManager } from './strategies/StandardPhaseManager.js';
+import { CopyCatPhaseManager } from './strategies/CopyCatPhaseManager.js';
 
 // Re-export types
 export type { PhaseManager } from './types.js';
 export { StandardPhaseManager } from './strategies/StandardPhaseManager.js';
+export { CopyCatPhaseManager } from './strategies/CopyCatPhaseManager.js';
 
 // Cache PhaseManagers by gameMode ID (they're stateless, so we can reuse them)
 const phaseManagerCache = new Map<string, PhaseManager>();
@@ -38,9 +40,15 @@ export function getPhaseManagerForMode(gameModeId: string): PhaseManager {
   // Get config and create appropriate manager
   const config = gameModes.get(gameModeId);
 
-  // For now, all modes use StandardPhaseManager
-  // In the future, we can add different managers based on config or mode type
-  const manager = new StandardPhaseManager(config);
+  // Select appropriate PhaseManager based on game mode
+  let manager: PhaseManager;
+  switch (gameModeId) {
+    case 'copy-cat':
+      manager = new CopyCatPhaseManager(config);
+      break;
+    default:
+      manager = new StandardPhaseManager(config);
+  }
 
   // Cache for reuse
   phaseManagerCache.set(gameModeId, manager);

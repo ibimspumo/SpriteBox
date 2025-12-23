@@ -16,6 +16,9 @@ export const en: Translations = {
 		you: 'You',
 		anonymous: 'Anonymous',
 		linkCopied: 'Link copied!',
+		backToHome: 'Back to Home',
+		backToModes: 'Back to Modes',
+		differentMode: 'Different Mode',
 	},
 
 	connection: {
@@ -166,11 +169,39 @@ export const en: Translations = {
 	gameModes: {
 		pixelBattle: 'Pixel Battle',
 		pixelBattleDesc: 'Draw 8×8 pixel art, vote on others, climb the Elo rankings',
+		copyCat: 'CopyCat',
+		copyCatDesc: 'Memorize and recreate - highest accuracy wins!',
 		duel: '1v1 Duel',
 		duelDesc: 'Challenge a friend to a pixel art duel',
 		soloPractice: 'Solo Practice',
 		soloPracticeDesc: 'Practice your pixel art skills without time pressure',
 		selectMode: 'Select Game Mode',
+	},
+
+	copyCat: {
+		memorize: 'Memorize',
+		memorizeDesc: 'Study the image carefully!',
+		drawFromMemory: 'Draw from memory',
+		accuracy: 'Accuracy',
+		matchingPixels: 'Matching pixels',
+		winner: 'Winner',
+		draw: 'Draw',
+		youWon: 'You won!',
+		youLost: 'You lost',
+		waitingForOpponent: 'Waiting for opponent...',
+		referenceImage: 'Original',
+		// Rematch
+		playAgain: 'Play Again?',
+		rematchQuestion: 'Want to play another round?',
+		yesRematch: 'Yes, Rematch!',
+		noThanks: 'No Thanks',
+		rematchAccepted: 'Rematch!',
+		startingNewRound: 'Starting new round...',
+		backToLobby: 'Back to Lobby',
+		opponentDeclined: 'Your opponent declined.',
+		rematchTimeout: 'Time ran out.',
+		wantsRematch: 'Wants rematch',
+		declined: 'Declined',
 	},
 
 	landing: {
@@ -197,5 +228,33 @@ export const en: Translations = {
 		pixelCanvasReadonly: '8x8 pixel art canvas (readonly)',
 		closeModal: 'Close modal',
 		shareRoom: 'Share room link',
+	},
+
+	modeSelection: {
+		title: 'Choose Your Game Mode',
+		playersActive: 'active',
+		players: 'players',
+		classic: {
+			name: 'Classic',
+			description: '5-100 players, Elo voting, climb the rankings',
+		},
+		copycat: {
+			name: 'CopyCat',
+			description: '1v1 memory duel - highest accuracy wins',
+		},
+	},
+
+	stats: {
+		title: 'Your Stats',
+		gamesPlayed: 'Games Played',
+		wins: 'Wins',
+		top3: 'Top 3',
+		winRate: 'Win Rate',
+		currentStreak: 'Current Streak',
+		bestStreak: 'Best Streak',
+		bestAccuracy: 'Best Accuracy',
+		totalStats: 'Total Stats',
+		modeStats: 'Stats by Mode',
+		noStatsYet: 'No stats yet - play a game!',
 	},
 };

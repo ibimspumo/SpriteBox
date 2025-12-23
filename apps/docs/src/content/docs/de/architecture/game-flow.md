@@ -3,7 +3,16 @@ title: Spielablauf
 description: Phasen-System und Spielschleife
 ---
 
-## Phasen-Überblick
+## Spielmodi
+
+SpriteBox unterstützt mehrere Spielmodi mit unterschiedlichem Ablauf:
+
+| Modus | Beschreibung | Spielerzahl |
+|-------|--------------|-------------|
+| `pixel-battle` | Klassisch: Prompts zeichnen, Kunstwerke bewerten | 5-100 |
+| `copy-cat` | Memory: Referenzbild nachzeichnen | 2 (1v1) |
+
+## Phasen-Überblick (Pixel Battle)
 
 ```
 ┌─────────┐    ┌───────────┐    ┌─────────┐    ┌────────┐
@@ -90,6 +99,50 @@ setTimeout(() => {
   transitionToPhase('voting');
   broadcastToInstance('phase-changed', { phase: 'voting' });
 }, PHASE_TIMERS.drawing);
+```
+
+## CopyCat-Modus
+
+CopyCat ist ein 1v1 Memory-basierter Spielmodus mit anderem Phasenablauf.
+
+### Phasenablauf
+
+```
+  LOBBY                    COUNTDOWN (5s)           MEMORIZE (5s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  2 Spieler  │  Auto    │   Bereit    │          │  Referenz-  │
+  │  treten bei │ ───────► │   machen    │ ───────► │  bild wird  │
+  │  (1v1)      │  start   │             │          │  gezeigt    │
+  └─────────────┘          └─────────────┘          └─────────────┘
+                                                           │
+       ┌───────────────────────────────────────────────────┘
+       │
+       ▼
+  DRAWING (30s)            ERGEBNIS (10s)           REVANCHE?
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  Aus dem    │          │  Genauigkeit│   Vote   │  Beide      │
+  │  Gedächtnis │ ───────► │  vergleichen│ ───────► │  stimmen    │
+  │  zeichnen   │          │  Sieger     │          │  ab         │
+  └─────────────┘          └─────────────┘          └─────────────┘
+```
+
+### CopyCat-Phasen
+
+| Phase | Dauer | Beschreibung |
+|-------|-------|--------------|
+| Lobby | Bis 2 Spieler | Sofortstart bei 2. Spieler |
+| Countdown | 5 Sekunden | Spieler bereiten sich vor |
+| Memorize | 5 Sekunden | Referenzbild wird gezeigt |
+| Drawing | 30 Sekunden | Aus dem Gedächtnis nachzeichnen |
+| Ergebnis | 10 Sekunden | Genauigkeitsvergleich |
+| Revanche | 15 Sekunden | Optional: für neue Runde abstimmen |
+
+### Genauigkeitsberechnung
+
+```typescript
+genauigkeit = (übereinstimmendePixel / gesamtPixel) × 100
+// Höhere Genauigkeit gewinnt
+// Bei Gleichstand: schnellere Einreichung gewinnt
 ```
 
 ## Nächste Schritte

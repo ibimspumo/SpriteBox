@@ -32,12 +32,45 @@ export interface ServerToClientEvents {
   'room-created': (data: { code: string; instanceId: string }) => void;
   'online-count': (data: { count: number }) => void;
   'game-modes': (data: GameModesData) => void;
+  'copycat-reference': (data: { referenceImage: string; duration: number; endsAt: number }) => void;
+  'copycat-results': (data: CopyCatResultsData) => void;
+  'copycat-rematch-prompt': (data: { duration: number; endsAt: number }) => void;
+  'copycat-rematch-vote': (data: { playerId: string; wantsRematch: boolean }) => void;
+  'copycat-rematch-result': (data: { rematch: boolean; reason: 'both-yes' | 'declined' | 'timeout' }) => void;
+}
+
+// Persistent stats per game mode
+export interface GameModeStats {
+  gamesPlayed: number;
+  wins: number;
+  top3: number;
+  currentWinStreak: number;
+  bestWinStreak: number;
+  bestAccuracy?: number;  // CopyCat specific
+}
+
+export interface CopyCatPlayerResult {
+  playerId: string;
+  user: User;
+  pixels: string;
+  accuracy: number;
+  matchingPixels: number;
+  submitTime: number;
+}
+
+export interface CopyCatResultsData {
+  referenceImage: string | null;
+  results: CopyCatPlayerResult[];
+  winner: CopyCatPlayerResult | null;
+  isDraw: boolean;
+  duration: number;
+  endsAt: number;
 }
 
 export interface ClientToServerEvents {
   ping: (callback: (time: number) => void) => void;
-  'join-public': () => void;
-  'create-room': (data?: { password?: string }) => void;
+  'join-public': (data?: { gameMode?: string }) => void;
+  'create-room': (data?: { password?: string; gameMode?: string }) => void;
   'join-room': (data: { code: string; password?: string }) => void;
   'leave-lobby': () => void;
   'change-name': (data: { name: string }) => void;
@@ -47,9 +80,11 @@ export interface ClientToServerEvents {
   'submit-drawing': (data: { pixels: string }) => void;
   'vote': (data: { chosenId: string }) => void;
   'finale-vote': (data: { playerId: string }) => void;
-  'sync-stats': (data: { gamesPlayed: number; placements: { 1: number; 2: number; 3: number } }) => void;
   'restore-session': (data: { sessionId: string }) => void;
-  'restore-user': (data: { displayName: string; discriminator: string }) => void;
+  'restore-user': (data: { displayName: string }) => void;
+  'copycat-rematch-vote': (data: { wantsRematch: boolean }) => void;
+  'view-mode': (data: { gameMode: string }) => void;
+  'leave-mode': () => void;
 }
 
 export interface SessionRestoredData {
@@ -299,4 +334,22 @@ export function waitForConnection(): Promise<void> {
       reject(err);
     });
   });
+}
+
+/**
+ * Emits view-mode event to track mode page viewing
+ */
+export function emitViewMode(gameMode: string): void {
+  if (socket?.connected) {
+    socket.emit('view-mode', { gameMode });
+  }
+}
+
+/**
+ * Emits leave-mode event when leaving a mode page
+ */
+export function emitLeaveMode(): void {
+  if (socket?.connected) {
+    socket.emit('leave-mode');
+  }
 }

@@ -3,15 +3,20 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { initSocketBridge } from '$lib/socketBridge';
-  import { connectionStatus, lastError, lobby } from '$lib/stores';
+  import { getSocket } from '$lib/socket';
+  import { connectionStatus, lastError, lobby, idleWarning } from '$lib/stores';
   import { t } from '$lib/i18n';
   import DebugPanel from '$lib/components/debug/DebugPanel.svelte';
+  import PixelEditor from '$lib/components/debug/PixelEditor.svelte';
   import { CookieNotice } from '$lib/components/organisms';
-  import { LanguageToggle } from '$lib/components/atoms';
+  import { LanguageToggle, Button } from '$lib/components/atoms';
+  import { PageTransition } from '$lib/components/utility';
+  import { dev } from '$app/environment';
   import '$lib/styles/tokens.css';
 
   let { children } = $props();
   let showCopiedToast = $state(false);
+  let showPixelEditor = $state(false);
   let errorToast = $state<{ message: string; code: string } | null>(null);
   let errorTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -42,6 +47,14 @@
     if (errorTimeout) clearTimeout(errorTimeout);
   }
 
+  function handleStillHere() {
+    const socket = getSocket();
+    if (socket) {
+      socket.emit('ping', () => {});
+    }
+    idleWarning.set({ show: false, timeLeft: 0 });
+  }
+
   function getErrorMessage(code: string): string {
     const messages: Record<string, string> = {
       'DUPLICATE_SESSION': $t.errors.duplicateSession,
@@ -61,6 +74,18 @@
   onMount(() => {
     if (browser) {
       initSocketBridge();
+
+      // Dev-only keyboard shortcut: Ctrl+Shift+E to toggle Pixel Editor
+      if (dev) {
+        function handleGlobalKeyDown(e: KeyboardEvent) {
+          if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+            e.preventDefault();
+            showPixelEditor = !showPixelEditor;
+          }
+        }
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+      }
     }
   });
 
@@ -107,10 +132,27 @@
     </div>
   {/if}
 
-  {@render children()}
+  <!-- Idle Warning Modal (shows on top of everything) -->
+  {#if $idleWarning.show}
+    <div class="idle-warning-overlay" role="alertdialog" aria-modal="true">
+      <div class="idle-warning-modal">
+        <span class="idle-icon">👋</span>
+        <h2>{$t.idleWarning.title}</h2>
+        <p>{$t.idleWarning.message}</p>
+        <Button variant="action" size="lg" onclick={handleStillHere}>{$t.idleWarning.imHere}</Button>
+      </div>
+    </div>
+  {/if}
+
+  <PageTransition>
+    {@render children()}
+  </PageTransition>
 
   <!-- Debug Panel (only in Development) -->
   <DebugPanel />
+
+  <!-- Pixel Editor (Dev only - Ctrl+Shift+E) -->
+  <PixelEditor show={showPixelEditor} onclose={() => showPixelEditor = false} />
 
   <!-- Cookie/Privacy Notice -->
   <CookieNotice />
@@ -442,5 +484,65 @@
     top: var(--space-4);
     right: var(--space-4);
     z-index: var(--z-sticky);
+  }
+
+  /* Idle Warning Modal */
+  .idle-warning-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    padding: var(--space-4);
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .idle-warning-modal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    text-align: center;
+    padding: var(--space-8);
+    background: var(--color-bg-secondary);
+    border: 3px solid var(--color-accent);
+    border-radius: var(--radius-md);
+    max-width: 360px;
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  .idle-icon {
+    font-size: 3.5rem;
+    animation: wave 1s ease-in-out infinite;
+  }
+
+  @keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(20deg); }
+    75% { transform: rotate(-20deg); }
+  }
+
+  .idle-warning-modal h2 {
+    margin: 0;
+    font-size: var(--font-size-xl);
+    color: var(--color-text-primary);
+  }
+
+  .idle-warning-modal p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
   }
 </style>

@@ -43,6 +43,7 @@ export { GameModeRegistry, gameModes } from './registry.js';
 
 // Re-export modes
 export { pixelBattleMode } from './modes/pixelBattle.js';
+export { copyCatMode } from './modes/copyCat.js';
 
 // Re-export helpers
 export {
@@ -66,6 +67,7 @@ export {
 // Import for initialization
 import { gameModes } from './registry.js';
 import { pixelBattleMode } from './modes/pixelBattle.js';
+import { copyCatMode } from './modes/copyCat.js';
 import { log } from '../utils.js';
 
 /**
@@ -75,6 +77,9 @@ import { log } from '../utils.js';
 export function initializeGameModes(): void {
   // Register the standard pixel-battle mode
   gameModes.register(pixelBattleMode);
+
+  // Register CopyCat mode
+  gameModes.register(copyCatMode);
 
   // Set pixel-battle as the default
   gameModes.setDefault('pixel-battle');

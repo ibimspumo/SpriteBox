@@ -25,7 +25,11 @@ export type GamePhase =
   | 'drawing'
   | 'voting'
   | 'finale'
-  | 'results';
+  | 'results'
+  // CopyCat mode phases
+  | 'memorize'
+  | 'copycat-result'
+  | 'copycat-rematch';
 
 export interface Instance {
   id: string;
@@ -46,6 +50,26 @@ export interface Instance {
   lobbyTimer?: NodeJS.Timeout;
   lobbyTimerEndsAt?: number;  // When the lobby timer ends (for late joiners)
   phaseTimer?: NodeJS.Timeout;
+  // CopyCat mode fields
+  copyCat?: CopyCatState;
+}
+
+// === CopyCat Mode Types ===
+export interface CopyCatState {
+  referenceImage: string;   // 64-char hex string of the image to copy
+  referenceImageId?: string; // Optional ID from gallery
+  playerResults: Map<string, CopyCatPlayerResult>;
+  drawStartTime?: number;   // When drawing phase started (for tie-breaking)
+  rematchVotes: Map<string, boolean>;  // playerId -> wants rematch
+}
+
+export interface CopyCatPlayerResult {
+  playerId: string;
+  pixels: string;           // Player's drawing
+  accuracy: number;         // 0-100 percentage
+  matchingPixels: number;   // Count of matching pixels
+  totalPixels: number;      // Total pixels (64)
+  submitTime: number;       // Timestamp for tie-breaking
 }
 
 // === Submission ===
@@ -93,6 +117,17 @@ export interface PlayerStats {
     2: number;
     3: number;
   };
+}
+
+// === Persistent Stats (per game mode) ===
+export interface GameModeStats {
+  gamesPlayed: number;
+  wins: number;           // 1st place
+  top3: number;           // 1st, 2nd, or 3rd place
+  currentWinStreak: number;
+  bestWinStreak: number;
+  // CopyCat specific
+  bestAccuracy?: number;  // Best accuracy percentage (0-100)
 }
 
 // === Socket Events ===
@@ -175,7 +210,7 @@ export interface ServerToClientEvents {
   'queue-ready': (data: { message: string }) => void;
   'queue-removed': (data: { reason: 'timeout' | 'disconnect' | 'manual' }) => void;
   'server-status': (data: { status: 'ok' | 'warning' | 'critical'; currentPlayers: number; maxPlayers: number }) => void;
-  'online-count': (data: { count: number }) => void;
+  'online-count': (data: { count: number; total?: number; byMode?: Record<string, number> }) => void;
   'game-modes': (data: {
     available: Array<{
       id: string;
@@ -185,12 +220,41 @@ export interface ServerToClientEvents {
     }>;
     default: string;
   }) => void;
+  // CopyCat mode events
+  'copycat-reference': (data: {
+    referenceImage: string;
+    duration: number;
+    endsAt: number;
+  }) => void;
+  'copycat-results': (data: {
+    referenceImage: string | null;
+    results: CopyCatResultEntry[];
+    winner: CopyCatResultEntry | null;
+    isDraw: boolean;
+    duration: number;
+    endsAt: number;
+  }) => void;
+  'copycat-rematch-prompt': (data: {
+    duration: number;
+    endsAt: number;
+  }) => void;
+  'copycat-rematch-vote': (data: {
+    playerId: string;
+    wantsRematch: boolean;
+  }) => void;
+  'copycat-rematch-result': (data: {
+    rematch: boolean;
+    reason: 'both-yes' | 'declined' | 'timeout';
+  }) => void;
+  'lobby-timer-cancelled': (data: Record<string, never>) => void;
+  'player-disconnected': (data: { playerId: string; user: User; timestamp: number }) => void;
+  'player-reconnected': (data: { playerId: string; user: User; timestamp: number }) => void;
 }
 
 export interface ClientToServerEvents {
   ping: (callback: (time: number) => void) => void;
-  'join-public': () => void;
-  'create-room': (data?: { password?: string }) => void;
+  'join-public': (data?: { gameMode?: string }) => void;
+  'create-room': (data?: { password?: string; gameMode?: string }) => void;
   'join-room': (data: { code: string; password?: string }) => void;
   'leave-lobby': () => void;
   'host-start-game': () => void;
@@ -199,11 +263,13 @@ export interface ClientToServerEvents {
   'submit-drawing': (data: { pixels: string }) => void;
   'vote': (data: { chosenId: string }) => void;
   'finale-vote': (data: { playerId: string }) => void;
-  'sync-stats': (data: PlayerStats) => void;
   'change-name': (data: { name: string }) => void;
   'restore-session': (data: { sessionId: string }) => void;
-  'restore-user': (data: { displayName: string; discriminator: string }) => void;
+  'restore-user': (data: { displayName: string }) => void;
   'leave-queue': () => void;
+  'copycat-rematch-vote': (data: { wantsRematch: boolean }) => void;
+  'view-mode': (data: { gameMode: string }) => void;
+  'leave-mode': () => void;
 }
 
 // === Helper types ===
@@ -268,4 +334,31 @@ export type PhaseState =
       timer?: PhaseTimer;
       finalists: FinalistData[];
       finaleVoted: boolean;
+    }
+  // CopyCat mode phases
+  | {
+      phase: 'memorize';
+      timer?: PhaseTimer;
+      referenceImage: string;
+    }
+  | {
+      phase: 'copycat-result';
+      referenceImage: string;
+      playerResults: CopyCatResultEntry[];
+      winner?: CopyCatResultEntry;
+      isDraw: boolean;
+    }
+  | {
+      phase: 'copycat-rematch';
+      timer?: PhaseTimer;
+      votes: { playerId: string; wantsRematch: boolean }[];
     };
+
+export interface CopyCatResultEntry {
+  playerId: string;
+  user: User;
+  pixels: string;
+  accuracy: number;
+  matchingPixels: number;
+  submitTime: number;
+}

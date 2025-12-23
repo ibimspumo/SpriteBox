@@ -16,6 +16,9 @@ export const de: Translations = {
 		you: 'Du',
 		anonymous: 'Anonym',
 		linkCopied: 'Link kopiert!',
+		backToHome: 'Zur Startseite',
+		backToModes: 'Zur Modusauswahl',
+		differentMode: 'Anderer Modus',
 	},
 
 	connection: {
@@ -166,11 +169,39 @@ export const de: Translations = {
 	gameModes: {
 		pixelBattle: 'Pixel Battle',
 		pixelBattleDesc: 'Zeichne 8×8 Pixel Art, vote für andere, steige im Elo-Ranking',
+		copyCat: 'CopyCat',
+		copyCatDesc: 'Merken und nachzeichnen - höchste Genauigkeit gewinnt!',
 		duel: '1v1 Duell',
 		duelDesc: 'Fordere einen Freund zum Pixel Art Duell heraus',
 		soloPractice: 'Solo Übung',
 		soloPracticeDesc: 'Übe deine Pixel Art Fähigkeiten ohne Zeitdruck',
 		selectMode: 'Spielmodus wählen',
+	},
+
+	copyCat: {
+		memorize: 'Merken',
+		memorizeDesc: 'Studiere das Bild genau!',
+		drawFromMemory: 'Aus dem Gedächtnis zeichnen',
+		accuracy: 'Genauigkeit',
+		matchingPixels: 'Übereinstimmende Pixel',
+		winner: 'Gewinner',
+		draw: 'Unentschieden',
+		youWon: 'Du hast gewonnen!',
+		youLost: 'Du hast verloren',
+		waitingForOpponent: 'Warte auf Gegner...',
+		referenceImage: 'Original',
+		// Rematch
+		playAgain: 'Nochmal spielen?',
+		rematchQuestion: 'Willst du eine weitere Runde spielen?',
+		yesRematch: 'Ja, Revanche!',
+		noThanks: 'Nein danke',
+		rematchAccepted: 'Revanche!',
+		startingNewRound: 'Neue Runde startet...',
+		backToLobby: 'Zurück zur Lobby',
+		opponentDeclined: 'Dein Gegner hat abgelehnt.',
+		rematchTimeout: 'Zeit abgelaufen.',
+		wantsRematch: 'Will Revanche',
+		declined: 'Abgelehnt',
 	},
 
 	landing: {
@@ -197,5 +228,33 @@ export const de: Translations = {
 		pixelCanvasReadonly: '8x8 Pixel Art Canvas (schreibgeschützt)',
 		closeModal: 'Modal schließen',
 		shareRoom: 'Raumlink teilen',
+	},
+
+	modeSelection: {
+		title: 'Wähle deinen Spielmodus',
+		playersActive: 'aktiv',
+		players: 'Spieler',
+		classic: {
+			name: 'Klassisch',
+			description: '5-100 Spieler, Elo-Voting, steige im Ranking auf',
+		},
+		copycat: {
+			name: 'CopyCat',
+			description: '1v1 Memory-Duell - höchste Genauigkeit gewinnt',
+		},
+	},
+
+	stats: {
+		title: 'Deine Statistiken',
+		gamesPlayed: 'Gespielte Spiele',
+		wins: 'Siege',
+		top3: 'Top 3',
+		winRate: 'Siegquote',
+		currentStreak: 'Aktuelle Serie',
+		bestStreak: 'Beste Serie',
+		bestAccuracy: 'Beste Genauigkeit',
+		totalStats: 'Gesamtstatistik',
+		modeStats: 'Statistik nach Modus',
+		noStatsYet: 'Noch keine Statistiken - spiel ein Spiel!',
 	},
 };

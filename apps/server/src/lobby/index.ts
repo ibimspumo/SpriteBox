@@ -12,6 +12,7 @@ import type { LobbyStrategy } from './types.js';
 import { gameModes } from '../gameModes/index.js';
 import { StandardLobbyStrategy } from './strategies/StandardLobbyStrategy.js';
 import { PrivateLobbyStrategy } from './strategies/PrivateLobbyStrategy.js';
+import { CopyCatLobbyStrategy } from './strategies/CopyCatLobbyStrategy.js';
 
 // Re-export types
 export type {
@@ -24,6 +25,7 @@ export type {
 // Re-export strategies
 export { StandardLobbyStrategy } from './strategies/StandardLobbyStrategy.js';
 export { PrivateLobbyStrategy } from './strategies/PrivateLobbyStrategy.js';
+export { CopyCatLobbyStrategy } from './strategies/CopyCatLobbyStrategy.js';
 
 // Cache strategies by key (gameMode:instanceType)
 const lobbyStrategyCache = new Map<string, LobbyStrategy>();
@@ -61,7 +63,10 @@ export function getLobbyStrategyFor(
 
   let strategy: LobbyStrategy;
 
-  if (instanceType === 'private') {
+  // CopyCat mode uses its own strategy for both public and private
+  if (gameModeId === 'copy-cat') {
+    strategy = new CopyCatLobbyStrategy(config);
+  } else if (instanceType === 'private') {
     strategy = new PrivateLobbyStrategy(config);
   } else {
     strategy = new StandardLobbyStrategy(config);

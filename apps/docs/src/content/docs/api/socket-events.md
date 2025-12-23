@@ -11,11 +11,13 @@ All real-time communication uses Socket.io. Events follow the pattern: `noun-ver
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `join-public` | `{}` | Join a public game |
-| `create-room` | `{ password?: string }` | Create private room (optional password) |
+| `join-public` | `{ gameMode?: string }` | Join a public game (defaults to pixel-battle) |
+| `create-room` | `{ password?: string; gameMode?: string }` | Create private room (optional password & mode) |
 | `join-room` | `{ code: string; password?: string }` | Join private room by code |
 | `leave-lobby` | `{}` | Leave current game |
 | `leave-queue` | `{}` | Leave waiting queue |
+| `view-mode` | `{ gameMode: string }` | Track viewing mode selection page |
+| `leave-mode` | `{}` | Stop tracking mode page viewing |
 
 ### Host Functions (Private Rooms)
 
@@ -32,15 +34,15 @@ All real-time communication uses Socket.io. Events follow the pattern: `noun-ver
 | `submit-drawing` | `{ pixels: string }` | Submit 64-char hex artwork |
 | `vote` | `{ chosenId: string }` | Vote for image in matchup |
 | `finale-vote` | `{ playerId: string }` | Vote for finalist |
+| `copycat-rematch-vote` | `{ wantsRematch: boolean }` | CopyCat mode: vote for rematch |
 
 ### User Management
 
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `change-name` | `{ name: string }` | Change display name (1-20 chars) |
-| `restore-user` | `{ displayName, discriminator }` | Restore user from localStorage |
+| `restore-user` | `{ displayName: string }` | Restore username from localStorage (discriminator is always new) |
 | `restore-session` | `{ sessionId: string }` | Restore session after reconnect |
-| `sync-stats` | `{ gamesPlayed, placements }` | Sync local stats with server |
 | `ping` | `callback` | Latency check |
 
 ## Server → Client Events
@@ -154,6 +156,31 @@ All real-time communication uses Socket.io. Events follow the pattern: `noun-ver
 }
 ```
 
+### CopyCat Mode Events
+
+CopyCat is a 1v1 memory-based game mode with unique phases.
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `copycat-image` | `{ pixels: string }` | Reference image to memorize |
+| `copycat-result` | See below | Round results with accuracy |
+| `copycat-rematch-update` | `{ votes, declined? }` | Rematch vote status |
+
+**`copycat-result` payload:**
+
+```typescript
+{
+  yourPixels: string;
+  opponentPixels: string;
+  referencePixels: string;
+  yourAccuracy: number;      // 0-100 percentage
+  opponentAccuracy: number;
+  winner: 'you' | 'opponent' | 'draw';
+  player: { user: User; accuracy: number };
+  opponent: { user: User; accuracy: number };
+}
+```
+
 ### Results & Gallery
 
 | Event | Payload | Description |
@@ -188,7 +215,7 @@ All real-time communication uses Socket.io. Events follow the pattern: `noun-ver
 | `queue-ready` | `{ message }` | Spot available |
 | `queue-removed` | `{ reason }` | Removed from queue |
 | `server-status` | `{ status, currentPlayers, maxPlayers }` | Server health |
-| `online-count` | `{ count }` | Global online players |
+| `online-count` | `{ count, total, byMode }` | Online players (total + per mode) |
 
 ### Session Events
 
@@ -209,6 +236,7 @@ All real-time communication uses Socket.io. Events follow the pattern: `noun-ver
 | `create-room` | 3/minute |
 | `join-room` | 5/10 seconds |
 | `change-name` | 5/minute |
+| `copycat-rematch-vote` | 2/10 seconds |
 
 ## Example Usage
 
@@ -223,8 +251,11 @@ socket.on('connected', ({ user, sessionId }) => {
   localStorage.setItem('sessionId', sessionId);
 });
 
-// Join public game
+// Join public game (default mode)
 socket.emit('join-public', {});
+
+// Join specific game mode
+socket.emit('join-public', { gameMode: 'copy-cat' });
 
 // Handle phase changes
 socket.on('phase-changed', ({ phase, promptIndices }) => {

@@ -44,6 +44,9 @@ initServerConfig();
 // Initialize game modes (must be before socket handlers)
 initializeGameModes();
 
+// Note: User data (username, stats) is stored client-side in localStorage
+// Server just accepts client-provided data on restore-user event
+
 // Health Check (muss vor SPA Fallback kommen)
 app.get('/health', (_req, res) => {
   const instanceStats = getInstanceStats();
@@ -112,9 +115,19 @@ startMonitoring();
 server.listen(PORT, () => {
   console.log(`🎨 SpriteBox running on port ${PORT}`);
   console.log(`📡 Mode: ${isProduction ? 'Production' : 'Development'}`);
+  console.log(`💾 User data: client-side localStorage`);
   if (!isProduction) {
     console.log(`🔗 Health check: http://localhost:${PORT}/health`);
   }
 });
+
+// Graceful shutdown
+function gracefulShutdown(signal: string): void {
+  console.log(`\n${signal} received. Shutting down...`);
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export { io };

@@ -3,9 +3,18 @@ title: Game Flow
 description: Phase state machine and game lifecycle
 ---
 
-## Game Phases
+## Game Modes
 
-SpriteBox uses a state machine with 6 phases:
+SpriteBox supports multiple game modes, each with its own phase flow:
+
+| Mode | Description | Player Count |
+|------|-------------|--------------|
+| `pixel-battle` | Classic mode: draw prompts, vote on artwork | 5-100 |
+| `copy-cat` | Memory mode: recreate a reference image | 2 (1v1) |
+
+## Game Phases (Pixel Battle)
+
+The classic Pixel Battle mode uses a state machine with 6 phases:
 
 ```typescript
 type GamePhase = 'lobby' | 'countdown' | 'drawing' | 'voting' | 'finale' | 'results';
@@ -197,3 +206,47 @@ All submissions validated against phase timing.
 - Can only vote for assigned matchup images
 - Cannot vote for own submission
 - One vote per round enforced
+
+## CopyCat Mode
+
+CopyCat is a 1v1 memory-based game mode with a different phase flow.
+
+### Phase Flow
+
+```text
+  LOBBY                    COUNTDOWN (5s)           MEMORIZE (5s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  2 Players  │  Auto    │   Get       │          │  Reference  │
+  │  Join Room  │ ───────► │   Ready     │ ───────► │  Image      │
+  │  (1v1)      │  start   │             │          │  Shown      │
+  └─────────────┘          └─────────────┘          └─────────────┘
+                                                           │
+       ┌───────────────────────────────────────────────────┘
+       │
+       ▼
+  DRAWING (30s)            RESULT (10s)             REMATCH?
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  Draw from  │          │  Compare    │   Vote   │  Both vote  │
+  │  Memory     │ ───────► │  Accuracy   │ ───────► │  for new    │
+  │             │          │  Winner     │          │  round      │
+  └─────────────┘          └─────────────┘          └─────────────┘
+```
+
+### CopyCat Phases
+
+| Phase | Duration | Description |
+|-------|----------|-------------|
+| Lobby | Until 2 players | Instant start when 2nd player joins |
+| Countdown | 5 seconds | Players prepare |
+| Memorize | 5 seconds | Reference image shown |
+| Drawing | 30 seconds | Recreate from memory |
+| Result | 10 seconds | Accuracy comparison |
+| Rematch | 15 seconds | Optional: vote for new round |
+
+### Accuracy Calculation
+
+```typescript
+accuracy = (matchingPixels / totalPixels) × 100
+// Higher accuracy wins
+// Tie: faster submission wins
+```
