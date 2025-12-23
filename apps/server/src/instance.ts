@@ -255,6 +255,9 @@ export function removePlayerFromInstance(instance: Instance, playerId: string): 
   // Notify strategy of player leave
   lobbyStrategy.onPlayerLeave(instance, playerId);
 
+  // Check if lobby timer should be cancelled (players dropped below threshold)
+  checkCancelLobbyTimer(instance);
+
   // Check if instance should be cleaned up
   checkInstanceCleanup(instance);
 }
@@ -306,6 +309,29 @@ export function checkLobbyTimer(instance: Instance): void {
       duration: timerConfig.duration,
       startsAt: endsAt,
     });
+  }
+}
+
+/**
+ * Checks if lobby timer should be cancelled (when players drop below threshold)
+ */
+function checkCancelLobbyTimer(instance: Instance): void {
+  if (instance.phase !== 'lobby') return;
+  if (!instance.lobbyTimer) return;
+
+  const lobbyStrategy = getLobbyStrategy(instance);
+  const threshold = lobbyStrategy.getAutoStartThreshold(instance);
+
+  // Cancel timer if players dropped below threshold
+  if (instance.players.size < threshold) {
+    clearTimeout(instance.lobbyTimer);
+    instance.lobbyTimer = undefined;
+    instance.lobbyTimerEndsAt = undefined;
+
+    log('Instance', `Lobby timer cancelled for instance ${instance.id} (players: ${instance.players.size} < ${threshold})`);
+
+    // Notify all players
+    emitToInstance(instance, 'lobby-timer-cancelled', {});
   }
 }
 

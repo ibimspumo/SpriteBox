@@ -24,6 +24,7 @@
   // Keyboard navigation state
   let selectedX = $state(0);
   let selectedY = $state(0);
+  let isFocused = $state(false);
 
   function getPixelIndex(x: number, y: number): number {
     return y * GRID_SIZE + x;
@@ -127,6 +128,8 @@
   onpointerup={handlePointerUp}
   onpointerleave={handlePointerUp}
   onkeydown={handleKeyDown}
+  onfocus={() => (isFocused = true)}
+  onblur={() => (isFocused = false)}
   role="application"
   aria-label={ariaLabel}
   tabindex={readonly || pixelData ? -1 : 0}
@@ -134,7 +137,7 @@
   {#each Array(GRID_SIZE * GRID_SIZE) as _, i}
     {@const x = i % GRID_SIZE}
     {@const y = Math.floor(i / GRID_SIZE)}
-    {@const isSelected = !readonly && !pixelData && x === selectedX && y === selectedY}
+    {@const isSelected = !readonly && !pixelData && isFocused && x === selectedX && y === selectedY}
     <div
       class="pixel"
       class:selected={isSelected}

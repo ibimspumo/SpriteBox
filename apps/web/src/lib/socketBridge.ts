@@ -32,6 +32,7 @@ import {
   sessionBlocked,
   idleWarning,
   startTimer,
+  stopTimer,
   resetGameState,
   resetLobbyState,
   availableGameModes,
@@ -313,6 +314,10 @@ function setupEventHandlers(socket: AppSocket): void {
 
   socket.on('lobby-timer-started', (data: { duration: number; startsAt: number }) => {
     startTimer(data.duration, data.startsAt);
+  });
+
+  socket.on('lobby-timer-cancelled', () => {
+    stopTimer();
   });
 
   // === Phase Events ===

@@ -69,6 +69,7 @@ All real-time communication uses Socket.io. Events follow the pattern: `noun-ver
 | `left-lobby` | `{}` | Left lobby confirmed |
 | `kicked` | `{ reason: string }` | You were kicked |
 | `lobby-timer-started` | `{ duration, startsAt }` | Countdown to auto-start |
+| `lobby-timer-cancelled` | `{}` | Timer cancelled (not enough players) |
 | `password-required` | `{ code: string }` | Password needed to join |
 | `password-changed` | `{ hasPassword: boolean }` | Password updated |
 

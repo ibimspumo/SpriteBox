@@ -13,6 +13,7 @@ export interface ServerToClientEvents {
   'player-disconnected': (data: { playerId: string; user: User; timestamp: number }) => void;
   'player-reconnected': (data: { playerId: string; user: User; timestamp: number }) => void;
   'lobby-timer-started': (data: { duration: number; startsAt: number }) => void;
+  'lobby-timer-cancelled': () => void;
   'phase-changed': (data: PhaseChangedData) => void;
   'submission-received': (data: { success: boolean; submissionCount: number }) => void;
   'voting-round': (data: VotingRoundData) => void;

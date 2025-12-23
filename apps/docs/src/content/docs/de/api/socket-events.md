@@ -128,6 +128,25 @@ socket.on('game-results', {
 
 ## Timer-Events
 
+#### `lobby-timer-started`
+
+Lobby-Countdown gestartet (genug Spieler vorhanden).
+
+```typescript
+socket.on('lobby-timer-started', {
+  duration: number,   // Gesamtdauer in ms
+  startsAt: number,   // Endzeitpunkt (Unix timestamp)
+});
+```
+
+#### `lobby-timer-cancelled`
+
+Lobby-Countdown abgebrochen (nicht mehr genug Spieler).
+
+```typescript
+socket.on('lobby-timer-cancelled', {});
+```
+
 #### `timer-update`
 Synchronisiert den Countdown.
 

@@ -31,7 +31,7 @@ export { EloVotingStrategy } from './voting/index.js';
 export { NoVotingStrategy } from './voting/index.js';
 
 // Import for internal use
-import { getVotingStrategy } from './voting/index.js';
+import { getVotingStrategy, getVotingStrategyForMode } from './voting/index.js';
 import type { VotingState, VoteResult, RankedPlayer, FairnessReport } from './voting/index.js';
 
 // ============================================================================
@@ -51,7 +51,6 @@ export function initVotingState(submissions: Submission[], instance?: Instance):
   }
 
   // Fallback: use default pixel-battle mode strategy
-  const { getVotingStrategyForMode } = require('./voting/index.js');
   const strategy = getVotingStrategyForMode('pixel-battle');
   return strategy.initialize(submissions);
 }
@@ -67,7 +66,6 @@ export function calculateVotingRounds(playerCount: number, instance?: Instance):
   }
 
   // Fallback: use default pixel-battle mode strategy
-  const { getVotingStrategyForMode } = require('./voting/index.js');
   const strategy = getVotingStrategyForMode('pixel-battle');
   return strategy.calculateRounds(playerCount);
 }
@@ -83,7 +81,6 @@ export function calculateFinalistCount(playerCount: number, instance?: Instance)
   }
 
   // Fallback: use default pixel-battle mode strategy
-  const { getVotingStrategyForMode } = require('./voting/index.js');
   const strategy = getVotingStrategyForMode('pixel-battle');
   return strategy.calculateFinalistCount(playerCount);
 }
@@ -131,7 +128,6 @@ export function processFinaleVote(
   }
 
   // Fallback: use default pixel-battle mode strategy
-  const { getVotingStrategyForMode } = require('./voting/index.js');
   const strategy = getVotingStrategyForMode('pixel-battle');
   return strategy.processFinaleVote(state, voterId, chosenPlayerId);
 }
@@ -151,7 +147,6 @@ export function calculateFinalRanking(
   }
 
   // Fallback: use default pixel-battle mode strategy
-  const { getVotingStrategyForMode } = require('./voting/index.js');
   const strategy = getVotingStrategyForMode('pixel-battle');
   return strategy.calculateRanking(submissions, state);
 }
@@ -167,7 +162,6 @@ export function validateFairness(state: VotingState, instance?: Instance): Fairn
   }
 
   // Fallback: use default pixel-battle mode strategy
-  const { getVotingStrategyForMode } = require('./voting/index.js');
   const strategy = getVotingStrategyForMode('pixel-battle');
   return strategy.validateFairness(state);
 }
@@ -183,7 +177,6 @@ export function isRoundComplete(state: VotingState, instance?: Instance): boolea
   }
 
   // Fallback: use default pixel-battle mode strategy
-  const { getVotingStrategyForMode } = require('./voting/index.js');
   const strategy = getVotingStrategyForMode('pixel-battle');
   return strategy.isRoundComplete(state);
 }
