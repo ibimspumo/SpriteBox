@@ -215,4 +215,12 @@ export interface Translations {
 		perRound: string;
 		underMinutes: string;
 	};
+
+	// Accessibility labels
+	accessibility: {
+		pixelCanvas: string;
+		pixelCanvasReadonly: string;
+		closeModal: string;
+		shareRoom: string;
+	};
 }

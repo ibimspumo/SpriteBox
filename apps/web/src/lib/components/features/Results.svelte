@@ -35,7 +35,7 @@
           <div class="medal-badge">{medals[index]}</div>
           <div class="card-wrapper">
             <div class="pixel-card" class:gold={isWinner} class:own={isOwn}>
-              <div class="place-label">{medalLabels[index]} Place</div>
+              <div class="place-label">{medalLabels[index]}</div>
               <div class="canvas-frame" class:gold={isWinner}>
                 <PixelCanvas
                   pixelData={entry.pixels}

@@ -4,6 +4,7 @@
 import type { Express, Request, Response, NextFunction } from 'express';
 import type { Server } from 'socket.io';
 import express from 'express';
+import { randomInt } from 'crypto';
 import type { Instance, Player, User, VotingAssignment, Submission } from './types.js';
 import {
   findOrCreatePublicInstance,
@@ -234,13 +235,13 @@ class BotController {
     }
 
     // AFK chance
-    if (Math.random() < config.afkChance) {
+    if (randomInt(0, 100) < config.afkChance * 100) {
       log('Debug', `Bot ${bot.user.fullName} is AFK, won't draw`);
       return;
     }
 
     // Disconnect chance
-    if (Math.random() < config.disconnectChance) {
+    if (randomInt(0, 100) < config.disconnectChance * 100) {
       this.simulateDisconnect(bot, instance);
       return;
     }
@@ -272,12 +273,12 @@ class BotController {
     if (state.votersVoted.has(bot.playerId)) return;
 
     // AFK chance
-    if (Math.random() < config.afkChance) {
+    if (randomInt(0, 100) < config.afkChance * 100) {
       return;
     }
 
     // Disconnect chance
-    if (Math.random() < config.disconnectChance) {
+    if (randomInt(0, 100) < config.disconnectChance * 100) {
       this.simulateDisconnect(bot, instance);
       return;
     }
@@ -304,7 +305,7 @@ class BotController {
     if (state.votersVoted.has(bot.playerId)) return;
 
     // AFK chance
-    if (Math.random() < config.afkChance) {
+    if (randomInt(0, 100) < config.afkChance * 100) {
       return;
     }
 
@@ -442,11 +443,11 @@ class BotController {
     for (let i = 0; i < colorCount; i++) {
       let pos: number;
       do {
-        pos = Math.floor(Math.random() * CANVAS.TOTAL_PIXELS);
+        pos = randomInt(0, CANVAS.TOTAL_PIXELS);
       } while (usedPositions.has(pos));
 
       usedPositions.add(pos);
-      const color = colors[Math.floor(Math.random() * colors.length)];
+      const color = colors[randomInt(0, colors.length)];
       pixels = pixels.substring(0, pos) + color + pixels.substring(pos + 1);
     }
 
@@ -459,8 +460,8 @@ class BotController {
   private generateStripes(): string {
     let pixels = '';
     const colors = '023456789ABCDEF';
-    const color1 = colors[Math.floor(Math.random() * colors.length)];
-    const color2 = colors[Math.floor(Math.random() * colors.length)];
+    const color1 = colors[randomInt(0, colors.length)];
+    const color2 = colors[randomInt(0, colors.length)];
 
     for (let y = 0; y < 8; y++) {
       for (let x = 0; x < 8; x++) {
@@ -476,8 +477,8 @@ class BotController {
   private generateCheckerboard(): string {
     let pixels = '';
     const colors = '023456789ABCDEF';
-    const color1 = colors[Math.floor(Math.random() * colors.length)];
-    const color2 = colors[Math.floor(Math.random() * colors.length)];
+    const color1 = colors[randomInt(0, colors.length)];
+    const color2 = colors[randomInt(0, colors.length)];
 
     for (let y = 0; y < 8; y++) {
       for (let x = 0; x < 8; x++) {
@@ -530,7 +531,7 @@ class BotController {
    */
   private submitVote(bot: Bot, instance: Instance, state: VotingState, assignment: VotingAssignment): void {
     // Random choice between imageA and imageB
-    const chosenId = Math.random() > 0.5 ? assignment.imageA : assignment.imageB;
+    const chosenId = randomInt(0, 2) === 0 ? assignment.imageA : assignment.imageB;
 
     const result = processVote(instance, state, bot.playerId, chosenId);
 
@@ -663,7 +664,7 @@ export const botController = new BotController();
 
 // === Helper Functions ===
 function randomBetween(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return randomInt(min, max + 1);
 }
 
 // === Debug Endpoints ===

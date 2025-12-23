@@ -2,6 +2,7 @@
 <script lang="ts">
   import { lobby, passwordPrompt } from '$lib/stores';
   import { joinPrivateRoom } from '$lib/socketBridge';
+  import { t } from '$lib/i18n';
   import { Modal } from '../../organisms';
   import { PasswordInput } from '../../molecules';
   import LobbyMenu from './LobbyMenu.svelte';
@@ -26,17 +27,17 @@
   <!-- Password prompt modal -->
   <Modal
     show={$passwordPrompt.show}
-    title="Password Required"
+    title={$t.passwordModal.title}
     onclose={handleCancelPasswordPrompt}
   >
     <div class="password-modal-content">
       <p class="modal-text">
-        Room <strong>{$passwordPrompt.roomCode}</strong> requires a password.
+        {$t.lobbyRoom.room} <strong>{$passwordPrompt.roomCode}</strong> {$t.passwordModal.roomRequiresPassword}
       </p>
       <PasswordInput
         bind:value={joinPassword}
-        placeholder="Enter password"
-        submitLabel="Join"
+        placeholder={$t.passwordInput.enterPassword}
+        submitLabel={$t.common.join}
         error={$passwordPrompt.error}
         onsubmit={handleJoinWithPassword}
         oncancel={handleCancelPasswordPrompt}

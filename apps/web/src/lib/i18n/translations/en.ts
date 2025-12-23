@@ -191,4 +191,11 @@ export const en: Translations = {
 		perRound: '5s/round',
 		underMinutes: '<3 min',
 	},
+
+	accessibility: {
+		pixelCanvas: '8x8 pixel art canvas - use arrow keys to navigate, space or enter to draw',
+		pixelCanvasReadonly: '8x8 pixel art canvas (readonly)',
+		closeModal: 'Close modal',
+		shareRoom: 'Share room link',
+	},
 };

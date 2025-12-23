@@ -2,6 +2,7 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { randomInt } from 'crypto';
 import { randomItem } from './utils.js';
 import type { Prompt, PromptIndices } from './types.js';
 
@@ -53,7 +54,7 @@ function loadPromptData(): PromptData {
  * Helper to get random index from array length
  */
 function randomIndex(length: number): number {
-  return Math.floor(Math.random() * length);
+  return randomInt(0, length);
 }
 
 /**
@@ -68,8 +69,8 @@ export function generatePromptIndices(): PromptIndices {
   }
 
   // Same random logic as before: sometimes skip prefix/suffix
-  const hasPrefix = Math.random() > 0.3;
-  const hasSuffix = Math.random() > 0.5;
+  const hasPrefix = randomInt(0, 100) > 30;
+  const hasSuffix = randomInt(0, 100) > 50;
 
   return {
     prefixIdx: hasPrefix ? randomIndex(data.prefixes.length) : null,

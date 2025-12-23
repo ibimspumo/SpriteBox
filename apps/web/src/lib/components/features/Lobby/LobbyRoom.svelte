@@ -83,8 +83,8 @@
             </span>
           {/if}
         </div>
-        <button class="share-room-btn" onclick={handleShareRoom} title={$t.lobbyRoom.inviteFriends}>
-          <img src="/icons/link.svg" alt="Share" class="share-room-icon" />
+        <button class="share-room-btn" onclick={handleShareRoom} title={$t.lobbyRoom.inviteFriends} aria-label={$t.accessibility.shareRoom}>
+          <img src="/icons/link.svg" alt="" class="share-room-icon" />
         </button>
       {:else}
         <div class="room-code-display">

@@ -2,6 +2,7 @@
 <script lang="ts">
   import { pixels, selectedColor } from '$lib/stores';
   import { PALETTE, indexToHexChar, hexCharToIndex } from '$lib/palette';
+  import { t } from '$lib/i18n';
 
   interface Props {
     readonly?: boolean;
@@ -19,6 +20,10 @@
 
   let isDrawing = $state(false);
   let canvasElement: HTMLDivElement;
+
+  // Keyboard navigation state
+  let selectedX = $state(0);
+  let selectedY = $state(0);
 
   function getPixelIndex(x: number, y: number): number {
     return y * GRID_SIZE + x;
@@ -77,8 +82,41 @@
     const colorIndex = hexCharToIndex(hexChar);
     return PALETTE[colorIndex]?.hex ?? '#FFFFFF';
   }
+
+  function handleKeyDown(e: KeyboardEvent): void {
+    if (readonly || pixelData) return;
+
+    switch (e.key) {
+      case 'ArrowUp':
+        e.preventDefault();
+        selectedY = Math.max(0, selectedY - 1);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        selectedY = Math.min(GRID_SIZE - 1, selectedY + 1);
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        selectedX = Math.max(0, selectedX - 1);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        selectedX = Math.min(GRID_SIZE - 1, selectedX + 1);
+        break;
+      case ' ':
+      case 'Enter':
+        e.preventDefault();
+        setPixel(selectedX, selectedY);
+        break;
+    }
+  }
+
+  // Derived value for aria-label
+  let ariaLabel = $derived(readonly || pixelData ? $t.accessibility.pixelCanvasReadonly : $t.accessibility.pixelCanvas);
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   class="canvas"
   class:readonly
@@ -88,12 +126,18 @@
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
   onpointerleave={handlePointerUp}
-  role="img"
-  aria-label="Pixel Canvas"
+  onkeydown={handleKeyDown}
+  role="application"
+  aria-label={ariaLabel}
+  tabindex={readonly || pixelData ? -1 : 0}
 >
   {#each Array(GRID_SIZE * GRID_SIZE) as _, i}
+    {@const x = i % GRID_SIZE}
+    {@const y = Math.floor(i / GRID_SIZE)}
+    {@const isSelected = !readonly && !pixelData && x === selectedX && y === selectedY}
     <div
       class="pixel"
+      class:selected={isSelected}
       style="background-color: {getPixelColor(i)}"
     ></div>
   {/each}
@@ -119,6 +163,11 @@
     image-rendering: crisp-edges;
   }
 
+  .canvas:focus {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
   .canvas.readonly {
     cursor: default;
     opacity: 0.8;
@@ -132,10 +181,16 @@
     transition: opacity var(--transition-fast);
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    position: relative;
   }
 
   .pixel:hover {
     opacity: 0.9;
+  }
+
+  .pixel.selected {
+    box-shadow: inset 0 0 0 3px var(--color-accent);
+    z-index: 1;
   }
 
   /* Pixel art rendering */

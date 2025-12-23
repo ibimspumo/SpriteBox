@@ -1,5 +1,6 @@
 // apps/server/src/utils.ts
 import { nanoid } from 'nanoid';
+import { randomInt } from 'crypto';
 
 /**
  * Generiert eine einzigartige ID
@@ -15,7 +16,7 @@ export function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for (let i = 0; i < 4; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[randomInt(0, chars.length)];
   }
   return code;
 }
@@ -24,7 +25,7 @@ export function generateRoomCode(): string {
  * Generiert einen 4-stelligen Discriminator
  */
 export function generateDiscriminator(): string {
-  return Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return randomInt(0, 10000).toString().padStart(4, '0');
 }
 
 /**
@@ -38,7 +39,7 @@ export function createFullName(displayName: string, discriminator: string): stri
  * Wählt ein zufälliges Element aus einem Array
  */
 export function randomItem<T>(array: T[]): T {
-  return array[Math.floor(Math.random() * array.length)];
+  return array[randomInt(0, array.length)];
 }
 
 /**
@@ -47,7 +48,7 @@ export function randomItem<T>(array: T[]): T {
 export function shuffleArray<T>(array: T[]): T[] {
   const result = [...array];
   for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomInt(0, i + 1);
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;

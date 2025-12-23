@@ -1,7 +1,7 @@
 // apps/server/src/socket.ts
 import type { Server, Socket } from 'socket.io';
-import { timingSafeEqual } from 'crypto';
-import type { Player, User, ServerToClientEvents, ClientToServerEvents } from './types.js';
+import { timingSafeEqual, randomInt } from 'crypto';
+import type { Player, User, ServerToClientEvents, ClientToServerEvents, PhaseState } from './types.js';
 import {
   findOrCreatePublicInstance,
   createPrivateRoom,
@@ -290,7 +290,7 @@ export function setupSocketHandlers(io: TypedServer): void {
 }
 
 function initializePlayer(socket: TypedSocket): Player {
-  const displayName = GUEST_NAMES[Math.floor(Math.random() * GUEST_NAMES.length)];
+  const displayName = GUEST_NAMES[randomInt(0, GUEST_NAMES.length)];
   const discriminator = generateDiscriminator();
 
   const user: User = {
@@ -512,15 +512,21 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       }
 
       // Verify password
-      const isValid = await verifyRoomPassword(roomCode, data.password);
-      if (!isValid) {
-        recordFailedPasswordAttempt(ip, roomCode);
-        socket.emit('error', { code: 'WRONG_PASSWORD', message: 'Incorrect password' });
+      try {
+        const isValid = await verifyRoomPassword(roomCode, data.password);
+        if (!isValid) {
+          recordFailedPasswordAttempt(ip, roomCode);
+          socket.emit('error', { code: 'WRONG_PASSWORD', message: 'Incorrect password' });
+          return;
+        }
+
+        // Successful login - reset attempts
+        clearPasswordAttempts(ip, roomCode);
+      } catch (error) {
+        log('Error', `Password verification failed for room ${roomCode}: ${error}`);
+        socket.emit('error', { code: 'PASSWORD_VERIFICATION_FAILED', message: 'Password verification failed' });
         return;
       }
-
-      // Successful login - reset attempts
-      clearPasswordAttempts(ip, roomCode);
     }
 
     // Check if this browser is already in this instance (prevent duplicate tabs)
@@ -780,16 +786,22 @@ function registerHostHandlers(socket: TypedSocket, io: TypedServer, player: Play
       }
     }
 
-    const result = await changeRoomPassword(instance, data?.password ?? null);
-    if (!result.success) {
-      socket.emit('error', { code: 'PASSWORD_CHANGE_FAILED', message: result.error });
+    try {
+      const result = await changeRoomPassword(instance, data?.password ?? null);
+      if (!result.success) {
+        socket.emit('error', { code: 'PASSWORD_CHANGE_FAILED', message: result.error });
+        return;
+      }
+
+      // Notify all players in the room
+      io.to(instance.id).emit('password-changed', { hasPassword: !!data?.password });
+
+      log('Host', `${player.user.fullName} ${data?.password ? 'set' : 'removed'} password for room ${instance.code}`);
+    } catch (error) {
+      log('Error', `Password change failed for room ${instance.code}: ${error}`);
+      socket.emit('error', { code: 'PASSWORD_CHANGE_FAILED', message: 'Password change failed' });
       return;
     }
-
-    // Notify all players in the room
-    io.to(instance.id).emit('password-changed', { hasPassword: !!data?.password });
-
-    log('Host', `${player.user.fullName} ${data?.password ? 'set' : 'removed'} password for room ${instance.code}`);
   });
 }
 
@@ -1063,56 +1075,59 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
     }
 
     // Build phase-specific state
-    let phaseState: any = undefined;
+    let phaseState: PhaseState | undefined = undefined;
 
-    if (instance.phase !== 'lobby') {
-      const timings = getPhaseTimings(instance.id);
-      phaseState = {};
+    const timings = getPhaseTimings(instance.id);
+    const timer = timings && timings.phaseEndsAt > Date.now()
+      ? { duration: timings.phaseEndsAt - timings.phaseStartedAt, endsAt: timings.phaseEndsAt }
+      : undefined;
 
-      // Timer info
-      if (timings && timings.phaseEndsAt > Date.now()) {
-        phaseState.timer = {
-          duration: timings.phaseEndsAt - timings.phaseStartedAt,
-          endsAt: timings.phaseEndsAt,
-        };
-      }
-
-      // Drawing phase
-      if (instance.phase === 'drawing') {
-        phaseState.hasSubmitted = instance.submissions.some(s => s.playerId === player.id);
-        phaseState.submissionCount = instance.submissions.length;
-      }
-
-      // Voting phase
-      if (instance.phase === 'voting') {
-        const votingState = getVotingState(instance.id);
-        if (votingState) {
-          phaseState.currentRound = votingState.currentRound;
-          phaseState.totalRounds = votingState.totalRounds;
-          phaseState.hasVoted = votingState.votersVoted.has(player.id);
-
-          // Find this player's voting assignment
-          const assignment = votingState.assignments.find(a => a.voterId === player.id);
-          if (assignment) {
-            const imageA = instance.submissions.find(s => s.playerId === assignment.imageA);
-            const imageB = instance.submissions.find(s => s.playerId === assignment.imageB);
-            if (imageA && imageB) {
-              phaseState.votingAssignment = {
-                imageA: { playerId: imageA.playerId, pixels: imageA.pixels },
-                imageB: { playerId: imageB.playerId, pixels: imageB.pixels },
-              };
-            }
+    if (instance.phase === 'lobby') {
+      phaseState = { phase: 'lobby' };
+    } else if (instance.phase === 'countdown') {
+      phaseState = { phase: 'countdown' };
+    } else if (instance.phase === 'results') {
+      phaseState = { phase: 'results' };
+    } else if (instance.phase === 'drawing') {
+      phaseState = {
+        phase: 'drawing',
+        timer,
+        hasSubmitted: instance.submissions.some(s => s.playerId === player.id),
+        submissionCount: instance.submissions.length,
+      };
+    } else if (instance.phase === 'voting') {
+      const votingState = getVotingState(instance.id);
+      if (votingState) {
+        const assignment = votingState.assignments.find(a => a.voterId === player.id);
+        let votingAssignment;
+        if (assignment) {
+          const imageA = instance.submissions.find(s => s.playerId === assignment.imageA);
+          const imageB = instance.submissions.find(s => s.playerId === assignment.imageB);
+          if (imageA && imageB) {
+            votingAssignment = {
+              imageA: { playerId: imageA.playerId, pixels: imageA.pixels },
+              imageB: { playerId: imageB.playerId, pixels: imageB.pixels },
+            };
           }
         }
+        phaseState = {
+          phase: 'voting',
+          timer,
+          currentRound: votingState.currentRound,
+          totalRounds: votingState.totalRounds,
+          hasVoted: votingState.votersVoted.has(player.id),
+          votingAssignment,
+        };
       }
-
-      // Finale phase
-      if (instance.phase === 'finale') {
-        const votingState = getVotingState(instance.id);
-        if (votingState) {
-          phaseState.finalists = votingState.finalists;
-          phaseState.finaleVoted = votingState.votersVoted.has(player.id);
-        }
+    } else if (instance.phase === 'finale') {
+      const votingState = getVotingState(instance.id);
+      if (votingState) {
+        phaseState = {
+          phase: 'finale',
+          timer,
+          finalists: votingState.finalists,
+          finaleVoted: votingState.votersVoted.has(player.id),
+        };
       }
     }
 

@@ -163,7 +163,7 @@ export interface ServerToClientEvents {
     promptIndices?: PromptIndices;
     players: User[];
     isSpectator: boolean;
-    phaseState?: any;
+    phaseState?: PhaseState;
     gameMode: string;
   }) => void;
   'session-restore-failed': (data: { reason: string }) => void;
@@ -227,3 +227,45 @@ export interface RankingEntry {
   finalVotes: number;
   elo: number;
 }
+
+// === Phase State Types ===
+export interface VotingAssignmentData {
+  imageA: { playerId: string; pixels: string };
+  imageB: { playerId: string; pixels: string };
+}
+
+export interface FinalistData {
+  playerId: string;
+  pixels: string;
+  elo: number;
+}
+
+export interface PhaseTimer {
+  duration: number;
+  endsAt: number;
+}
+
+export type PhaseState =
+  | { phase: 'lobby' }
+  | { phase: 'countdown' }
+  | { phase: 'results' }
+  | {
+      phase: 'drawing';
+      timer?: PhaseTimer;
+      hasSubmitted: boolean;
+      submissionCount: number;
+    }
+  | {
+      phase: 'voting';
+      timer?: PhaseTimer;
+      currentRound: number;
+      totalRounds: number;
+      hasVoted: boolean;
+      votingAssignment?: VotingAssignmentData;
+    }
+  | {
+      phase: 'finale';
+      timer?: PhaseTimer;
+      finalists: FinalistData[];
+      finaleVoted: boolean;
+    };

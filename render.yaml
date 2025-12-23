@@ -4,7 +4,7 @@ services:
     name: spritebox
     runtime: node
     region: frankfurt  # EU Server
-    plan: free  # Oder starter/standard für Production
+    plan: starter  # Oder starter/standard für Production
     buildCommand: pnpm install && pnpm build
     startCommand: pnpm start
     envVars:

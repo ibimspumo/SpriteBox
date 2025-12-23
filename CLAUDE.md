@@ -285,6 +285,240 @@ Drawing prompts are localized per-user. The server sends **prompt indices**, and
 
 Both prompt files MUST have identical array lengths and structure.
 
+## Coding Standards and Best Practices
+
+### Security Best Practices
+
+**DO:**
+
+- Use `crypto.randomInt()` for security-sensitive operations (room codes, shuffling, tokens)
+- Wrap async operations in try-catch blocks with proper error handling
+- Use timing-safe string comparisons for password verification
+- Sanitize and validate all user input on the server side
+
+**DON'T:**
+
+- **NEVER** use `Math.random()` for security-sensitive operations (room codes, session IDs)
+- Don't trust client input - always validate with Zod schemas
+- Don't expose error stack traces to clients in production
+
+```typescript
+// DO: Secure random generation
+import crypto from 'node:crypto';
+const roomCode = Array.from({ length: 4 }, () =>
+  'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[crypto.randomInt(0, 32)]
+).join('');
+
+// DON'T: Insecure random
+const roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+
+// DO: Safe async with error handling
+try {
+  const isValid = await verifyPassword(password, hash);
+} catch (error) {
+  console.error('Password verification failed:', error);
+  return false;
+}
+```
+
+### TypeScript Standards
+
+**DO:**
+
+- Add explicit return types to all exported functions
+- Use discriminated unions for type-safe state management
+- Prefer `unknown` over `any` when type is truly unknown
+- Keep shared types synchronized between client and server
+
+**DON'T:**
+
+- **NEVER** use `any` type - it defeats the purpose of TypeScript
+- Don't use type assertions (`as`) unless absolutely necessary
+- Don't ignore TypeScript errors with `@ts-ignore`
+
+```typescript
+// DO: Explicit return types and discriminated unions
+export function calculateElo(winner: number, loser: number): { winner: number; loser: number } {
+  // ...
+}
+
+type GamePhase =
+  | { type: 'lobby'; playerCount: number }
+  | { type: 'drawing'; timeRemaining: number }
+  | { type: 'voting'; round: number };
+
+// DON'T: Implicit any and loose types
+function processData(data: any) {  // ❌ Never use 'any'
+  return data.whatever;
+}
+```
+
+### Accessibility (a11y) Requirements
+
+**DO:**
+
+- Add keyboard support to all interactive elements (Enter, Space, Escape, Arrow keys)
+- Implement focus trapping in modals and dialogs
+- Add translated aria-labels using the i18n system
+- Provide keyboard navigation for canvas-based UI
+- Use semantic HTML elements
+
+**DON'T:**
+
+- Don't create click-only interfaces without keyboard alternatives
+- Don't hardcode aria-labels - use `$t.a11y.keyName` translations
+- Don't forget focus indicators (`:focus-visible` styles)
+
+```svelte
+<!-- DO: Full keyboard support with translated labels -->
+<button
+  onclick={handleClick}
+  onkeydown={(e) => e.key === 'Enter' && handleClick()}
+  aria-label={$t.a11y.closeModal}
+>
+  {$t.common.close}
+</button>
+
+<!-- DO: Focus trapping in modals -->
+<div role="dialog" aria-modal="true" use:trapFocus>
+  <!-- Modal content -->
+</div>
+
+<!-- DON'T: Missing keyboard support and hardcoded label -->
+<div onclick={handleClick} aria-label="Close">  ❌
+  Close
+</div>
+```
+
+### CSS and Styling Rules
+
+**DO:**
+
+- Use design tokens exclusively: `var(--space-4)`, `var(--color-accent)`
+- Define animation keyframes in `tokens.css` only
+- Use logical properties (`margin-inline`, `padding-block`) for i18n
+- Follow mobile-first responsive design
+
+**DON'T:**
+
+- **NEVER** use hardcoded pixel values for spacing or colors
+- Don't define keyframes in component `<style>` blocks
+- Don't use `!important` unless absolutely necessary
+- Don't duplicate design token values
+
+```css
+/* DO: Design tokens */
+.card {
+  padding: var(--space-4);
+  margin-block-end: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+}
+
+/* DON'T: Hardcoded values */
+.card {
+  padding: 16px;  /* ❌ Use var(--space-4) */
+  margin-bottom: 12px;  /* ❌ Use var(--space-3) */
+  border-radius: 8px;  /* ❌ Use var(--radius-md) */
+  background: #1a1a1a;  /* ❌ Use var(--color-bg-secondary) */
+}
+```
+
+### Svelte 5 Runes
+
+**DO:**
+
+- Use `$state` for local component state
+- Use `$derived` for computed values
+- Use `$effect` for side effects (cleanup, subscriptions)
+- Use `$props` for component props with TypeScript interface
+
+**DON'T:**
+
+- Don't mix Svelte 4 stores with Svelte 5 runes in components
+- Don't use `$effect` for derived values (use `$derived` instead)
+- Don't mutate `$props` directly
+
+```svelte
+<script lang="ts">
+  interface Props {
+    initialCount?: number;
+  }
+
+  let { initialCount = 0 }: Props = $props();
+
+  // DO: State and derived
+  let count = $state(initialCount);
+  let doubled = $derived(count * 2);
+
+  // DO: Effects for side effects
+  $effect(() => {
+    const timer = setInterval(() => count++, 1000);
+    return () => clearInterval(timer);
+  });
+
+  // DON'T: Use effect for derived values
+  let doubled = $state(0);
+  $effect(() => {
+    doubled = count * 2;  // ❌ Use $derived instead
+  });
+</script>
+```
+
+### Error Handling
+
+**DO:**
+
+- Wrap all async operations in try-catch blocks
+- Log errors with context (function name, relevant IDs)
+- Return meaningful error messages to clients (using i18n)
+- Use Zod's `.safeParse()` for validation with error handling
+
+**DON'T:**
+
+- Don't let errors crash the server
+- Don't expose internal error details to clients
+- Don't silently swallow errors
+
+```typescript
+// DO: Proper error handling
+socket.on('join-room', async (data) => {
+  try {
+    const parsed = JoinRoomSchema.safeParse(data);
+    if (!parsed.success) {
+      socket.emit('error', { message: 'Invalid room code' });
+      return;
+    }
+
+    const room = await findRoom(parsed.data.code);
+    // ...
+  } catch (error) {
+    console.error('Error joining room:', error);
+    socket.emit('error', { message: 'Failed to join room' });
+  }
+});
+
+// DON'T: Unhandled errors
+socket.on('join-room', async (data) => {  // ❌ Will crash on error
+  const room = await findRoom(data.code);
+});
+```
+
+### Code Quality Checklist
+
+Before submitting code, verify:
+
+- [ ] All user-facing text uses `$t.section.key` (no hardcoded strings)
+- [ ] All interactive elements have keyboard support
+- [ ] Async operations have try-catch error handling
+- [ ] No `any` types or `@ts-ignore` comments
+- [ ] Design tokens used for all spacing/colors
+- [ ] Aria-labels are translated
+- [ ] Security-sensitive randomness uses `crypto.randomInt()`
+- [ ] TypeScript types match between client and server
+- [ ] Component follows Atomic Design hierarchy
+- [ ] No ESLint or TypeScript errors
+
 ## What NOT to Do
 
 - Don't add external database dependencies
@@ -293,6 +527,10 @@ Both prompt files MUST have identical array lengths and structure.
 - Don't add heavy client-side processing (server is authoritative)
 - Don't store persistent user data (intentionally ephemeral)
 - **Don't hardcode UI text** - All user-facing strings MUST use the i18n system (`$t.section.key`)
+- **Don't use `Math.random()` for security** - Use `crypto.randomInt()` for room codes, shuffling
+- **Don't use `any` type** - Use proper TypeScript types or `unknown`
+- **Don't skip error handling** - Wrap async operations in try-catch
+- **Don't hardcode CSS values** - Use design tokens exclusively
 
 ## Reference Files
 
