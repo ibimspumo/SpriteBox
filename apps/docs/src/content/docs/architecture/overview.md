@@ -128,6 +128,6 @@ function validateMinPixels(pixels: string): { valid: boolean; setPixels: number 
 
 ## Next Steps
 
-- [Game Flow](/docs/en/architecture/game-flow/) - Phase state machine
-- [Frontend Architecture](/docs/en/architecture/frontend/) - Component structure
-- [Backend Architecture](/docs/en/architecture/backend/) - Server internals
+- [Game Flow](/docs/architecture/game-flow/) - Phase state machine
+- [Frontend Architecture](/docs/architecture/frontend/) - Component structure
+- [Backend Architecture](/docs/architecture/backend/) - Server internals

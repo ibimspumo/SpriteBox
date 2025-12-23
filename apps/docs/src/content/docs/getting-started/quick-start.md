@@ -69,5 +69,5 @@ Use incognito/private windows to simulate truly separate players with different 
 
 ## Next Steps
 
-- [Architecture Overview](/docs/en/architecture/overview/) - Understand the system design
-- [Socket Events API](/docs/en/api/socket-events/) - Learn the real-time protocol
+- [Architecture Overview](/docs/architecture/overview/) - Understand the system design
+- [Socket Events API](/docs/api/socket-events/) - Learn the real-time protocol

@@ -36,7 +36,27 @@ components/
 │   ├── Drawing.svelte
 │   ├── Voting.svelte
 │   ├── Finale.svelte
-│   └── Results.svelte
+│   ├── Results.svelte
+│   ├── CopyCat/              # 1v1 Gedächtnis-Modus
+│   │   ├── Memorize.svelte       # Referenzbild anzeigen
+│   │   ├── CopyCatResult.svelte  # Genauigkeitsvergleich
+│   │   └── CopyCatRematch.svelte # Rematch-Abstimmung
+│   ├── PixelGuesser/         # Pictionary-Modus
+│   │   ├── Guessing.svelte       # Live-Zeichnen + Raten
+│   │   ├── Reveal.svelte         # Antwort enthüllen
+│   │   └── FinalResults.svelte   # Spielrangliste
+│   └── PixelSurvivor/        # Roguelike-Modus (11 Komponenten)
+│       ├── Menu.svelte           # Neues Spiel/Fortsetzen
+│       ├── CharacterCreation.svelte # Charakter zeichnen
+│       ├── DayStart.svelte       # Tagesanfang
+│       ├── Event.svelte          # Herausforderung
+│       ├── Result.svelte         # Ereignis-Ergebnis
+│       ├── LevelUp.svelte        # Stat-Upgrades
+│       ├── BossBattle.svelte     # Tag 30 Boss
+│       ├── GameOver.svelte       # Niederlage
+│       ├── Victory.svelte        # Sieg
+│       ├── Statistics.svelte     # Spielstatistiken
+│       └── HowToPlay.svelte      # Tutorial
 ├── utility/         # Funktionale Komponenten
 │   ├── PixelCanvas.svelte
 │   ├── ColorPalette.svelte

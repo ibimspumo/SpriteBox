@@ -18,7 +18,23 @@ apps/server/src/
 ├── socket.ts         # Socket.io Event-Handler
 ├── instance.ts       # Spielinstanz-Verwaltung
 ├── phases.ts         # Phasen-State-Machine
-├── voting.ts         # Elo-Algorithmus
+├── gameModes/        # Spielmodus-System
+│   ├── index.ts          # Modus-Initialisierung
+│   ├── registry.ts       # Modus-Registrierung
+│   ├── types.ts          # Modus-Interfaces
+│   ├── helpers.ts        # Hilfsfunktionen
+│   └── modes/
+│       ├── pixelBattle.ts    # Klassisch (5-100 Spieler)
+│       ├── copyCat.ts        # 1v1 Gedächtnisduell
+│       ├── pixelGuesser.ts   # Pictionary-Stil
+│       └── pixelSurvivor.ts  # Solo-Roguelike
+├── voting/           # Abstimmungssystem
+│   ├── index.ts          # Strategie-Factory
+│   └── strategies/
+│       ├── EloVotingStrategy.ts
+│       └── NoVotingStrategy.ts
+├── validation.ts     # Zod-Schemas
+├── rateLimit.ts      # DoS-Schutz
 └── types.ts          # TypeScript-Typdefinitionen
 ```
 

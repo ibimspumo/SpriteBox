@@ -11,7 +11,21 @@ apps/server/src/
 ├── socket.ts        # WebSocket event handlers
 ├── instance.ts      # Game instance management
 ├── phases.ts        # Phase state machine
-├── voting.ts        # Elo algorithm
+├── gameModes/       # Game mode system
+│   ├── index.ts         # Mode initialization
+│   ├── registry.ts      # Mode registration
+│   ├── types.ts         # Mode interfaces
+│   ├── helpers.ts       # Shared utilities
+│   └── modes/
+│       ├── pixelBattle.ts   # Classic (5-100 players)
+│       ├── copyCat.ts       # 1v1 memory duel
+│       ├── pixelGuesser.ts  # Pictionary-style
+│       └── pixelSurvivor.ts # Solo roguelike
+├── voting/          # Voting strategies
+│   ├── index.ts         # Strategy factory
+│   └── strategies/
+│       ├── EloVotingStrategy.ts
+│       └── NoVotingStrategy.ts
 ├── validation.ts    # Zod schemas
 ├── rateLimit.ts     # DoS protection
 └── types.ts         # TypeScript definitions

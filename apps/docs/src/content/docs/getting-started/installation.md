@@ -60,4 +60,4 @@ SpriteBox/
 
 ## Next Steps
 
-- [Quick Start](/docs/en/getting-started/quick-start/) - Run the development server
+- [Quick Start](/docs/getting-started/quick-start/) - Run the development server

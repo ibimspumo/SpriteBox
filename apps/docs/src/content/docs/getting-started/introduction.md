@@ -25,10 +25,16 @@ SpriteBox is a **free, browser-based multiplayer game** where you compete to cre
 
 ## Game Modes
 
+SpriteBox offers **4 unique game modes**:
+
 | Mode | Players | Description |
 |------|---------|-------------|
-| **Public** | 5-100 | Auto-matchmaking with strangers |
-| **Private** | 5-100 | 4-letter room code, host starts manually |
+| **Pixel Battle** | 5-100 | Classic mode: draw prompts, Elo-based voting, finale |
+| **CopyCat** | 2 (1v1) | Memory duel: memorize and recreate a reference image |
+| **Pixel Guesser** | 2-20 | Pictionary-style: one draws, others guess the word |
+| **Pixel Survivor** | 1 (solo) | Roguelike: draw your character and survive 30 days |
+
+Each mode supports **public matchmaking** or **private rooms** (4-letter codes).
 
 ## Next Steps
 
