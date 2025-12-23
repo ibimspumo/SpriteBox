@@ -12,6 +12,7 @@ export default defineConfig({
         src: './src/assets/logo.png',
         replacesTitle: false,
       },
+      titleHref: '/docs/',
       social: {
         github: 'https://github.com/ibimspumo/SpriteBox',
       },

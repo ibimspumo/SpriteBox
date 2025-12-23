@@ -45,9 +45,10 @@ self.addEventListener('fetch', (event) => {
 	// Skip non-GET requests
 	if (event.request.method !== 'GET') return;
 
-	// Skip WebSocket and API requests (let them go through normally)
+	// Skip WebSocket, API, and docs requests (let them go through normally)
 	if (url.pathname.startsWith('/socket.io')) return;
 	if (url.pathname.startsWith('/api')) return;
+	if (url.pathname.startsWith('/docs')) return;
 
 	// For same-origin requests, use cache-first strategy
 	if (url.origin === self.location.origin) {
