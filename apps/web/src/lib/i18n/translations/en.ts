@@ -205,22 +205,13 @@ export const en: Translations = {
 	},
 
 	landing: {
-		heroTitle: 'Pixel Art Battles',
-		heroSubtitle: 'Draw. Vote. Win.',
+		heroTitle: 'Pixel Art Games',
+		heroSubtitle: 'Draw. Compete. Have Fun.',
+		heroDescription: 'Quick multiplayer pixel art games for everyone. Multiple game modes, instant matches, zero hassle.',
 		tryIt: 'Try it out!',
 		startPlaying: 'Start Playing',
-		featureDrawTitle: 'Draw',
-		featureDrawDesc: '8×8 pixel art in 30 seconds',
-		featureVoteTitle: 'Vote',
-		featureVoteDesc: 'Pick the best art each round',
-		featureWinTitle: 'Win',
-		featureWinDesc: 'Climb the Elo rankings',
-		drawingTime: 'Drawing',
-		votingRounds: 'Voting',
-		quickMatches: 'Matches',
-		seconds: '30s',
-		perRound: '5s/round',
-		underMinutes: '<3 min',
+		chooseModes: 'Choose your Mode',
+		multipleModesHint: 'Classic battles, 1v1 duels & more',
 	},
 
 	accessibility: {

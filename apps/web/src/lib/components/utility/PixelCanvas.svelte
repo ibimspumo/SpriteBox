@@ -3,6 +3,7 @@
   import { pixels, selectedColor } from '$lib/stores';
   import { PALETTE, indexToHexChar, hexCharToIndex } from '$lib/palette';
   import { t } from '$lib/i18n';
+  import { playSound } from '$lib/audio';
 
   interface Props {
     readonly?: boolean;
@@ -22,6 +23,7 @@
 
   let isDrawing = $state(false);
   let canvasElement: HTMLDivElement;
+  let lastPaintedIndex = $state(-1);
 
   // Keyboard navigation state
   let selectedX = $state(0);
@@ -32,15 +34,32 @@
     return y * GRID_SIZE + x;
   }
 
-  function setPixel(x: number, y: number): void {
+  function setPixel(x: number, y: number, isNewStroke: boolean = false): void {
     // Allow editing if: not readonly AND (no external pixelData OR editable mode with callback)
     const canEdit = !readonly && (!pixelData || (editable && onchange));
     if (!canEdit) return;
 
     const index = getPixelIndex(x, y);
+
+    // Skip if we already painted this pixel in the current stroke (unless it's a new stroke)
+    if (!isNewStroke && index === lastPaintedIndex) return;
+
+    const currentColor = displayPixels[index];
+    const newColor = indexToHexChar($selectedColor);
+
+    // Skip if color hasn't changed
+    if (currentColor === newColor) {
+      lastPaintedIndex = index;
+      return;
+    }
+
     const newPixels = displayPixels.split('');
-    newPixels[index] = indexToHexChar($selectedColor);
+    newPixels[index] = newColor;
     const result = newPixels.join('');
+
+    // Play sound only when pixel actually changes
+    playSound('pixelPlace');
+    lastPaintedIndex = index;
 
     if (pixelData && editable && onchange) {
       // External control mode - notify parent via callback
@@ -69,11 +88,12 @@
     if (!canEdit) return;
     e.preventDefault();
     isDrawing = true;
+    lastPaintedIndex = -1; // Reset for new stroke
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
     const coords = getCoordsFromEvent(e);
     if (coords) {
-      setPixel(coords.x, coords.y);
+      setPixel(coords.x, coords.y, true);
     }
   }
 
@@ -89,6 +109,7 @@
 
   function handlePointerUp(e: PointerEvent): void {
     isDrawing = false;
+    lastPaintedIndex = -1; // Reset for next stroke
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
   }
 
@@ -122,7 +143,7 @@
       case ' ':
       case 'Enter':
         e.preventDefault();
-        setPixel(selectedX, selectedY);
+        setPixel(selectedX, selectedY, true);
         break;
     }
   }
@@ -193,8 +214,9 @@
   }
 
   .pixel {
-    width: var(--cell-size);
-    height: var(--cell-size);
+    /* Let the grid determine the size - don't use explicit width/height
+       to avoid conflicts with border-box and canvas border */
+    aspect-ratio: 1;
     /* Medium gray border visible on both light and dark colors */
     border: 1px solid rgba(128, 128, 128, 0.4);
     transition: opacity var(--transition-fast);

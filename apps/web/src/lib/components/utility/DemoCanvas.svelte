@@ -1,6 +1,7 @@
 <!-- DemoCanvas - Interactive demo canvas for landing page -->
 <script lang="ts">
   import { PALETTE, indexToHexChar, hexCharToIndex } from '$lib/palette';
+  import { playSound } from '$lib/audio';
 
   interface Props {
     size?: number;
@@ -16,16 +17,34 @@
   let selectedColor = $state(2); // Start with red
   let isDrawing = $state(false);
   let canvasElement: HTMLDivElement;
+  let lastPaintedIndex = $state(-1);
 
   function getPixelIndex(x: number, y: number): number {
     return y * GRID_SIZE + x;
   }
 
-  function setPixel(x: number, y: number): void {
+  function setPixel(x: number, y: number, isNewStroke: boolean = false): void {
     const index = getPixelIndex(x, y);
+
+    // Skip if we already painted this pixel in the current stroke
+    if (!isNewStroke && index === lastPaintedIndex) return;
+
+    const currentColor = pixels[index];
+    const newColor = indexToHexChar(selectedColor);
+
+    // Skip if color hasn't changed
+    if (currentColor === newColor) {
+      lastPaintedIndex = index;
+      return;
+    }
+
     const newPixels = pixels.split('');
-    newPixels[index] = indexToHexChar(selectedColor);
+    newPixels[index] = newColor;
     pixels = newPixels.join('');
+
+    // Play sound only when pixel actually changes
+    playSound('pixelPlace');
+    lastPaintedIndex = index;
   }
 
   function getCoordsFromEvent(e: PointerEvent): { x: number; y: number } | null {
@@ -44,11 +63,12 @@
   function handlePointerDown(e: PointerEvent): void {
     e.preventDefault();
     isDrawing = true;
+    lastPaintedIndex = -1; // Reset for new stroke
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
     const coords = getCoordsFromEvent(e);
     if (coords) {
-      setPixel(coords.x, coords.y);
+      setPixel(coords.x, coords.y, true);
     }
   }
 
@@ -63,6 +83,7 @@
 
   function handlePointerUp(e: PointerEvent): void {
     isDrawing = false;
+    lastPaintedIndex = -1; // Reset for next stroke
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
   }
 
@@ -164,8 +185,9 @@
   }
 
   .pixel {
-    width: var(--cell-size);
-    height: var(--cell-size);
+    /* Let the grid determine the size - don't use explicit width/height
+       to avoid conflicts with border-box and canvas border */
+    aspect-ratio: 1;
     border: 1px solid rgba(128, 128, 128, 0.25);
     transition: opacity var(--transition-fast);
     image-rendering: pixelated;

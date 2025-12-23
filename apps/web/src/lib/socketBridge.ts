@@ -410,6 +410,7 @@ function setupEventHandlers(socket: AppSocket): void {
     // Create the results data with decompressed rankings
     const resultsData: GameResultsData = {
       prompt: data.prompt,
+      promptIndices: data.promptIndices,
       rankings,
       totalParticipants: data.totalParticipants,
     };

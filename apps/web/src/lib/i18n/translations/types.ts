@@ -232,20 +232,11 @@ export interface Translations {
 	landing: {
 		heroTitle: string;
 		heroSubtitle: string;
+		heroDescription: string;
 		tryIt: string;
 		startPlaying: string;
-		featureDrawTitle: string;
-		featureDrawDesc: string;
-		featureVoteTitle: string;
-		featureVoteDesc: string;
-		featureWinTitle: string;
-		featureWinDesc: string;
-		drawingTime: string;
-		votingRounds: string;
-		quickMatches: string;
-		seconds: string;
-		perRound: string;
-		underMinutes: string;
+		chooseModes: string;
+		multipleModesHint: string;
 	};
 
 	// Accessibility labels

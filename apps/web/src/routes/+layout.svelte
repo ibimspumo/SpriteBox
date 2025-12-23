@@ -6,6 +6,7 @@
   import { getSocket } from '$lib/socket';
   import { connectionStatus, lastError, lobby, idleWarning } from '$lib/stores';
   import { t } from '$lib/i18n';
+  import { preloadSounds } from '$lib/audio';
   import DebugPanel from '$lib/components/debug/DebugPanel.svelte';
   import PixelEditor from '$lib/components/debug/PixelEditor.svelte';
   import { CookieNotice } from '$lib/components/organisms';
@@ -74,6 +75,7 @@
   onMount(() => {
     if (browser) {
       initSocketBridge();
+      preloadSounds();
 
       // Dev-only keyboard shortcut: Ctrl+Shift+E to toggle Pixel Editor
       if (dev) {

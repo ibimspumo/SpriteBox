@@ -1,6 +1,7 @@
 <!-- Button Atom - Pixel Art Style -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { playSound } from '$lib/audio';
 
   interface Props {
     variant?: 'primary' | 'secondary' | 'action' | 'danger' | 'ghost';
@@ -21,6 +22,12 @@
     onclick,
     children
   }: Props = $props();
+
+  function handleClick(e: MouseEvent): void {
+    if (disabled) return;
+    playSound('click');
+    onclick?.(e);
+  }
 </script>
 
 <button
@@ -28,7 +35,7 @@
   {disabled}
   class="pixel-btn {variant} {size}"
   class:full-width={fullWidth}
-  {onclick}
+  onclick={handleClick}
 >
   <span class="btn-content">
     {@render children()}

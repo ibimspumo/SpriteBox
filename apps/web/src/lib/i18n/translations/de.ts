@@ -205,22 +205,13 @@ export const de: Translations = {
 	},
 
 	landing: {
-		heroTitle: 'Pixel Art Battles',
-		heroSubtitle: 'Zeichnen. Voten. Gewinnen.',
+		heroTitle: 'Pixel Art Spiele',
+		heroSubtitle: 'Zeichnen. Antreten. Spaß haben.',
+		heroDescription: 'Schnelle Multiplayer Pixel Art Spiele für alle. Verschiedene Spielmodi, sofortige Matches, null Aufwand.',
 		tryIt: 'Probier es aus!',
 		startPlaying: 'Jetzt Spielen',
-		featureDrawTitle: 'Zeichnen',
-		featureDrawDesc: '8×8 Pixel Art in 30 Sekunden',
-		featureVoteTitle: 'Voten',
-		featureVoteDesc: 'Wähle die beste Kunst jeder Runde',
-		featureWinTitle: 'Gewinnen',
-		featureWinDesc: 'Steige im Elo-Ranking auf',
-		drawingTime: 'Zeichnen',
-		votingRounds: 'Voting',
-		quickMatches: 'Matches',
-		seconds: '30s',
-		perRound: '5s/Runde',
-		underMinutes: '<3 Min',
+		chooseModes: 'Wähle deinen Modus',
+		multipleModesHint: 'Klassische Battles, 1v1 Duelle & mehr',
 	},
 
 	accessibility: {

@@ -68,8 +68,8 @@ export function generatePromptIndices(): PromptIndices {
     return { prefixIdx: 0, subjectIdx: 0, suffixIdx: 0 };
   }
 
-  // Same random logic as before: sometimes skip prefix/suffix
-  const hasPrefix = randomInt(0, 100) > 30;
+  // 50% chance for prefix and suffix each (more variance)
+  const hasPrefix = randomInt(0, 100) > 50;
   const hasSuffix = randomInt(0, 100) > 50;
 
   return {

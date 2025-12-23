@@ -5,7 +5,7 @@
  *
  * Features:
  * - Always 1v1 (exactly 2 players)
- * - Instant countdown start when 2 players join
+ * - 5-second countdown starts when 2 players join
  * - Countdown aborted if a player leaves during countdown
  * - No spectators allowed
  * - Works for both public and private rooms
@@ -58,10 +58,10 @@ export class CopyCatLobbyStrategy implements LobbyStrategy {
     return { shouldStart: false, duration };
   }
 
-  shouldStartImmediately(instance: Instance): boolean {
-    // Start immediately when we have exactly 2 players
-    // The countdown will handle the actual game start
-    return instance.players.size >= 2;
+  shouldStartImmediately(_instance: Instance): boolean {
+    // Never start immediately - always use the countdown timer
+    // This gives players time to prepare before the game starts
+    return false;
   }
 
   canStartManually(instance: Instance, playerId: string): StartResult {

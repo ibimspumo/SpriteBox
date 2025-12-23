@@ -14,7 +14,7 @@ import {
   getInstanceStats,
   startGameManually,
 } from './instance.js';
-import { getVotingState } from './phases.js';
+import { getVotingState, startGame } from './phases.js';
 import { processVote, processFinaleVote, type VotingState } from './voting.js';
 import { generateId, generateDiscriminator, createFullName, log, randomItem, shuffleArray } from './utils.js';
 import { CANVAS, TIMERS, MAX_PLAYERS_PER_INSTANCE } from './constants.js';
@@ -803,7 +803,7 @@ export function setupDebugEndpoints(app: Express, io: Server): void {
   });
 
   /**
-   * POST /debug/game/force-start - Force start a game
+   * POST /debug/game/force-start - Force start a game (bypasses all validation)
    */
   app.post('/debug/game/force-start', (req: Request, res: Response) => {
     const { instanceId } = req.body;
@@ -825,13 +825,9 @@ export function setupDebugEndpoints(app: Express, io: Server): void {
       return res.status(400).json({ error: 'Need at least 2 players to start' });
     }
 
-    // Force start (bypass minimum player check)
-    const result = startGameManually(instance);
-
-    if (!result.success) {
-      // If normal start fails, we could force it here
-      return res.status(400).json({ error: result.error });
-    }
+    // Force start - directly call startGame, bypassing strategy validation
+    startGame(instance);
+    log('Debug', `Force started game in instance ${instance.id}`);
 
     res.json({
       success: true,
