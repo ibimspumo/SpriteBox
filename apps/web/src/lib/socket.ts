@@ -30,6 +30,7 @@ export interface ServerToClientEvents {
   'password-changed': (data: { hasPassword: boolean }) => void;
   'room-created': (data: { code: string; instanceId: string }) => void;
   'online-count': (data: { count: number }) => void;
+  'game-modes': (data: GameModesData) => void;
 }
 
 export interface ClientToServerEvents {
@@ -79,6 +80,7 @@ export interface SessionRestoredData {
     }>;
     finaleVoted?: boolean;
   };
+  gameMode: string;
 }
 
 // Interfaces
@@ -108,12 +110,29 @@ export interface LobbyJoinedData {
   hasPassword?: boolean;
   players: User[];
   spectator: boolean;
+  gameMode: string;
   phase?: string;
   prompt?: Prompt;
   promptIndices?: PromptIndices;
   timerEndsAt?: number;
   votingRound?: number;
   votingTotalRounds?: number;
+}
+
+export interface GameModeInfoData {
+  id: string;
+  displayName: string;
+  i18nKey: string;
+  players: {
+    min: number;
+    max: number;
+    privateMin?: number;
+  };
+}
+
+export interface GameModesData {
+  available: GameModeInfoData[];
+  default: string;
 }
 
 export interface PhaseChangedData {

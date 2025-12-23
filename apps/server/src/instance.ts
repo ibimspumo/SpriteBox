@@ -2,8 +2,14 @@
 import type { Server, Socket } from 'socket.io';
 import type { Instance, Player, InstanceType } from './types.js';
 import { generateId, generateRoomCode, log } from './utils.js';
-import { MAX_PLAYERS_PER_INSTANCE, MIN_PLAYERS_TO_START, TIMERS } from './constants.js';
+import { TIMERS } from './constants.js';
 import { startGame as startGamePhase } from './phases.js';
+import {
+  gameModes,
+  getInstanceConfig,
+  getPlayerLimits,
+} from './gameModes/index.js';
+import { getLobbyStrategy } from './lobby/index.js';
 import { hashPassword, verifyPassword } from './password.js';
 import { cleanupInstanceBrowserTracking } from './fingerprint.js';
 
@@ -36,10 +42,18 @@ export function createInstance(options: {
   hostId?: string;
   code?: string;
   passwordHash?: string;
+  gameMode?: string;  // Defaults to 'pixel-battle'
 }): Instance {
+  // Validate game mode (defaults to 'pixel-battle')
+  const modeId = options.gameMode ?? gameModes.getDefaultId();
+  if (!gameModes.has(modeId)) {
+    throw new Error(`Unknown game mode: ${modeId}`);
+  }
+
   const instance: Instance = {
     id: generateId(),
     type: options.type,
+    gameMode: modeId,
     code: options.code,
     hostId: options.hostId,
     passwordHash: options.passwordHash,
@@ -58,27 +72,32 @@ export function createInstance(options: {
     privateRooms.set(options.code, instance);
   }
 
-  log('Instance', `Created ${options.type} instance: ${instance.id}${options.passwordHash ? ' (password protected)' : ''}`);
+  log('Instance', `Created ${options.type} instance: ${instance.id} [${modeId}]${options.passwordHash ? ' (password protected)' : ''}`);
   return instance;
 }
 
 /**
  * Finds an open public instance or creates a new one
+ * @param gameMode - Game mode to find/create (defaults to 'pixel-battle')
  */
-export function findOrCreatePublicInstance(): Instance {
-  // Search for open instance (lobby phase, not full)
+export function findOrCreatePublicInstance(gameMode?: string): Instance {
+  const modeId = gameMode ?? gameModes.getDefaultId();
+  const config = gameModes.get(modeId);
+
+  // Search for open instance (same mode, lobby phase, not full)
   for (const instance of instances.values()) {
     if (
       instance.type === 'public' &&
+      instance.gameMode === modeId &&
       instance.phase === 'lobby' &&
-      instance.players.size < MAX_PLAYERS_PER_INSTANCE
+      instance.players.size < config.players.max
     ) {
       return instance;
     }
   }
 
   // No suitable instance found -> create new one
-  return createInstance({ type: 'public' });
+  return createInstance({ type: 'public', gameMode: modeId });
 }
 
 /**
@@ -86,7 +105,7 @@ export function findOrCreatePublicInstance(): Instance {
  */
 export async function createPrivateRoom(
   hostPlayer: Player,
-  options: { password?: string } = {}
+  options: { password?: string; gameMode?: string } = {}
 ): Promise<{ code: string; instance: Instance; hasPassword: boolean }> {
   const code = generateUniqueRoomCode();
 
@@ -100,6 +119,7 @@ export async function createPrivateRoom(
     hostId: hostPlayer.id,
     code,
     passwordHash,
+    gameMode: options.gameMode,
   });
 
   return { code, instance, hasPassword: !!passwordHash };
@@ -181,20 +201,24 @@ export function findInstance(instanceId: string): Instance | undefined {
 
 /**
  * Adds a player to an instance
+ * Uses LobbyStrategy to determine join rules
  */
 export function addPlayerToInstance(instance: Instance, player: Player): {
   success: boolean;
   spectator: boolean;
   error?: string;
 } {
-  // Instance full?
-  if (instance.players.size >= MAX_PLAYERS_PER_INSTANCE) {
-    return { success: false, spectator: false, error: 'Instance is full' };
+  const lobbyStrategy = getLobbyStrategy(instance);
+
+  // Use LobbyStrategy to check if player can join
+  const joinResult = lobbyStrategy.canJoin(instance, player);
+
+  if (!joinResult.success) {
+    return joinResult;
   }
 
-  // Game already running?
-  if (instance.phase !== 'lobby') {
-    // Add as spectator
+  // Join as spectator if indicated
+  if (joinResult.spectator) {
     instance.spectators.set(player.id, player);
     log('Instance', `Player ${player.id} joined as spectator`);
     return { success: true, spectator: true };
@@ -206,7 +230,10 @@ export function addPlayerToInstance(instance: Instance, player: Player): {
 
   log('Instance', `Player ${player.id} joined instance ${instance.id}`);
 
-  // Lobby-Timer-Logik prüfen
+  // Notify strategy of player join
+  lobbyStrategy.onPlayerJoin(instance, player);
+
+  // Check lobby timer logic
   checkLobbyTimer(instance);
 
   return { success: true, spectator: false };
@@ -214,33 +241,41 @@ export function addPlayerToInstance(instance: Instance, player: Player): {
 
 /**
  * Removes a player from an instance
+ * Uses LobbyStrategy to handle player leave events
  */
 export function removePlayerFromInstance(instance: Instance, playerId: string): void {
+  const lobbyStrategy = getLobbyStrategy(instance);
+
   instance.players.delete(playerId);
   instance.spectators.delete(playerId);
   instance.lastActivity = Date.now();
 
   log('Instance', `Player ${playerId} left instance ${instance.id}`);
 
-  // Prüfen ob Instanz noch valide
+  // Notify strategy of player leave
+  lobbyStrategy.onPlayerLeave(instance, playerId);
+
+  // Check if instance should be cleaned up
   checkInstanceCleanup(instance);
 }
 
 /**
  * Checks and starts the lobby timer
  * Exported for use in phases.ts after round reset
- * Note: Private instances never auto-start - host must manually start the game
+ * Uses LobbyStrategy to determine auto-start behavior
  */
 export function checkLobbyTimer(instance: Instance): void {
   if (instance.phase !== 'lobby') return;
 
-  // Private instances don't auto-start - host must manually start
-  if (instance.type === 'private') return;
+  const lobbyStrategy = getLobbyStrategy(instance);
 
-  const playerCount = instance.players.size;
+  // Check if auto-start is enabled for this lobby type
+  if (!lobbyStrategy.shouldAutoStart(instance)) {
+    return;
+  }
 
-  // Start immediately if full
-  if (playerCount >= MAX_PLAYERS_PER_INSTANCE) {
+  // Check if should start immediately (e.g., lobby is full)
+  if (lobbyStrategy.shouldStartImmediately(instance)) {
     clearTimeout(instance.lobbyTimer);
     instance.lobbyTimer = undefined;
     instance.lobbyTimerEndsAt = undefined;
@@ -248,24 +283,27 @@ export function checkLobbyTimer(instance: Instance): void {
     return;
   }
 
-  // Start timer when minimum reached
-  if (playerCount >= MIN_PLAYERS_TO_START && !instance.lobbyTimer) {
+  // Check if timer should start
+  const timerConfig = lobbyStrategy.shouldStartTimer(instance);
+  if (timerConfig.shouldStart && !instance.lobbyTimer) {
     log('Instance', `Lobby timer started for instance ${instance.id}`);
 
-    const endsAt = Date.now() + TIMERS.LOBBY_TIMEOUT;
+    const endsAt = Date.now() + timerConfig.duration;
     instance.lobbyTimerEndsAt = endsAt;
 
+    const minPlayers = lobbyStrategy.getMinPlayers(instance);
+
     instance.lobbyTimer = setTimeout(() => {
-      instance.lobbyTimer = undefined; // Clear reference after execution
+      instance.lobbyTimer = undefined;
       instance.lobbyTimerEndsAt = undefined;
-      if (instance.players.size >= MIN_PLAYERS_TO_START) {
+      if (instance.players.size >= minPlayers) {
         startGame(instance);
       }
-    }, TIMERS.LOBBY_TIMEOUT);
+    }, timerConfig.duration);
 
     // Send event to all players
     emitToInstance(instance, 'lobby-timer-started', {
-      duration: TIMERS.LOBBY_TIMEOUT,
+      duration: timerConfig.duration,
       startsAt: endsAt,
     });
   }
@@ -280,14 +318,16 @@ function startGame(instance: Instance): void {
 
 /**
  * Starts the game manually (for host in private rooms)
+ * Uses LobbyStrategy to validate start conditions
  */
-export function startGameManually(instance: Instance): { success: boolean; error?: string } {
-  if (instance.phase !== 'lobby') {
-    return { success: false, error: 'Game already in progress' };
-  }
+export function startGameManually(instance: Instance, requesterId?: string): { success: boolean; error?: string } {
+  const lobbyStrategy = getLobbyStrategy(instance);
 
-  if (instance.players.size < MIN_PLAYERS_TO_START) {
-    return { success: false, error: `Need at least ${MIN_PLAYERS_TO_START} players` };
+  // Use strategy to check if manual start is allowed
+  const result = lobbyStrategy.canStartManually(instance, requesterId ?? instance.hostId ?? '');
+
+  if (!result.success) {
+    return result;
   }
 
   startGame(instance);
@@ -296,10 +336,12 @@ export function startGameManually(instance: Instance): { success: boolean; error
 
 /**
  * Checks if an instance should be cleaned up
+ * Uses LobbyStrategy to determine cleanup conditions
  */
 function checkInstanceCleanup(instance: Instance): void {
-  // Leere Instanz in Lobby -> sofort löschen
-  if (instance.phase === 'lobby' && instance.players.size === 0) {
+  const lobbyStrategy = getLobbyStrategy(instance);
+
+  if (lobbyStrategy.shouldCleanup(instance)) {
     cleanupInstance(instance);
   }
 }

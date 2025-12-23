@@ -11,6 +11,22 @@ export const globalOnlineCount = writable<number>(0);
 export const sessionBlocked = writable<boolean>(false); // Too many sessions from same browser
 export const idleWarning = writable<{ show: boolean; timeLeft: number }>({ show: false, timeLeft: 0 });
 
+// === Game Mode State ===
+export interface GameModeInfo {
+  id: string;
+  displayName: string;
+  i18nKey: string;
+  players: {
+    min: number;
+    max: number;
+    privateMin?: number;
+  };
+}
+
+export const availableGameModes = writable<GameModeInfo[]>([]);
+export const selectedGameMode = writable<string>('pixel-battle');
+export const defaultGameMode = writable<string>('pixel-battle');
+
 // === User State ===
 export const currentUser = writable<User | null>(null);
 
@@ -24,6 +40,7 @@ export interface LobbyState {
   players: User[];
   isSpectator: boolean;
   onlineCount: number;
+  gameMode: string;
 }
 
 export const lobby = writable<LobbyState>({
@@ -35,6 +52,7 @@ export const lobby = writable<LobbyState>({
   players: [],
   isSpectator: false,
   onlineCount: 0,
+  gameMode: 'pixel-battle',
 });
 
 // === Password Prompt State ===
@@ -183,6 +201,7 @@ export function resetLobbyState(): void {
     players: [],
     isSpectator: false,
     onlineCount: 0,
+    gameMode: 'pixel-battle',
   });
   passwordPrompt.set({ show: false, roomCode: null, error: null });
   resetGameState();

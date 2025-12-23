@@ -34,6 +34,7 @@ import {
 import { getMemoryInfo } from './serverConfig.js';
 import { generateId, generateDiscriminator, createFullName, log } from './utils.js';
 import { MIN_PLAYERS_TO_START, CANVAS, DOS, TIMERS } from './constants.js';
+import { gameModes } from './gameModes/index.js';
 import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, validate, validateMinPixels } from './validation.js';
 import { getVotingState, isWithinPhaseTime, getPhaseTimings, checkAndTriggerEarlyVotingEnd, checkAndTriggerEarlyFinaleEnd } from './phases.js';
 import { processVote, processFinaleVote } from './voting.js';
@@ -199,6 +200,12 @@ export function setupSocketHandlers(io: TypedServer): void {
 
     // Initialize player
     const player = initializePlayer(socket);
+
+    // Send available game modes to client
+    socket.emit('game-modes', {
+      available: gameModes.getAllInfo(),
+      default: gameModes.getDefaultId(),
+    });
 
     // === Middleware for all events: Rate limiting ===
     socket.use((packet, next) => {
@@ -376,6 +383,7 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       hasPassword: false,
       players: getInstancePlayers(instance).map(p => p.user),
       spectator: result.spectator,
+      gameMode: instance.gameMode,
       // Include lobby timer if active
       ...(instance.phase === 'lobby' && instance.lobbyTimerEndsAt && {
         timerEndsAt: instance.lobbyTimerEndsAt,
@@ -451,6 +459,7 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
         hasPassword,
         players: [player.user],
         spectator: false,
+        gameMode: instance.gameMode,
       });
 
       log('Lobby', `${player.user.fullName} created private room ${code}${hasPassword ? ' (password protected)' : ''}`);
@@ -545,6 +554,7 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
       hasPassword: !!instance.passwordHash,
       players: getInstancePlayers(instance).map(p => p.user),
       spectator: result.spectator,
+      gameMode: instance.gameMode,
       // Include lobby timer if active
       ...(instance.phase === 'lobby' && instance.lobbyTimerEndsAt && {
         timerEndsAt: instance.lobbyTimerEndsAt,
@@ -1116,6 +1126,7 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
       players: getInstancePlayers(instance).map(p => p.user),
       isSpectator: instance.spectators.has(player.id),
       phaseState,
+      gameMode: instance.gameMode,
     });
 
     log('Reconnect', `Session restored for ${player.user.fullName}`);

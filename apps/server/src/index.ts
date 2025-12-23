@@ -12,6 +12,7 @@ import { setupDebugEndpoints } from './debug.js';
 import { initServerConfig, getServerConfig, getMemoryInfo } from './serverConfig.js';
 import { startQueueProcessing, getQueueStats } from './queue.js';
 import { generateOgImage } from './ogImage.js';
+import { initializeGameModes } from './gameModes/index.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -39,6 +40,9 @@ setupDebugEndpoints(app, io);
 
 // Initialize server configuration (RAM detection)
 initServerConfig();
+
+// Initialize game modes (must be before socket handlers)
+initializeGameModes();
 
 // Health Check (muss vor SPA Fallback kommen)
 app.get('/health', (_req, res) => {

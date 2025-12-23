@@ -30,6 +30,7 @@ export type GamePhase =
 export interface Instance {
   id: string;
   type: InstanceType;
+  gameMode: string;       // Game mode ID (e.g., 'pixel-battle')
   code?: string;          // Only for private rooms
   hostId?: string;        // Only for private rooms
   passwordHash?: string;  // Optional password for private rooms
@@ -106,6 +107,7 @@ export interface ServerToClientEvents {
     hasPassword?: boolean;
     players: User[];
     spectator: boolean;
+    gameMode: string;
     // Mid-game state (for joining in-progress games)
     phase?: GamePhase;
     prompt?: Prompt;
@@ -162,6 +164,7 @@ export interface ServerToClientEvents {
     players: User[];
     isSpectator: boolean;
     phaseState?: any;
+    gameMode: string;
   }) => void;
   'session-restore-failed': (data: { reason: string }) => void;
   'instance-closing': (data: { reason: string }) => void;
@@ -173,6 +176,15 @@ export interface ServerToClientEvents {
   'queue-removed': (data: { reason: 'timeout' | 'disconnect' | 'manual' }) => void;
   'server-status': (data: { status: 'ok' | 'warning' | 'critical'; currentPlayers: number; maxPlayers: number }) => void;
   'online-count': (data: { count: number }) => void;
+  'game-modes': (data: {
+    available: Array<{
+      id: string;
+      displayName: string;
+      i18nKey: string;
+      players: { min: number; max: number; privateMin?: number };
+    }>;
+    default: string;
+  }) => void;
 }
 
 export interface ClientToServerEvents {

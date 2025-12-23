@@ -1,9 +1,9 @@
 // apps/server/src/phases.ts
 import type { Server } from 'socket.io';
 import type { Instance, GamePhase, RankingEntry } from './types.js';
-import { TIMERS, COMPRESSION } from './constants.js';
+import { TIMERS } from './constants.js';
 import { log } from './utils.js';
-import { generatePrompt, generatePromptIndices, assemblePromptFromIndices } from './prompts.js';
+import { generatePromptIndices, assemblePromptFromIndices } from './prompts.js';
 import {
   initVotingState,
   prepareVotingRound,
@@ -15,6 +15,8 @@ import {
 } from './voting.js';
 import { compressIfNeeded } from './compression.js';
 import { checkLobbyTimer, cleanupInstance } from './instance.js';
+import { getPhaseManager } from './phases/index.js';
+import { shouldCompress } from './gameModes/index.js';
 
 // IO instance (set by index.ts)
 let io: Server | null = null;
@@ -184,40 +186,46 @@ function handleLobby(instance: Instance): void {
  * Countdown-Phase (5 Sekunden)
  */
 function handleCountdown(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('countdown') ?? TIMERS.COUNTDOWN;
+
   emitToInstance(instance, 'phase-changed', {
     phase: 'countdown',
     prompt: instance.prompt,
     promptIndices: instance.promptIndices,
-    duration: TIMERS.COUNTDOWN,
-    startsAt: Date.now() + TIMERS.COUNTDOWN,
+    duration,
+    startsAt: Date.now() + duration,
   });
 
   instance.phaseTimer = setTimeout(() => {
     transitionTo(instance, 'drawing');
-  }, TIMERS.COUNTDOWN);
+  }, duration);
 }
 
 /**
- * Drawing phase (60 seconds)
+ * Drawing phase (30 seconds)
  */
 function handleDrawing(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('drawing') ?? TIMERS.DRAWING;
+
   // Reset submissions
   instance.submissions = [];
 
   // Set phase timing for anti-cheat
-  setPhaseTimings(instance.id, TIMERS.DRAWING);
+  setPhaseTimings(instance.id, duration);
 
   emitToInstance(instance, 'phase-changed', {
     phase: 'drawing',
     prompt: instance.prompt,
     promptIndices: instance.promptIndices,
-    duration: TIMERS.DRAWING,
-    endsAt: Date.now() + TIMERS.DRAWING,
+    duration,
+    endsAt: Date.now() + duration,
   });
 
   instance.phaseTimer = setTimeout(() => {
     endDrawingPhase(instance);
-  }, TIMERS.DRAWING);
+  }, duration);
 }
 
 /**
@@ -252,8 +260,16 @@ function endDrawingPhase(instance: Instance): void {
  * Voting phase
  */
 function handleVoting(instance: Instance): void {
-  // Initialize state
-  const state = initVotingState(instance.submissions);
+  // Initialize state using the instance's game mode
+  const state = initVotingState(instance.submissions, instance);
+
+  // If no voting for this game mode, skip to results
+  if (!state) {
+    log('Phase', 'No voting for this game mode, skipping to results');
+    transitionTo(instance, 'results');
+    return;
+  }
+
   votingStates.set(instance.id, state);
 
   log('Phase', `Voting started with ${state.totalRounds} rounds for ${instance.submissions.length} submissions`);
@@ -266,23 +282,26 @@ function handleVoting(instance: Instance): void {
  * Starts a voting round
  */
 function startVotingRound(instance: Instance, state: VotingState, roundNumber: number): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('voting') ?? TIMERS.VOTING_ROUND;
+
   log('Phase', `Voting round ${roundNumber}/${state.totalRounds}`);
 
   // Set phase timing for anti-cheat
-  setPhaseTimings(instance.id, TIMERS.VOTING_ROUND);
+  setPhaseTimings(instance.id, duration);
 
   // Calculate assignments
   const assignments = prepareVotingRound(instance, state, roundNumber);
 
   // IMPORTANT: Calculate endsAt once to ensure consistency
-  const endsAt = Date.now() + TIMERS.VOTING_ROUND;
+  const endsAt = Date.now() + duration;
 
   // RACE CONDITION FIX: Send phase-changed FIRST
   emitToInstance(instance, 'phase-changed', {
     phase: 'voting',
     round: roundNumber,
     totalRounds: state.totalRounds,
-    duration: TIMERS.VOTING_ROUND,
+    duration,
     endsAt,
   });
 
@@ -300,7 +319,7 @@ function startVotingRound(instance: Instance, state: VotingState, roundNumber: n
         totalRounds: state.totalRounds,
         imageA: { playerId: imageA.playerId, pixels: imageA.pixels },
         imageB: { playerId: imageB.playerId, pixels: imageB.pixels },
-        timeLimit: TIMERS.VOTING_ROUND,
+        timeLimit: duration,
         endsAt,
       });
     }
@@ -309,7 +328,7 @@ function startVotingRound(instance: Instance, state: VotingState, roundNumber: n
   // Timer for round end
   instance.phaseTimer = setTimeout(() => {
     endVotingRound(instance, state, roundNumber);
-  }, TIMERS.VOTING_ROUND);
+  }, duration);
 }
 
 /**
@@ -335,6 +354,9 @@ function endVotingRound(instance: Instance, state: VotingState, roundNumber: num
  * Finale phase
  */
 function handleFinale(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('finale') ?? TIMERS.FINALE;
+
   const state = votingStates.get(instance.id);
   if (!state) {
     log('Phase', `No voting state found, skipping to results`);
@@ -343,9 +365,9 @@ function handleFinale(instance: Instance): void {
   }
 
   // Set phase timing for anti-cheat
-  setPhaseTimings(instance.id, TIMERS.FINALE);
+  setPhaseTimings(instance.id, duration);
 
-  const finalistCount = calculateFinalistCount(instance.submissions.length);
+  const finalistCount = manager.calculateFinalistCount(instance.submissions.length);
 
   // Select top X by Elo
   const sorted = [...state.eloRatings.entries()].sort((a, b) => b[1] - a[1]).slice(0, finalistCount);
@@ -369,21 +391,23 @@ function handleFinale(instance: Instance): void {
   state.votersVoted.clear();
   finalists.forEach((f) => state.finaleVotes.set(f.playerId, 0));
 
+  const endsAt = Date.now() + duration;
+
   emitToInstance(instance, 'finale-start', {
     finalists,
-    timeLimit: TIMERS.FINALE,
-    endsAt: Date.now() + TIMERS.FINALE,
+    timeLimit: duration,
+    endsAt,
   });
 
   emitToInstance(instance, 'phase-changed', {
     phase: 'finale',
-    duration: TIMERS.FINALE,
-    endsAt: Date.now() + TIMERS.FINALE,
+    duration,
+    endsAt,
   });
 
   instance.phaseTimer = setTimeout(() => {
     endFinale(instance);
-  }, TIMERS.FINALE);
+  }, duration);
 }
 
 /**
@@ -411,6 +435,9 @@ function endFinale(instance: Instance): void {
  * Results mit Ranking anzeigen
  */
 function handleResultsWithRanking(instance: Instance, ranking: ReturnType<typeof calculateFinalRanking>): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('results') ?? TIMERS.RESULTS;
+
   instance.phase = 'results';
 
   const results: RankingEntry[] = ranking.map((r) => {
@@ -428,12 +455,13 @@ function handleResultsWithRanking(instance: Instance, ranking: ReturnType<typeof
 
   emitToInstance(instance, 'phase-changed', {
     phase: 'results',
-    duration: TIMERS.RESULTS,
+    duration,
   });
 
-  // Use compression for large galleries
+  // Use compression for large galleries (based on game mode config)
   const playerCount = instance.submissions.length;
-  const compressedRankings = compressIfNeeded(results, playerCount);
+  const useCompression = shouldCompress(instance, playerCount);
+  const compressedRankings = useCompression ? compressIfNeeded(results, playerCount) : { compressed: false, data: '' };
 
   emitToInstance(instance, 'game-results', {
     prompt: instance.prompt,
@@ -455,14 +483,17 @@ function handleResultsWithRanking(instance: Instance, ranking: ReturnType<typeof
 
   instance.phaseTimer = setTimeout(() => {
     resetForNextRound(instance);
-  }, TIMERS.RESULTS);
+  }, duration);
 }
 
 /**
  * Results phase (15 seconds)
  */
 function handleResults(instance: Instance): void {
-  // Simple ranking by submission order (will be replaced by Elo in phase 4)
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('results') ?? TIMERS.RESULTS;
+
+  // Simple ranking by submission order (fallback when no voting)
   const rankings = instance.submissions.map((sub, index) => {
     const player = instance.players.get(sub.playerId) || instance.spectators.get(sub.playerId);
     return {
@@ -477,7 +508,7 @@ function handleResults(instance: Instance): void {
 
   emitToInstance(instance, 'phase-changed', {
     phase: 'results',
-    duration: TIMERS.RESULTS,
+    duration,
   });
 
   emitToInstance(instance, 'game-results', {
@@ -496,7 +527,7 @@ function handleResults(instance: Instance): void {
   // After results: Back to lobby
   instance.phaseTimer = setTimeout(() => {
     resetForNextRound(instance);
-  }, TIMERS.RESULTS);
+  }, duration);
 }
 
 /**

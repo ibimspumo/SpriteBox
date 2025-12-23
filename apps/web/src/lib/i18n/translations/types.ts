@@ -185,6 +185,17 @@ export interface Translations {
 		title: string;
 	};
 
+	// Game modes
+	gameModes: {
+		pixelBattle: string;
+		pixelBattleDesc: string;
+		duel: string;
+		duelDesc: string;
+		soloPractice: string;
+		soloPracticeDesc: string;
+		selectMode: string;
+	};
+
 	// Landing page
 	landing: {
 		heroTitle: string;

@@ -163,6 +163,16 @@ export const de: Translations = {
 		title: 'FARBPALETTE',
 	},
 
+	gameModes: {
+		pixelBattle: 'Pixel Battle',
+		pixelBattleDesc: 'Zeichne 8×8 Pixel Art, vote für andere, steige im Elo-Ranking',
+		duel: '1v1 Duell',
+		duelDesc: 'Fordere einen Freund zum Pixel Art Duell heraus',
+		soloPractice: 'Solo Übung',
+		soloPracticeDesc: 'Übe deine Pixel Art Fähigkeiten ohne Zeitdruck',
+		selectMode: 'Spielmodus wählen',
+	},
+
 	landing: {
 		heroTitle: 'Pixel Art Battles',
 		heroSubtitle: 'Zeichnen. Voten. Gewinnen.',

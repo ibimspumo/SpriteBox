@@ -13,6 +13,7 @@ import {
   type FinaleData,
   type GameResultsData,
   type SessionRestoredData,
+  type GameModesData,
 } from './socket';
 import {
   connectionStatus,
@@ -33,6 +34,9 @@ import {
   startTimer,
   resetGameState,
   resetLobbyState,
+  availableGameModes,
+  selectedGameMode,
+  defaultGameMode,
   type GamePhase,
 } from './stores';
 import { recordGameResult, syncStatsWithServer } from './stats';
@@ -195,6 +199,13 @@ function setupEventHandlers(socket: AppSocket): void {
     globalOnlineCount.set(data.count);
   });
 
+  // === Game Modes ===
+  socket.on('game-modes', (data: GameModesData) => {
+    availableGameModes.set(data.available);
+    defaultGameMode.set(data.default);
+    selectedGameMode.set(data.default);
+  });
+
   // === Lobby Events ===
   socket.on('lobby-joined', (data: LobbyJoinedData) => {
     lobby.set({
@@ -206,6 +217,7 @@ function setupEventHandlers(socket: AppSocket): void {
       players: data.players,
       isSpectator: data.spectator,
       onlineCount: data.players.length,
+      gameMode: data.gameMode,
     });
     // Clear any password prompt on successful join
     passwordPrompt.set({ show: false, roomCode: null, error: null });
@@ -431,6 +443,7 @@ function setupEventHandlers(socket: AppSocket): void {
       players: data.players,
       isSpectator: data.isSpectator,
       onlineCount: data.players.length,
+      gameMode: data.gameMode,
     });
     game.update((g) => ({
       ...g,
