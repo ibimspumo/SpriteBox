@@ -205,106 +205,112 @@ Pixel Guesser ist ein Pictionary-artiges Spiel, bei dem ein Spieler zeichnet wä
 
 ## Pixel Survivor Modus
 
-Pixel Survivor ist ein Einzelspieler-Roguelike, bei dem du zeichnest um 30 Tage zu überleben.
+Pixel Survivor ist ein Einzelspieler-RPG, bei dem deine Pixelkunst die Stats, das Element und den Persönlichkeitszug deines Charakters bestimmt.
 
 ### Kernkonzept
 
-- **Zeichne deinen Charakter**: Stats (HP, Angriff, Verteidigung, Tempo, Glück) werden durch Pixelkunst-Eigenschaften bestimmt
-- **Zeichne zum Überleben**: Jedes Event erfordert eine gezeichnete Lösung, die geometrisch analysiert wird
-- **Roguelike-Fortschritt**: Permadeath, Upgrades beim Level-Up, 30-Tage-Runs
-- **Keine KI-Erkennung**: Reine geometrische Analyse (Form, Farbe, Dichte)
+- **Zeichne deinen Charakter**: Stats werden durch Pixelkunst-Eigenschaften bestimmt (Form, Farbe, Dichte)
+- **Element-System**: Dominante Farben bestimmen die Element-Affinität (Feuer, Wasser, Erde, Luft, Licht, Dunkel)
+- **Trait-System**: Zeichenstil bestimmt Persönlichkeitsmerkmale die das Gameplay beeinflussen
+- **Engine-basiert**: Flexibles RPG-Engine mit Stats, Modifiern, Effekten und Würfelwürfen
 
 ### Pixel Survivor Phasenablauf
 
 ```text
-  MENÜ                       CHARAKTER (120s)         TAG START (3s)
+  MENÜ                       CHARAKTER                GAMEPLAY
   ┌─────────────┐            ┌─────────────┐          ┌─────────────┐
-  │  Neuer Run/ │  Start     │  Zeichne    │          │  Tag X      │
-  │  Fortsetzen/│ ──────────►│  Survivor   │ ────────►│  Ressourcen │
-  │  Statistik  │            │  Stats Gen  │          │  Update     │
+  │  Neuer Run/ │  Start     │  Zeichne    │  Fertig  │  RPG        │
+  │  Fortsetzen/│ ──────────►│  Charakter  │ ────────►│  Gameplay   │
+  │  Statistik  │            │  (8x8 Grid) │          │  (Engine)   │
   └─────────────┘            └─────────────┘          └─────────────┘
-                                                             │
-       ┌─────────────────────────────────────────────────────┘
-       │
-       ▼
-  EVENT (5s)                 ZEICHNEN (60s)           ERGEBNIS (5s)
-  ┌─────────────┐            ┌─────────────┐          ┌─────────────┐
-  │  Zufällige  │            │  Zeichne    │          │  Erfolg oder│
-  │  Heraus-    │ ──────────►│  Lösung     │ ────────►│  Misserfolg │
-  │  forderung  │            │             │          │  +Belohnung │
-  └─────────────┘            └─────────────┘          └─────────────┘
-       │                                                     │
-       │                          ┌──────────────────────────┘
-       │                          │
-       │                          ▼
-       │                     LEVEL UP? (30s)          GAME OVER/SIEG
-       │                     ┌─────────────┐          ┌─────────────┐
-       │      HP > 0         │  Wähle 1    │  Tag 30  │  Punktzahl  │
-       └─────────────────────│  von 3      │ ────────►│  Statistik  │
-          Nächster Tag       │  Upgrades   │  /HP=0   │  Highscore  │
-                             └─────────────┘          └─────────────┘
+        ▲                                                    │
+        │                                                    │
+        └────────────────── Exit / Game Over ────────────────┘
 ```
 
 ### Pixel Survivor Phasen
 
-| Phase | Dauer | Beschreibung |
-|-------|-------|--------------|
-| Menü | - | Neuer Run, Fortsetzen oder Statistiken |
-| Charakter | 120 Sekunden | Charakter zeichnen, Stats aus Design berechnet |
-| Tag Start | 3 Sekunden | Tagnummer zeigen, Ressourcen aktualisieren |
-| Event | 5 Sekunden | Zufällige Herausforderung mit Hinweis |
-| Zeichnen | 60 Sekunden | Lösung für das Event zeichnen |
-| Ergebnis | 5 Sekunden | Erfolg/Misserfolg, Belohnungen/Schaden |
-| Level Up | 30 Sekunden | 1 von 3 zufälligen Upgrades wählen |
-| Game Over | - | Punktzahl zeigen wenn HP = 0 |
-| Sieg | - | Punktzahl zeigen wenn 30 Tage überlebt |
+| Phase | Beschreibung |
+|-------|--------------|
+| Menü | Neuer Run, gespeicherten Run fortsetzen, oder Statistiken |
+| Charakter | 8x8 Charakter zeichnen, Live-Stats-Vorschau |
+| Gameplay | Aktives Gameplay mit erstelltem Charakter |
 
-### Charakter-Stats aus Zeichnung
+### Charakter-Erstellungssystem
 
-Die Charakter-Pixelkunst wird analysiert um Stats zu generieren:
+Wenn du deinen Charakter zeichnest, analysiert die Engine die Pixelkunst in Echtzeit:
 
-| Eigenschaft | Beeinflusst | Beispiel |
-|-------------|-------------|----------|
-| Pixelanzahl | Max HP | Mehr Pixel = mehr HP (50-150) |
-| Asymmetrie | Angriff | Asymmetrisch = aggressiv (20-100) |
-| Symmetrie + Kompaktheit | Verteidigung | Symmetrisch = stabil (20-100) |
-| Geringe Dichte | Tempo | Spärlich = leicht/schnell (20-100) |
-| Farbvielfalt | Glück | Mehr Farben = mehr Glück (10-50) |
-| Dominante Farbe | Element | Rot=Feuer, Blau=Wasser, etc. |
+#### Stats aus Zeichnung
 
-### Zeichnungserkennung
+| Eigenschaft | Beeinflusster Stat | Funktionsweise |
+|-------------|-------------------|----------------|
+| Pixelanzahl | Max HP | Mehr gefüllte Pixel = mehr HP |
+| Asymmetrie | Angriff | Asymmetrische Designs = höherer Angriff |
+| Symmetrie | Verteidigung | Symmetrische, kompakte Designs = höhere Verteidigung |
+| Dichte | Tempo | Spärliche/leichte Designs = höheres Tempo |
+| Farbvielfalt | Glück | Mehr verwendete Farben = höheres Glück |
 
-Zeichnungen werden nach geometrischen Eigenschaften kategorisiert, nicht per KI:
+#### Element-Erkennung
 
-| Kategorie | Erkennungskriterien |
-|-----------|---------------------|
-| Waffe | Hoch (Seitenverhältnis ≥2.5), dünn (Breite ≤2) |
-| Schild | Breit, solide, kompakt, dicht (>0.7) |
-| Feuer | Warme Farben (Rot/Gelb/Orange), verstreut |
-| Unterschlupf | Hohl, groß (≥4x4) |
-| Brücke | Horizontal, flach (Höhe ≤2), lang (Breite ≥5) |
-| Boot | Hohl, untere Position |
-| Falle | Spitz, tiefe Position |
+Die dominanten Farben in deiner Zeichnung bestimmen deine Element-Affinität:
 
-### Event-Typen
+| Element | Farben | Stärken |
+|---------|--------|---------|
+| Feuer | Rot, Orange | Stark gegen Erde, schwach gegen Wasser |
+| Wasser | Blau, Cyan | Stark gegen Feuer, schwach gegen Erde |
+| Erde | Grün, Braun | Stark gegen Wasser, schwach gegen Luft |
+| Luft | Weiß, Hellgrau | Stark gegen Erde, schwach gegen Feuer |
+| Licht | Gelb, Gold | Stark gegen Dunkel |
+| Dunkel | Lila, Schwarz | Stark gegen Licht |
+| Neutral | Gemischt/Grau | Keine Schwächen, keine Stärken |
 
-- **Kampf**: Kämpfe gegen Kreaturen (Wolf, Bär, Banditen)
-- **Überleben**: Überlebe die Natur (Kälte, Hunger, Stürme)
-- **Erkundung**: Navigiere Terrain (Flüsse, Klippen, Höhlen)
-- **Sozial**: NPC-Interaktionen (Händler, Reisende)
-- **Mysterium**: Rätsel und Entscheidungen
+#### Trait-Erkennung
 
-### Gewinn-/Verlustbedingungen
+Dein Zeichenstil bestimmt Persönlichkeitsmerkmale:
 
-- **Gewinn**: 30 Tage überleben ODER Endboss an Tag 30 besiegen
-- **Verlust**: HP erreicht 0 (Permadeath)
-- **Punktzahl**: Überlebte Tage × Level × Getötete Monster
+| Trait | Erkennung | Effekt |
+|-------|-----------|--------|
+| Aggressiv | Hohe Asymmetrie, warme Farben | +Angriff, -Verteidigung |
+| Defensiv | Hohe Symmetrie, kompakt | +Verteidigung, -Tempo |
+| Flink | Geringe Dichte, spärlich | +Tempo, -HP |
+| Glücklich | Hohe Farbvielfalt | +Glück, +Kritische Treffer |
+| Ausgeglichen | Gleichmäßige Verteilung | Keine Boni oder Mali |
+| Chaotisch | Komplexe Muster | Zufällige Stat-Variationen |
+
+### Engine-Systeme
+
+Das Spiel verwendet eine modulare RPG-Engine:
+
+#### StatManager
+
+Verwaltet alle Charakter-Stats mit Basiswerten und Modifiern:
+
+- **Ressourcen**: HP, Mana, Schild
+- **Kampf**: Angriff, Verteidigung, Tempo, Glück
+- **Fortschritt**: Level, XP, XP bis nächstes Level
+
+#### EffectProcessor
+
+Verarbeitet Buffs, Debuffs und Statuseffekte:
+
+- Zeitbasierte Effekte (Gift, Regeneration)
+- Ausgelöste Effekte (bei Treffer, bei Kritisch)
+- Stapelbare Modifier
+
+#### DiceRoller
+
+Verarbeitet Skill-Checks und Schadensberechnungen:
+
+- D20-basierte Skill-Checks
+- Schadenswürfe mit Modifiern
+- Kritisches Treffen/Verfehlen System
 
 ### Technische Hinweise
 
-- **Einzelspieler**: Läuft clientseitig mit LocalStorage-Persistenz
-- **Keine Server-Räume**: Nur Modus-Registrierung für Konsistenz
-- **Keine Abstimmung**: Geometrische Analyse ersetzt Spieler-Voting
+- **Einzelspieler**: Läuft komplett clientseitig
+- **LocalStorage**: Charakter- und Run-Daten lokal gespeichert
+- **Keine Server-Räume**: Als Spielmodus registriert für Konsistenz
+- **Echtzeit-Vorschau**: Stats aktualisieren sich während des Zeichnens
 
 ## Nächste Schritte
 

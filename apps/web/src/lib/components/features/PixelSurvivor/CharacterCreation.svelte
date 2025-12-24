@@ -2,17 +2,19 @@
 <script lang="ts">
   import { Button, Icon } from '../../atoms';
   import { PixelCanvas } from '../../utility';
+  import StatLegendModal from './StatLegendModal.svelte';
   import { t } from '$lib/i18n';
   import { PALETTE } from '$lib/palette';
   import { selectedColor } from '$lib/stores';
   import {
     currentDrawing,
-    startNewRun,
+    startNewRunFromPixels,
     cancelCharacterCreation,
-    analyzeCharacter,
-    calculateCharacterStats,
+    previewCharacter,
+    generateRandomCharacter,
+    generateRandomName,
   } from '$lib/survivor';
-  import type { CharacterStats, SurvivorCharacter } from '$lib/survivor';
+  import type { CharacterPreview } from '$lib/survivor';
 
   // Stat definitions with icons and translation keys
   const STATS = [
@@ -25,13 +27,19 @@
 
   let mounted = $state(false);
   let characterName = $state('');
+  let showLegend = $state(false);
 
-  // Analyze character in real-time
-  let analysis = $derived(analyzeCharacter($currentDrawing));
-  let previewStats = $derived<CharacterStats | null>(analysis ? calculateCharacterStats(analysis) : null);
+  // Preview character stats in real-time using CharacterFactory
+  let previewStats = $derived<CharacterPreview | null>(previewCharacter($currentDrawing));
 
   // Check if character has enough pixels
-  let hasEnoughPixels = $derived(analysis !== null && analysis.pixelCount >= 5);
+  let hasEnoughPixels = $derived(previewStats !== null && previewStats.isValid);
+
+  // Check if name is valid (required)
+  let hasValidName = $derived(characterName.trim().length > 0);
+
+  // Can start run only if both conditions are met
+  let canStartRun = $derived(hasEnoughPixels && hasValidName);
 
   $effect(() => {
     setTimeout(() => {
@@ -52,41 +60,20 @@
   }
 
   function handleRandomize(): void {
-    // Generate random character pixels
-    const colors = ['0', '2', '3', '4', '5', '8', 'F', 'D']; // Common character colors
-    let pixels = '';
-    for (let i = 0; i < 64; i++) {
-      const x = i % 8;
-      const y = Math.floor(i / 8);
-      // Create a humanoid-ish shape
-      const inBody = x >= 2 && x <= 5 && y >= 1 && y <= 6;
-      const inHead = x >= 3 && x <= 4 && y >= 0 && y <= 1;
-      const inArms = (x === 1 || x === 6) && y >= 2 && y <= 4;
-      const inLegs = (x === 2 || x === 3 || x === 4 || x === 5) && y >= 6;
-
-      if (inHead || inBody || inArms || inLegs) {
-        if (Math.random() > 0.2) {
-          pixels += colors[Math.floor(Math.random() * colors.length)];
-        } else {
-          pixels += '1';
-        }
-      } else {
-        pixels += '1';
-      }
-    }
+    // Generate anatomically coherent character using template system
+    const pixels = generateRandomCharacter();
     currentDrawing.set(pixels);
   }
 
+  async function handleRandomizeName(): Promise<void> {
+    const name = await generateRandomName();
+    characterName = name;
+  }
+
   function handleStartRun(): void {
-    if (!previewStats || !hasEnoughPixels) return;
+    if (!canStartRun) return;
 
-    const character: SurvivorCharacter = {
-      pixels: $currentDrawing,
-      name: characterName.trim() || 'Survivor',
-      stats: previewStats,
-    };
-
-    startNewRun(character);
+    startNewRunFromPixels($currentDrawing, characterName.trim());
   }
 
   function handleBack(): void {
@@ -162,18 +149,23 @@
 
     <!-- Right: Stats Preview -->
     <div class="stats-section">
-      <h2>{$t.pixelSurvivor.previewStats}</h2>
+      <div class="stats-header">
+        <h2>{$t.pixelSurvivor.previewStats}</h2>
+        <button class="info-button" onclick={() => showLegend = true} aria-label={$t.pixelSurvivor.legend.title}>
+          <Icon name="info-box" size="sm" />
+        </button>
+      </div>
 
       {#if previewStats}
         <div class="stats-list">
           {#each STATS as stat}
             <div class="stat-bar-container">
-              <div class="stat-bar" style="width: {getStatPercent(previewStats[stat.key], stat.min, stat.max)}%; background: {stat.color};">
+              <div class="stat-bar" style="width: {getStatPercent(previewStats.stats[stat.key], stat.min, stat.max)}%; background: {stat.color};">
                 <span class="stat-icon-label">
                   <Icon name={stat.icon} size="sm" />
                   <span>{$t.pixelSurvivor.statAbbr[stat.transKey]}</span>
                 </span>
-                <span class="stat-value">{previewStats[stat.key]}</span>
+                <span class="stat-value">{previewStats.stats[stat.key]}</span>
               </div>
             </div>
           {/each}
@@ -211,14 +203,30 @@
 
       <!-- Name Input -->
       <div class="name-input">
-        <label for="character-name">{$t.pixelSurvivor.characterName}</label>
-        <input
-          id="character-name"
-          type="text"
-          bind:value={characterName}
-          placeholder={$t.pixelSurvivor.defaultName}
-          maxlength={20}
-        />
+        <label for="character-name">
+          {$t.pixelSurvivor.characterName}
+          <span class="required">*</span>
+        </label>
+        <div class="name-input-row">
+          <input
+            id="character-name"
+            type="text"
+            bind:value={characterName}
+            placeholder={$t.pixelSurvivor.enterName}
+            maxlength={30}
+            class:invalid={!hasValidName && characterName.length === 0}
+            required
+          />
+          <button
+            type="button"
+            class="dice-button"
+            onclick={handleRandomizeName}
+            aria-label={$t.pixelSurvivor.randomizeName}
+            title={$t.pixelSurvivor.randomizeName}
+          >
+            <Icon name="dice" size="sm" />
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -232,12 +240,15 @@
       variant="primary"
       size="lg"
       onclick={handleStartRun}
-      disabled={!hasEnoughPixels}
+      disabled={!canStartRun}
     >
       {$t.pixelSurvivor.startRun} →
     </Button>
   </div>
 </div>
+
+<!-- Legend Modal -->
+<StatLegendModal show={showLegend} onclose={() => showLegend = false} />
 
 <style>
   .character-creation {
@@ -367,12 +378,39 @@
     border-radius: var(--radius-md);
   }
 
+  .stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .stats-section h2 {
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 1px;
+  }
+
+  .info-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: var(--color-bg-tertiary);
+    border: 2px solid var(--color-bg-elevated);
+    border-radius: 50%;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .info-button:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-accent);
+    border-color: var(--color-accent);
   }
 
   .stats-list {
@@ -482,13 +520,26 @@
   }
 
   .name-input label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 1px;
   }
 
+  .name-input .required {
+    color: var(--color-danger);
+  }
+
+  .name-input-row {
+    display: flex;
+    gap: var(--space-2);
+  }
+
   .name-input input {
+    flex: 1;
     padding: var(--space-2) var(--space-3);
     background: var(--color-bg-tertiary);
     border: 2px solid var(--color-bg-elevated);
@@ -501,6 +552,37 @@
   .name-input input:focus {
     outline: none;
     border-color: var(--color-accent);
+  }
+
+  .name-input input.invalid {
+    border-color: var(--color-danger);
+  }
+
+  .dice-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: var(--color-bg-tertiary);
+    border: 2px solid var(--color-bg-elevated);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .dice-button:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    transform: rotate(15deg);
+  }
+
+  .dice-button:active {
+    transform: rotate(360deg);
+    transition: transform 0.3s ease;
   }
 
   .actions {

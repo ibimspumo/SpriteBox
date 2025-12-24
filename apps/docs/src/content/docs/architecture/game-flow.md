@@ -311,103 +311,109 @@ Pixel Guesser is a Pictionary-style game where one player draws while others gue
 
 ## Pixel Survivor Mode
 
-Pixel Survivor is a single-player roguelike where you draw to survive 30 days of challenges.
+Pixel Survivor is a single-player RPG where your pixel art determines your character's stats, element, and personality trait.
 
 ### Core Concept
 
-- **Draw your character**: Stats (HP, Attack, Defense, Speed, Luck) determined by pixel art properties
-- **Draw to survive**: Each event requires a drawn solution analyzed geometrically
-- **Roguelike progression**: Permadeath, upgrades on level-up, 30-day runs
-- **No AI recognition**: Pure geometric analysis (shape, color, density)
+- **Draw your character**: Stats determined by pixel art properties (shape, color, density)
+- **Element system**: Dominant colors determine elemental affinity (Fire, Water, Earth, Air, Light, Dark)
+- **Trait system**: Drawing style determines personality traits affecting gameplay
+- **Engine-based**: Flexible RPG engine with stats, modifiers, effects, and dice rolls
 
 ### Pixel Survivor Phase Flow
 
 ```text
-  MENU                      CHARACTER (120s)         DAY START (3s)
+  MENU                      CHARACTER                GAMEPLAY
   ┌─────────────┐           ┌─────────────┐          ┌─────────────┐
-  │  New Run /  │  Start    │  Draw Your  │          │  Day X      │
-  │  Continue / │ ─────────►│  Survivor   │ ────────►│  Resource   │
-  │  Stats      │           │  Stats Gen  │          │  Update     │
+  │  New Run /  │  Start    │  Draw Your  │  Done    │  RPG        │
+  │  Continue / │ ─────────►│  Character  │ ────────►│  Gameplay   │
+  │  Stats      │           │  (8x8 grid) │          │  (Engine)   │
   └─────────────┘           └─────────────┘          └─────────────┘
-                                                            │
-       ┌────────────────────────────────────────────────────┘
-       │
-       ▼
-  EVENT (5s)                DRAWING (60s)            RESULT (5s)
-  ┌─────────────┐           ┌─────────────┐          ┌─────────────┐
-  │  Random     │           │  Draw       │          │  Success or │
-  │  Challenge  │ ─────────►│  Solution   │ ────────►│  Failure    │
-  │  + Hint     │           │             │          │  +Rewards   │
-  └─────────────┘           └─────────────┘          └─────────────┘
-       │                                                    │
-       │                         ┌──────────────────────────┘
-       │                         │
-       │                         ▼
-       │                    LEVEL UP? (30s)          GAME OVER/VICTORY
-       │                    ┌─────────────┐          ┌─────────────┐
-       │      HP > 0        │  Choose 1   │  Day 30  │  Score      │
-       └────────────────────│  of 3       │ ────────►│  Stats      │
-         Next Day           │  Upgrades   │  or HP=0 │  Highscore  │
-                            └─────────────┘          └─────────────┘
+        ▲                                                   │
+        │                                                   │
+        └───────────────── Exit / Game Over ────────────────┘
 ```
 
 ### Pixel Survivor Phases
 
-| Phase | Duration | Description |
-|-------|----------|-------------|
-| Menu | - | New run, continue, or view statistics |
-| Character | 120 seconds | Draw character, stats calculated from design |
-| Day Start | 3 seconds | Show day number, update resources |
-| Event | 5 seconds | Display random challenge with hint |
-| Drawing | 60 seconds | Draw solution to the event |
-| Result | 5 seconds | Show success/failure, rewards/damage |
-| Level Up | 30 seconds | Choose 1 of 3 random upgrades |
-| Game Over | - | Show score if HP reaches 0 |
-| Victory | - | Show score if survived 30 days |
+| Phase | Description |
+|-------|-------------|
+| Menu | New run, continue saved run, or view statistics |
+| Character | Draw 8x8 character, see live stat preview |
+| Gameplay | Active gameplay with the created character |
 
-### Character Stats from Drawing
+### Character Creation System
 
-Character pixel art is analyzed to generate stats:
+When you draw your character, the engine analyzes the pixel art in real-time:
 
-| Property | Affects | Example |
-|----------|---------|---------|
-| Pixel count | Max HP | More pixels = more HP (50-150) |
-| Asymmetry | Attack | Asymmetric = aggressive (20-100) |
-| Symmetry + Compactness | Defense | Symmetric = stable (20-100) |
-| Low density | Speed | Sparse = light/fast (20-100) |
-| Color variety | Luck | More colors = luckier (10-50) |
-| Dominant color | Element | Red=Fire, Blue=Water, etc. |
+#### Stats from Drawing
 
-### Drawing Recognition
+| Property | Stat Affected | How It Works |
+|----------|---------------|--------------|
+| Pixel count | Max HP | More filled pixels = more HP |
+| Asymmetry | Attack | Asymmetric designs = higher attack |
+| Symmetry | Defense | Symmetric, compact designs = higher defense |
+| Density | Speed | Sparse/light designs = higher speed |
+| Color variety | Luck | More colors used = higher luck |
 
-Drawings are categorized by geometric properties, not AI recognition:
+#### Element Detection
 
-| Category | Detection Criteria |
-|----------|-------------------|
-| Weapon | Tall (aspect ratio ≥2.5), thin (width ≤2) |
-| Shield | Wide, solid, compact, dense (>0.7) |
-| Fire | Warm colors (red/yellow/orange), scattered |
-| Shelter | Hollow, large (≥4x4) |
-| Bridge | Horizontal, flat (height ≤2), long (width ≥5) |
-| Boat | Hollow, bottom position |
-| Trap | Pointy, low position |
+The dominant colors in your drawing determine your elemental affinity:
 
-### Event Types
+| Element | Colors | Strengths |
+|---------|--------|-----------|
+| Fire | Red, Orange | Strong vs Earth, weak vs Water |
+| Water | Blue, Cyan | Strong vs Fire, weak vs Earth |
+| Earth | Green, Brown | Strong vs Water, weak vs Air |
+| Air | White, Light Gray | Strong vs Earth, weak vs Fire |
+| Light | Yellow, Gold | Strong vs Dark |
+| Dark | Purple, Black | Strong vs Light |
+| Neutral | Mixed/Gray | No weaknesses, no strengths |
 
-- **Combat**: Fight creatures (wolf, bear, bandits)
-- **Survival**: Survive nature (cold, hunger, storms)
-- **Exploration**: Navigate terrain (rivers, cliffs, caves)
-- **Social**: NPC interactions (merchants, travelers)
-- **Mystery**: Puzzles and choices
+#### Trait Detection
 
-### Win/Lose Conditions
+Your drawing style determines personality traits:
 
-- **Win**: Survive 30 days OR defeat Final Boss on Day 30
-- **Lose**: HP reaches 0 (permadeath)
-- **Score**: Days survived × Level × Monsters killed
+| Trait | Detection | Effect |
+|-------|-----------|--------|
+| Aggressive | High asymmetry, warm colors | +Attack, -Defense |
+| Defensive | High symmetry, compact | +Defense, -Speed |
+| Swift | Low density, sparse | +Speed, -HP |
+| Lucky | High color variety | +Luck, +Critical chance |
+| Balanced | Even distribution | No bonuses or penalties |
+| Chaotic | Complex patterns | Random stat variations |
+
+### Engine Systems
+
+The game uses a modular RPG engine:
+
+#### StatManager
+
+Manages all character stats with base values and modifiers:
+
+- **Resources**: HP, Mana, Shield
+- **Combat**: Attack, Defense, Speed, Luck
+- **Progression**: Level, XP, XP to next level
+
+#### EffectProcessor
+
+Handles buffs, debuffs, and status effects:
+
+- Time-based effects (poison, regeneration)
+- Triggered effects (on hit, on critical)
+- Stackable modifiers
+
+#### DiceRoller
+
+Handles skill checks and damage calculations:
+
+- D20-based skill checks
+- Damage rolls with modifiers
+- Critical hit/miss system
 
 ### Technical Notes
 
-- **Single-player**: Runs client-side with LocalStorage persistence
-- **No server rooms**: Mode registration only for consistency
-- **No voting**: Geometric analysis replaces player voting
+- **Single-player**: Runs entirely client-side
+- **LocalStorage**: Character and run data persisted locally
+- **No server rooms**: Registered as game mode for consistency
+- **Real-time preview**: Stats update as you draw

@@ -1,9 +1,11 @@
 <!-- PixelSurvivor/Statistics.svelte - Player statistics display -->
+<!-- Simplified: Only character creation stats -->
 <script lang="ts">
   import { Button } from '../../atoms';
   import { Modal } from '../../organisms';
   import { t } from '$lib/i18n';
   import { survivorStats } from '$lib/survivor';
+  import type { Element, Trait } from '$lib/survivor';
 
   interface Props {
     show: boolean;
@@ -13,6 +15,18 @@
   let { show, onclose }: Props = $props();
 
   const stats = $derived($survivorStats);
+
+  // Get translated element name
+  function getElementName(element: string): string {
+    const elements = $t.pixelSurvivor.elements;
+    return elements[element as Element] ?? element;
+  }
+
+  // Get translated trait name
+  function getTraitName(trait: string): string {
+    const traits = $t.pixelSurvivor.traits;
+    return traits[trait as Trait] ?? trait;
+  }
 
   function formatTime(ms: number): string {
     const seconds = Math.floor(ms / 1000);
@@ -26,101 +40,38 @@
     }
     return `${seconds}s`;
   }
-
-  const winRate = $derived(
-    stats.totalRuns > 0 ? Math.round((stats.totalWins / stats.totalRuns) * 100) : 0
-  );
 </script>
 
 <Modal {show} {onclose} title={$t.pixelSurvivor.statistics}>
   <div class="stats-grid">
-    <!-- Run Stats -->
+    <!-- Character Stats -->
     <div class="stat-section">
-      <h3 class="section-title">{$t.stats.gamesPlayed}</h3>
+      <h3 class="section-title">{$t.pixelSurvivor.charactersCreated}</h3>
       <div class="stat-row">
-        <span class="stat-label">Total Runs</span>
-        <span class="stat-value">{stats.totalRuns}</span>
+        <span class="stat-label">{$t.pixelSurvivor.totalCharacters}</span>
+        <span class="stat-value accent">{stats.totalCharactersCreated}</span>
       </div>
-      <div class="stat-row">
-        <span class="stat-label">{$t.stats.wins}</span>
-        <span class="stat-value success">{stats.totalWins}</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Deaths</span>
-        <span class="stat-value danger">{stats.totalDeaths}</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">{$t.stats.winRate}</span>
-        <span class="stat-value">{winRate}%</span>
-      </div>
-    </div>
-
-    <!-- Progress Stats -->
-    <div class="stat-section">
-      <h3 class="section-title">Progress</h3>
-      <div class="stat-row">
-        <span class="stat-label">Best Day</span>
-        <span class="stat-value accent">{stats.bestDayReached}</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Total Days</span>
-        <span class="stat-value">{stats.totalDaysSurvived}</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Monsters Killed</span>
-        <span class="stat-value">{stats.totalMonstersKilled}</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Levels Gained</span>
-        <span class="stat-value">{stats.totalLevelsGained}</span>
-      </div>
-    </div>
-
-    <!-- Drawing Stats -->
-    <div class="stat-section">
-      <h3 class="section-title">Drawing</h3>
-      <div class="stat-row">
-        <span class="stat-label">Total Drawings</span>
-        <span class="stat-value">{stats.totalDrawings}</span>
-      </div>
-      {#if stats.favoriteCategory}
+      {#if stats.favoriteElement}
         <div class="stat-row">
-          <span class="stat-label">Favorite</span>
-          <span class="stat-value accent">{stats.favoriteCategory}</span>
+          <span class="stat-label">{$t.pixelSurvivor.favoriteElement}</span>
+          <span class="stat-value">{getElementName(stats.favoriteElement)}</span>
         </div>
       {/if}
-    </div>
-
-    <!-- Resource Stats -->
-    <div class="stat-section">
-      <h3 class="section-title">Resources</h3>
-      <div class="stat-row">
-        <span class="stat-label">{$t.pixelSurvivor.gold} Earned</span>
-        <span class="stat-value">{stats.totalGoldEarned}</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Damage Taken</span>
-        <span class="stat-value danger">{stats.totalDamageTaken}</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Damage Dealt</span>
-        <span class="stat-value success">{stats.totalDamageDealt}</span>
-      </div>
+      {#if stats.favoriteTrait}
+        <div class="stat-row">
+          <span class="stat-label">{$t.pixelSurvivor.favoriteTrait}</span>
+          <span class="stat-value">{getTraitName(stats.favoriteTrait)}</span>
+        </div>
+      {/if}
     </div>
 
     <!-- Time Stats -->
     <div class="stat-section">
-      <h3 class="section-title">Time</h3>
+      <h3 class="section-title">{$t.pixelSurvivor.time}</h3>
       <div class="stat-row">
-        <span class="stat-label">Total Play Time</span>
+        <span class="stat-label">{$t.pixelSurvivor.totalPlayTime}</span>
         <span class="stat-value">{formatTime(stats.totalPlayTime)}</span>
       </div>
-      {#if stats.fastestWin}
-        <div class="stat-row">
-          <span class="stat-label">Fastest Win</span>
-          <span class="stat-value accent">{formatTime(stats.fastestWin)}</span>
-        </div>
-      {/if}
     </div>
   </div>
 
@@ -176,14 +127,6 @@
     font-size: var(--font-size-md);
     font-weight: var(--font-weight-bold);
     color: var(--color-text-primary);
-  }
-
-  .stat-value.success {
-    color: var(--color-success);
-  }
-
-  .stat-value.danger {
-    color: var(--color-danger);
   }
 
   .stat-value.accent {

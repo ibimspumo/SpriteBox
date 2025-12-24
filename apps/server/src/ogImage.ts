@@ -77,7 +77,7 @@ function generateOgSvg(logoBase64: string): string {
     x="600"
     y="400"
     text-anchor="middle"
-    font-family="'Pixelify Sans', 'Press Start 2P', monospace"
+    font-family="'NF-Pixels', 'Press Start 2P', monospace"
     font-size="32"
     font-weight="600"
     fill="${COLORS.textSecondary}"
@@ -97,7 +97,7 @@ function generateOgSvg(logoBase64: string): string {
       <!-- 3D shadow (bottom/right darker) -->
       <rect x="-60" y="16" width="120" height="4" fill="rgba(0, 0, 0, 0.25)"/>
       <rect x="56" y="-20" width="4" height="40" fill="rgba(0, 0, 0, 0.2)"/>
-      <text x="0" y="8" text-anchor="middle" font-family="'Pixelify Sans', monospace" font-size="20" font-weight="700" fill="#0f0f23">DRAW</text>
+      <text x="0" y="8" text-anchor="middle" font-family="'NF-Pixels', monospace" font-size="20" font-weight="700" fill="#0f0f23">DRAW</text>
     </g>
 
     <!-- Vote badge (Brand/Orange) -->
@@ -108,7 +108,7 @@ function generateOgSvg(logoBase64: string): string {
       <rect x="-60" y="-20" width="4" height="40" fill="rgba(255, 255, 255, 0.2)"/>
       <rect x="-60" y="16" width="120" height="4" fill="rgba(0, 0, 0, 0.25)"/>
       <rect x="56" y="-20" width="4" height="40" fill="rgba(0, 0, 0, 0.2)"/>
-      <text x="0" y="8" text-anchor="middle" font-family="'Pixelify Sans', monospace" font-size="20" font-weight="700" fill="#0f0f23">VOTE</text>
+      <text x="0" y="8" text-anchor="middle" font-family="'NF-Pixels', monospace" font-size="20" font-weight="700" fill="#0f0f23">VOTE</text>
     </g>
 
     <!-- Compete badge (Brand Light/Yellow) -->
@@ -119,7 +119,7 @@ function generateOgSvg(logoBase64: string): string {
       <rect x="-60" y="-20" width="4" height="40" fill="rgba(255, 255, 255, 0.2)"/>
       <rect x="-60" y="16" width="120" height="4" fill="rgba(0, 0, 0, 0.25)"/>
       <rect x="56" y="-20" width="4" height="40" fill="rgba(0, 0, 0, 0.2)"/>
-      <text x="0" y="8" text-anchor="middle" font-family="'Pixelify Sans', monospace" font-size="20" font-weight="700" fill="#0f0f23">WIN</text>
+      <text x="0" y="8" text-anchor="middle" font-family="'NF-Pixels', monospace" font-size="20" font-weight="700" fill="#0f0f23">WIN</text>
     </g>
   </g>
 
@@ -162,7 +162,7 @@ function generateOgSvg(logoBase64: string): string {
     x="600"
     y="580"
     text-anchor="middle"
-    font-family="'Pixelify Sans', monospace"
+    font-family="'NF-Pixels', monospace"
     font-size="26"
     font-weight="600"
     fill="${COLORS.accent}"
@@ -209,9 +209,9 @@ export async function generateOgImage(): Promise<Buffer> {
       const fallbackSvg = `
         <svg width="${OG_WIDTH}" height="${OG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
           <rect width="100%" height="100%" fill="${COLORS.bgPrimary}"/>
-          <text x="600" y="280" text-anchor="middle" font-family="'Pixelify Sans', monospace" font-size="72" font-weight="bold" fill="${COLORS.brand}">SpriteBox</text>
-          <text x="600" y="360" text-anchor="middle" font-family="'Pixelify Sans', monospace" font-size="32" fill="${COLORS.textSecondary}">Multiplayer Pixel Art Game</text>
-          <text x="600" y="450" text-anchor="middle" font-family="'Pixelify Sans', monospace" font-size="26" font-weight="600" fill="${COLORS.accent}">spritebox.de</text>
+          <text x="600" y="280" text-anchor="middle" font-family="'NF-Pixels', monospace" font-size="72" font-weight="bold" fill="${COLORS.brand}">SpriteBox</text>
+          <text x="600" y="360" text-anchor="middle" font-family="'NF-Pixels', monospace" font-size="32" fill="${COLORS.textSecondary}">Multiplayer Pixel Art Game</text>
+          <text x="600" y="450" text-anchor="middle" font-family="'NF-Pixels', monospace" font-size="26" font-weight="600" fill="${COLORS.accent}">spritebox.de</text>
         </svg>`;
       cachedOgImage = await sharp(Buffer.from(fallbackSvg)).png().toBuffer();
       return cachedOgImage;

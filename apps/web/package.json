@@ -10,8 +10,10 @@
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
+    "@types/three": "^0.182.0",
     "lz-string": "^1.5.0",
-    "socket.io-client": "^4.8.0"
+    "socket.io-client": "^4.8.0",
+    "three": "^0.182.0"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.0",

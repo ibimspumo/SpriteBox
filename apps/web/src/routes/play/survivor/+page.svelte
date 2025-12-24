@@ -1,28 +1,22 @@
 <!-- Pixel Survivor Page - /play/survivor -->
-<!-- Single-player roguelike mode - no socket connection needed -->
+<!-- Single-player roguelike mode with persistent game shell -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { t } from '$lib/i18n';
   import {
     SurvivorMenu,
     CharacterCreation,
-    DayStart,
-    SurvivorEvent,
-    SurvivorResult,
-    LevelUp,
-    BossBattle,
-    GameOver,
-    Victory,
     SurvivorStatistics,
     HowToPlay,
+    GameplayDemo,
   } from '$lib/components/features';
+  import { SurvivorGameShell } from '$lib/components/organisms';
   import {
     survivorPhase,
-    survivorRun,
     showStatsScreen,
     showTutorial,
     initializeSurvivor,
-    startNewDay,
+    exitGameplay,
+    D20Tester,
   } from '$lib/survivor';
 
   let mounted = $state(false);
@@ -38,56 +32,53 @@
 
   // Current phase determines which component to show
   const phase = $derived($survivorPhase);
-  const run = $derived($survivorRun);
 
-  // Trigger day start when entering day-start phase without an event
-  $effect(() => {
-    if (phase === 'survivor-day-start' && run && !run.currentEvent) {
-      startNewDay();
-    }
-  });
+  // Is this a gameplay phase that needs the shell?
+  const isGameplayPhase = $derived(phase === 'survivor-gameplay');
+
+  function handleHomeClick(): void {
+    exitGameplay();
+  }
 </script>
 
 <div class="survivor-page" class:mounted>
-  <div class="survivor-container">
-    {#if phase === 'survivor-menu'}
-      <SurvivorMenu />
-    {:else if phase === 'survivor-character'}
-      <CharacterCreation />
-    {:else if phase === 'survivor-day-start'}
-      <DayStart />
-    {:else if phase === 'survivor-event'}
-      <SurvivorEvent />
-    {:else if phase === 'survivor-drawing'}
-      <!-- Drawing submitted, show result -->
-      <SurvivorResult />
-    {:else if phase === 'survivor-result'}
-      <SurvivorResult />
-    {:else if phase === 'survivor-levelup'}
-      <LevelUp />
-    {:else if phase === 'survivor-boss'}
-      <BossBattle />
-    {:else if phase === 'survivor-gameover'}
-      <GameOver />
-    {:else if phase === 'survivor-victory'}
-      <Victory />
-    {:else}
-      <!-- Fallback to menu -->
-      <SurvivorMenu />
-    {/if}
-  </div>
+  {#if isGameplayPhase}
+    <!-- Gameplay phases use the persistent game shell -->
+    <SurvivorGameShell
+      gold={125}
+      showSidebar={true}
+      onhome={handleHomeClick}
+    >
+      <GameplayDemo />
+    </SurvivorGameShell>
+  {:else}
+    <!-- Non-gameplay phases (menu, character creation) have their own layout -->
+    <div class="survivor-container">
+      {#if phase === 'survivor-menu'}
+        <SurvivorMenu />
+      {:else if phase === 'survivor-character'}
+        <CharacterCreation />
+      {:else}
+        <!-- Fallback to menu -->
+        <SurvivorMenu />
+      {/if}
+    </div>
+  {/if}
 
-  <!-- Statistics Modal -->
+  <!-- Statistics Modal (available in all phases) -->
   <SurvivorStatistics
     show={$showStatsScreen}
     onclose={() => showStatsScreen.set(false)}
   />
 
-  <!-- How to Play Modal -->
+  <!-- How to Play Modal (available in all phases) -->
   <HowToPlay
     show={$showTutorial}
     onclose={() => showTutorial.set(false)}
   />
+
+  <!-- D20 Tester (Dev Mode Only) -->
+  <D20Tester />
 </div>
 
 <style>
@@ -95,10 +86,6 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background:
-      radial-gradient(ellipse at 30% 20%, rgba(255, 100, 100, 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 70% 80%, rgba(255, 200, 100, 0.06) 0%, transparent 50%),
-      var(--color-bg-primary);
     opacity: 0;
     transition: opacity 0.3s ease;
   }
@@ -113,6 +100,10 @@
     align-items: center;
     justify-content: center;
     padding: var(--space-6);
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(255, 100, 100, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(255, 200, 100, 0.06) 0%, transparent 50%),
+      var(--color-bg-primary);
   }
 
   @media (max-width: 640px) {

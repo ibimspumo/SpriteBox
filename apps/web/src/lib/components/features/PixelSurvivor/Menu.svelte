@@ -1,4 +1,5 @@
 <!-- PixelSurvivor/Menu.svelte - Main menu for Pixel Survivor mode -->
+<!-- Simplified: Only character creation remains -->
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { Button, Badge } from '../../atoms';
@@ -9,15 +10,17 @@
     hasActiveRunStore,
     initializeSurvivor,
     abandonRun,
-    setPhase,
     enterCharacterCreation,
+    enterGameplay,
     showStatsScreen,
     showTutorial,
   } from '$lib/survivor';
   import { onMount } from 'svelte';
+  import CharacterView from './CharacterView.svelte';
 
   let mounted = $state(false);
   let showAbandonConfirm = $state(false);
+  let showCharacterView = $state(false);
 
   onMount(() => {
     // Initialize survivor data from localStorage
@@ -43,9 +46,16 @@
     enterCharacterCreation();
   }
 
-  function handleContinue() {
-    if ($survivorRun) {
-      setPhase($survivorRun.phase);
+  function handleViewCharacter() {
+    if ($survivorRun?.character) {
+      showCharacterView = true;
+    }
+  }
+
+  function handlePlayGame() {
+    // Enter gameplay mode
+    if ($survivorRun?.character) {
+      enterGameplay();
     }
   }
 
@@ -89,7 +99,7 @@
       <!-- Abandon Confirmation -->
       <div class="confirm-panel">
         <p class="confirm-text">
-          {$t.pixelSurvivor.day} {$survivorRun?.day ?? 1} - {$t.pixelSurvivor.level} {$survivorRun?.level ?? 1}
+          {$survivorRun?.character?.name ?? 'Survivor'}
         </p>
         <p class="confirm-warning">
           {$t.pixelSurvivor.abandonWarning}
@@ -104,17 +114,25 @@
         </div>
       </div>
     {:else}
-      <!-- Continue Run (if active) -->
-      {#if $hasActiveRunStore}
+      <!-- Active Character (if exists) -->
+      {#if $hasActiveRunStore && $survivorRun?.character}
         <div class="active-run-info">
-          <span class="run-status">{$t.pixelSurvivor.day} {$survivorRun?.day ?? 1}/30</span>
+          <span class="run-status">{$survivorRun.character.name}</span>
           <span class="run-details">
-            {$t.pixelSurvivor.level} {$survivorRun?.level ?? 1} · {$survivorRun?.hp ?? 100}/{$survivorRun?.maxHp ?? 100} {$t.pixelSurvivor.hp}
+            {$t.pixelSurvivor.elements[$survivorRun.character.gameCharacter.elementAffinity.primary]} · {$t.pixelSurvivor.traits[$survivorRun.character.gameCharacter.trait]}
           </span>
         </div>
-        <Button variant="primary" size="lg" fullWidth onclick={handleContinue}>
-          {$t.pixelSurvivor.continueRun}
+
+        <!-- Play Button (main action) -->
+        <Button variant="action" size="lg" fullWidth onclick={handlePlayGame}>
+          Play Demo →
         </Button>
+
+        <!-- View Character -->
+        <Button variant="secondary" fullWidth onclick={handleViewCharacter}>
+          {$t.pixelSurvivor.viewCharacter}
+        </Button>
+
         <div class="divider">
           <span class="divider-line"></span>
           <span class="divider-text">{$t.common.or}</span>
@@ -133,7 +151,7 @@
       </Button>
 
       <!-- Statistics -->
-      {#if $survivorStats.totalRuns > 0}
+      {#if $survivorStats.totalCharactersCreated > 0}
         <Button variant="ghost" fullWidth onclick={handleStatistics}>
           {$t.pixelSurvivor.statistics}
         </Button>
@@ -147,21 +165,11 @@
   </div>
 
   <!-- Stats Preview -->
-  {#if $survivorStats.totalRuns > 0}
+  {#if $survivorStats.totalCharactersCreated > 0}
     <div class="stats-preview">
       <span class="stat-item">
-        <span class="stat-value">{$survivorStats.totalRuns}</span>
-        <span class="stat-label">{$t.pixelSurvivor.runs}</span>
-      </span>
-      <span class="stat-divider">·</span>
-      <span class="stat-item">
-        <span class="stat-value">{$survivorStats.totalWins}</span>
-        <span class="stat-label">{$t.pixelSurvivor.wins}</span>
-      </span>
-      <span class="stat-divider">·</span>
-      <span class="stat-item">
-        <span class="stat-value">{$survivorStats.bestDayReached}</span>
-        <span class="stat-label">{$t.pixelSurvivor.bestDayLabel}</span>
+        <span class="stat-value">{$survivorStats.totalCharactersCreated}</span>
+        <span class="stat-label">{$t.pixelSurvivor.charactersCreated}</span>
       </span>
     </div>
   {/if}
@@ -170,6 +178,12 @@
   <button class="back-link" onclick={handleBackToModes}>
     ← {$t.common.backToModes}
   </button>
+
+  <!-- Character View Modal -->
+  <CharacterView
+    show={showCharacterView}
+    onclose={() => showCharacterView = false}
+  />
 </div>
 
 <style>
@@ -341,10 +355,6 @@
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 1px;
-  }
-
-  .stat-divider {
-    color: var(--color-text-muted);
   }
 
   .back-link {

@@ -1,29 +1,20 @@
 // apps/web/src/lib/survivor/index.ts
 // Barrel exports for Pixel Survivor module
+// Simplified: Only character creation system remains
 
 // Types
 export type {
   PixelSurvivorPhase,
   Element,
   Trait,
-  EventCategory,
   CharacterStats,
   SurvivorCharacter,
-  StatusEffect,
-  DrawingRecord,
-  CurrentEvent,
-  DrawingAnalysis,
-  Upgrade,
-  UpgradeEffect,
-  BossState,
   PixelSurvivorRun,
   PixelSurvivorStats,
-  HighscoreEntry,
-  PixelSurvivorHighscores,
   PixelSurvivorSettings,
 } from './types.js';
 
-export { DEFAULT_STATS, DEFAULT_SETTINGS, DEFAULT_HIGHSCORES } from './types.js';
+export { DEFAULT_STATS, DEFAULT_SETTINGS } from './types.js';
 
 // Storage
 export {
@@ -33,8 +24,6 @@ export {
   hasActiveRun,
   saveStats,
   loadStats,
-  saveHighscores,
-  loadHighscores,
   saveSettings,
   loadSettings,
   clearAllData,
@@ -47,16 +36,32 @@ export {
   survivorPhase,
   hasActiveRun as hasActiveRunStore,
   isCreatingCharacter,
-  effectiveStats,
-  hpPercent,
-  xpPercent,
+  currentGameCharacter,
   survivorStats,
   survivorSettings,
   currentDrawing,
   survivorSelectedColor,
-  analysisResult,
   showStatsScreen,
   showTutorial,
+  // Engine stores
+  statManager,
+  currentHp,
+  maxHp,
+  currentMana,
+  maxMana,
+  currentShield,
+  playerAttack,
+  playerDefense,
+  playerSpeed,
+  playerLuck,
+  playerLevel,
+  playerXp,
+  playerXpToNext,
+  activeBuffs,
+  activeDebuffs,
+  currentElement,
+  currentTrait,
+  // Actions
   initializeSurvivor,
   resetToMenu,
   setPhase,
@@ -64,99 +69,39 @@ export {
   endRun,
   abandonRun,
   startNewRun,
+  startNewRunFromPixels,
+  previewCharacter,
   enterCharacterCreation,
   cancelCharacterCreation,
+  enterGameplay,
+  exitGameplay,
+  // Combat/Resource actions
+  heal,
+  takeDamage,
+  addXp,
 } from './store.js';
 
-// Analysis (Character Creation)
-export type { CharacterAnalysis, ShapeAnalysis, DrawingCategory } from './analysis.js';
+// Analysis (Character Creation) - Now uses engine
+export type { CharacterAnalysis, ElementDetectionResult, TraitDetectionResult } from './analysis.js';
 export {
-  analyzeCharacter,
-  calculateCharacterStats,
-  determineElement,
-  determineTrait,
-  analyzeShape,
+  analyzeCharacterPixels,
+  detectElement,
+  detectTrait,
+  calculateBaseStats,
+  CharacterFactory,
 } from './analysis.js';
 
-// Drawable Analysis (Event Drawing Detection)
-export type { DrawableAnalysis } from './drawable-analysis.js';
-export { analyzeDrawable, checkDrawableCondition } from './drawable-analysis.js';
+// Engine (Stats, Modifiers, Effects, Dice)
+export * from './engine/index.js';
 
-// Categories
-export type { CategoryMeta } from './categories.js';
+// Character Generator (Template-based random generation with high variance)
 export {
-  CATEGORY_META,
-  getCategoryIcon,
-  getCategoryColor,
-  getSolutionCategories,
-  getCategoryMeta,
-  getAllCategories,
-  getCategoriesByShape,
-} from './categories.js';
+  generateRandomCharacter,
+  generateCharacterWithTemplate,
+  generateCharacterByCategory,
+  TEMPLATE_NAMES,
+  TEMPLATE_CATEGORIES,
+} from './character-generator.js';
 
-// Hints
-export type {
-  SoftHint,
-  CategoryMatchExplanation,
-  CategoryCondition,
-  CategoryRequirement,
-  ProgressReport,
-} from './hints.js';
-export {
-  CATEGORY_REQUIREMENTS,
-  generateSoftHints,
-  generateHintsForSolutions,
-  getBestHint,
-  explainCategoryMatch,
-  getTopHints,
-  getPrimaryNegativeHint,
-  getPrimaryPositiveHint,
-  meetsMinimumRequirements,
-  getCategoryConditions,
-  generateProgressReport,
-} from './hints.js';
-
-// Data
-export type {
-  GameEvent,
-  EventSolution,
-  Monster,
-  Boss,
-  UpgradeData,
-  DrawableCategory,
-  EventsData,
-  MonstersData,
-  UpgradesData,
-} from './data.js';
-export {
-  loadEvents,
-  loadMonsters,
-  loadUpgrades,
-  loadDrawableObjects,
-  loadAllGameData,
-  selectRandomEvent,
-  selectRandomUpgrades,
-  getLocalizedText,
-} from './data.js';
-
-// Engine
-export {
-  startNewDay,
-  proceedToEvent,
-  submitDrawingSolution,
-  resolveEvent,
-  applyEventResults,
-  proceedFromResult,
-  advanceDay,
-  getLevelUpChoices,
-  selectUpgrade,
-  // Boss Battle
-  getRandomBoss,
-  attackBoss,
-  fleeBoss,
-  initBossBattle,
-  // Live preview detection (uses same logic as submission)
-  getDetectedCategoryForPreview,
-  getDetectedCategorySync,
-  preloadDrawableObjects,
-} from './engine.js';
+// Name Generator (RPG-style random names)
+export { generateRandomName, generateSimpleName, generateFullTitle } from './name-generator.js';

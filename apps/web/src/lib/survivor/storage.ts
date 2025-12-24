@@ -1,20 +1,19 @@
 // apps/web/src/lib/survivor/storage.ts
 // LocalStorage utilities for Pixel Survivor
+// Simplified: Only character creation system remains
 
 import LZString from 'lz-string';
 import type {
   PixelSurvivorRun,
   PixelSurvivorStats,
   PixelSurvivorSettings,
-  PixelSurvivorHighscores,
 } from './types.js';
-import { DEFAULT_STATS, DEFAULT_SETTINGS, DEFAULT_HIGHSCORES } from './types.js';
+import { DEFAULT_STATS, DEFAULT_SETTINGS } from './types.js';
 
 // === Storage Keys ===
 const STORAGE_KEYS = {
   CURRENT_RUN: 'pixel_survivor_run',
   STATISTICS: 'pixel_survivor_stats',
-  HIGHSCORES: 'pixel_survivor_scores',
   SETTINGS: 'pixel_survivor_settings',
   VERSION: 'pixel_survivor_version',
 } as const;
@@ -98,35 +97,6 @@ export function loadStats(): PixelSurvivorStats {
   }
 }
 
-// === Highscores Storage ===
-
-/**
- * Save highscores to LocalStorage
- */
-export function saveHighscores(highscores: PixelSurvivorHighscores): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.HIGHSCORES, JSON.stringify(highscores));
-  } catch (error) {
-    console.error('[Survivor] Failed to save highscores:', error);
-  }
-}
-
-/**
- * Load highscores from LocalStorage
- */
-export function loadHighscores(): PixelSurvivorHighscores {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.HIGHSCORES);
-    if (!data) return { ...DEFAULT_HIGHSCORES };
-
-    const highscores = JSON.parse(data) as PixelSurvivorHighscores;
-    return migrateHighscores(highscores);
-  } catch (error) {
-    console.error('[Survivor] Failed to load highscores:', error);
-    return { ...DEFAULT_HIGHSCORES };
-  }
-}
-
 // === Settings Storage ===
 
 /**
@@ -169,10 +139,6 @@ function migrateRun(run: PixelSurvivorRun): PixelSurvivorRun {
 function migrateStats(stats: PixelSurvivorStats): PixelSurvivorStats {
   // Merge with defaults to ensure all fields exist
   return { ...DEFAULT_STATS, ...stats, version: SCHEMA_VERSION };
-}
-
-function migrateHighscores(highscores: PixelSurvivorHighscores): PixelSurvivorHighscores {
-  return { ...DEFAULT_HIGHSCORES, ...highscores, version: SCHEMA_VERSION };
 }
 
 function migrateSettings(settings: PixelSurvivorSettings): PixelSurvivorSettings {

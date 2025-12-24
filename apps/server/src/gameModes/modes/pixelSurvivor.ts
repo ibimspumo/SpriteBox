@@ -5,15 +5,12 @@ import type { GameModeConfig } from '../types.js';
 /**
  * Pixel Survivor - A single-player roguelike survival game.
  *
- * Players draw on an 8x8 pixel grid to survive 30 days of challenges.
- * Character stats are determined by the pixel art drawn for the character.
- * Events require drawing solutions that are analyzed geometrically.
+ * Currently only character creation is implemented.
+ * The game runs primarily client-side with LocalStorage persistence.
+ * The server only provides mode registration for consistency.
  *
  * Player count: 1 (single-player only)
- * Phases: survivor-menu → survivor-character → (day loop) → survivor-gameover/victory
- *
- * This mode runs primarily client-side with LocalStorage persistence.
- * The server only provides mode registration for consistency.
+ * Phases: survivor-menu → survivor-character
  */
 export const pixelSurvivorMode: GameModeConfig = {
   id: 'pixel-survivor',
@@ -26,33 +23,22 @@ export const pixelSurvivorMode: GameModeConfig = {
     privateMin: 1,
   },
 
-  // Survivor phases (mostly client-managed)
+  // Survivor phases (simplified - character creation only)
   phases: [
     'survivor-menu',
     'survivor-character',
-    'survivor-day-start',
-    'survivor-event',
-    'survivor-drawing',
-    'survivor-result',
-    'survivor-levelup',
-    'survivor-gameover',
-    'survivor-victory',
   ],
 
   timers: {
     lobby: null, // No lobby
     countdown: null, // No countdown
-    drawing: 60_000, // 60s per drawing challenge
+    drawing: null, // No timed drawing
     votingRound: null, // No voting
     finale: null, // No finale
     results: null, // No timed results
     reconnectGrace: 0, // Single-player, no reconnect
     // Survivor-specific timers (handled client-side)
     characterCreation: 120_000, // 2 minutes
-    dayStart: 3_000, // 3 seconds
-    eventIntro: 5_000, // 5 seconds
-    eventResult: 5_000, // 5 seconds
-    levelUp: 30_000, // 30 seconds
   },
 
   lobby: {
@@ -63,7 +49,7 @@ export const pixelSurvivorMode: GameModeConfig = {
     allowSpectators: false,
   },
 
-  voting: null, // No voting - geometric analysis instead
+  voting: null, // No voting
 
   canvas: {
     width: 8,

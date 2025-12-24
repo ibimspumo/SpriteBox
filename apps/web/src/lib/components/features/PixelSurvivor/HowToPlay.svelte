@@ -1,4 +1,5 @@
 <!-- PixelSurvivor/HowToPlay.svelte - Tutorial modal -->
+<!-- Simplified: Only character creation tutorial -->
 <script lang="ts">
   import { Button } from '../../atoms';
   import { Modal } from '../../organisms';
@@ -14,14 +15,6 @@
 
 <Modal {show} {onclose} title={$t.pixelSurvivor.howToPlay}>
   <div class="tutorial-content">
-    <!-- Goal -->
-    <section class="tutorial-section">
-      <h3 class="section-title">{$t.pixelSurvivor.tutorial.goal}</h3>
-      <p class="section-text">
-        {$t.pixelSurvivor.tutorial.goalText}
-      </p>
-    </section>
-
     <!-- Character -->
     <section class="tutorial-section">
       <h3 class="section-title">{$t.pixelSurvivor.tutorial.character}</h3>
@@ -37,48 +30,11 @@
       </ul>
     </section>
 
-    <!-- Events -->
-    <section class="tutorial-section">
-      <h3 class="section-title">{$t.pixelSurvivor.tutorial.events}</h3>
-      <p class="section-text">
-        {$t.pixelSurvivor.tutorial.eventsText}
-      </p>
-      <ul class="example-list">
-        <li>{$t.pixelSurvivor.tutorial.eventCategories.combat}</li>
-        <li>{$t.pixelSurvivor.tutorial.eventCategories.survival}</li>
-        <li>{$t.pixelSurvivor.tutorial.eventCategories.exploration}</li>
-        <li>{$t.pixelSurvivor.tutorial.eventCategories.social}</li>
-      </ul>
-    </section>
-
-    <!-- Drawing Tips -->
-    <section class="tutorial-section">
-      <h3 class="section-title">{$t.pixelSurvivor.tutorial.drawingTips}</h3>
-      <ul class="tip-list">
-        <li>{$t.pixelSurvivor.tutorial.drawingTipsList.analyzeShape}</li>
-        <li>{$t.pixelSurvivor.tutorial.drawingTipsList.tallThin}</li>
-        <li>{$t.pixelSurvivor.tutorial.drawingTipsList.wideHollow}</li>
-        <li>{$t.pixelSurvivor.tutorial.drawingTipsList.warmColors}</li>
-        <li>{$t.pixelSurvivor.tutorial.drawingTipsList.coolColors}</li>
-      </ul>
-    </section>
-
-    <!-- Resources -->
-    <section class="tutorial-section">
-      <h3 class="section-title">{$t.pixelSurvivor.tutorial.resources}</h3>
-      <ul class="resource-list">
-        <li>{$t.pixelSurvivor.tutorial.resourcesList.hp}</li>
-        <li>{$t.pixelSurvivor.tutorial.resourcesList.food}</li>
-        <li>{$t.pixelSurvivor.tutorial.resourcesList.gold}</li>
-        <li>{$t.pixelSurvivor.tutorial.resourcesList.xp}</li>
-      </ul>
-    </section>
-
-    <!-- Win Condition -->
+    <!-- Coming Soon -->
     <section class="tutorial-section highlight">
-      <h3 class="section-title">{$t.pixelSurvivor.tutorial.victory}</h3>
+      <h3 class="section-title">{$t.pixelSurvivor.tutorial.comingSoon}</h3>
       <p class="section-text">
-        {$t.pixelSurvivor.tutorial.victoryText}
+        {$t.pixelSurvivor.tutorial.comingSoonText}
       </p>
     </section>
   </div>
@@ -127,10 +83,7 @@
     line-height: 1.6;
   }
 
-  .stat-list,
-  .example-list,
-  .tip-list,
-  .resource-list {
+  .stat-list {
     margin: var(--space-2) 0 0;
     padding-left: var(--space-4);
     font-size: var(--font-size-sm);
@@ -138,14 +91,8 @@
     line-height: 1.8;
   }
 
-  .stat-list li,
-  .tip-list li,
-  .resource-list li {
+  .stat-list li {
     margin-bottom: var(--space-1);
-  }
-
-  .example-list li {
-    margin-bottom: var(--space-2);
   }
 
   .modal-actions {
