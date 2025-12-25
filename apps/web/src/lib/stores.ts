@@ -22,6 +22,7 @@ export interface GameModeInfo {
     max: number;
     privateMin?: number;
   };
+  allowPrivate: boolean;
 }
 
 export const availableGameModes = writable<GameModeInfo[]>([]);
@@ -136,7 +137,8 @@ export const currentGameModeInfo = derived(
       id: 'pixel-battle',
       displayName: 'Pixel Battle',
       i18nKey: 'pixelBattle',
-      players: { min: 5, max: 100 }
+      players: { min: 5, max: 100 },
+      allowPrivate: true,
     };
   }
 );

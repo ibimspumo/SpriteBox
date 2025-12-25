@@ -44,6 +44,7 @@ export { GameModeRegistry, gameModes } from './registry.js';
 // Re-export modes
 export { pixelBattleMode } from './modes/pixelBattle.js';
 export { copyCatMode } from './modes/copyCat.js';
+export { copyCatSoloMode } from './modes/copyCatSolo.js';
 export { pixelGuesserMode } from './modes/pixelGuesser.js';
 export { pixelSurvivorMode } from './modes/pixelSurvivor.js';
 
@@ -70,6 +71,7 @@ export {
 import { gameModes } from './registry.js';
 import { pixelBattleMode } from './modes/pixelBattle.js';
 import { copyCatMode } from './modes/copyCat.js';
+import { copyCatSoloMode } from './modes/copyCatSolo.js';
 import { pixelGuesserMode } from './modes/pixelGuesser.js';
 import { pixelSurvivorMode } from './modes/pixelSurvivor.js';
 import { log } from '../utils.js';
@@ -82,13 +84,16 @@ export function initializeGameModes(): void {
   // Register the standard pixel-battle mode
   gameModes.register(pixelBattleMode);
 
-  // Register CopyCat mode
+  // Register CopyCat mode (1v1)
   gameModes.register(copyCatMode);
 
   // Register Pixel Guesser mode
   gameModes.register(pixelGuesserMode);
 
-  // Register Pixel Survivor mode (single-player roguelike)
+  // Register CopyCat Solo mode (single-player memory practice)
+  gameModes.register(copyCatSoloMode);
+
+  // Register Pixel Survivor mode (single-player roguelike) - last position
   gameModes.register(pixelSurvivorMode);
 
   // Set pixel-battle as the default

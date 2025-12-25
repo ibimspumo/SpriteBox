@@ -91,68 +91,70 @@
       {$t.lobbyMenu.playNow}
     </Button>
 
-    <!-- Divider -->
-    <div class="divider">
-      <span class="divider-line"></span>
-      <span class="divider-text">{$t.common.or}</span>
-      <span class="divider-line"></span>
-    </div>
-
-    <!-- Private Room Options -->
-    {#if showCreateOptions}
-      <div class="option-panel">
-        <h3>{$t.lobbyMenu.createPrivateRoom}</h3>
-        <Input
-          type="password"
-          bind:value={createPassword}
-          placeholder={$t.lobbyMenu.passwordOptional}
-          minlength={4}
-          maxlength={64}
-          fullWidth
-        />
-        <div class="option-actions">
-          <Button variant="action" onclick={handleCreateRoom}>
-            {$t.common.create}
-          </Button>
-          <Button variant="ghost" onclick={() => { showCreateOptions = false; createPassword = ''; }}>
-            {$t.common.cancel}
-          </Button>
-        </div>
+    <!-- Private Room Options (only if mode allows it) -->
+    {#if modeInfo?.allowPrivate !== false}
+      <!-- Divider -->
+      <div class="divider">
+        <span class="divider-line"></span>
+        <span class="divider-text">{$t.common.or}</span>
+        <span class="divider-line"></span>
       </div>
-    {:else}
-      <Button variant="secondary" fullWidth onclick={() => showCreateOptions = true}>
-        {$t.lobbyMenu.privateRoom}
-      </Button>
-    {/if}
 
-    <!-- Join Room -->
-    {#if showJoinInput}
-      <div class="option-panel">
-        <h3>{$t.lobbyMenu.joinRoom}</h3>
-        <div class="join-input-row">
+      {#if showCreateOptions}
+        <div class="option-panel">
+          <h3>{$t.lobbyMenu.createPrivateRoom}</h3>
           <Input
-            bind:value={roomCode}
-            placeholder={$t.lobbyMenu.codePlaceholder}
-            maxlength={4}
-            uppercase
-            centered
-            size="lg"
-            onkeydown={handleKeyDown}
+            type="password"
+            bind:value={createPassword}
+            placeholder={$t.lobbyMenu.passwordOptional}
+            minlength={4}
+            maxlength={64}
+            fullWidth
           />
+          <div class="option-actions">
+            <Button variant="action" onclick={handleCreateRoom}>
+              {$t.common.create}
+            </Button>
+            <Button variant="ghost" onclick={() => { showCreateOptions = false; createPassword = ''; }}>
+              {$t.common.cancel}
+            </Button>
+          </div>
         </div>
-        <div class="option-actions">
-          <Button variant="action" onclick={handleJoinRoom} disabled={roomCode.length !== 4}>
-            {$t.common.join}
-          </Button>
-          <Button variant="ghost" onclick={() => { showJoinInput = false; roomCode = ''; }}>
-            {$t.common.cancel}
-          </Button>
+      {:else}
+        <Button variant="secondary" fullWidth onclick={() => showCreateOptions = true}>
+          {$t.lobbyMenu.privateRoom}
+        </Button>
+      {/if}
+
+      <!-- Join Room -->
+      {#if showJoinInput}
+        <div class="option-panel">
+          <h3>{$t.lobbyMenu.joinRoom}</h3>
+          <div class="join-input-row">
+            <Input
+              bind:value={roomCode}
+              placeholder={$t.lobbyMenu.codePlaceholder}
+              maxlength={4}
+              uppercase
+              centered
+              size="lg"
+              onkeydown={handleKeyDown}
+            />
+          </div>
+          <div class="option-actions">
+            <Button variant="action" onclick={handleJoinRoom} disabled={roomCode.length !== 4}>
+              {$t.common.join}
+            </Button>
+            <Button variant="ghost" onclick={() => { showJoinInput = false; roomCode = ''; }}>
+              {$t.common.cancel}
+            </Button>
+          </div>
         </div>
-      </div>
-    {:else if !showCreateOptions}
-      <Button variant="ghost" fullWidth onclick={() => showJoinInput = true}>
-        {$t.lobbyMenu.enterRoomCode}
-      </Button>
+      {:else if !showCreateOptions}
+        <Button variant="ghost" fullWidth onclick={() => showJoinInput = true}>
+          {$t.lobbyMenu.enterRoomCode}
+        </Button>
+      {/if}
     {/if}
   </div>
 

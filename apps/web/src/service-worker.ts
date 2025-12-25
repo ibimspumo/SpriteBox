@@ -7,6 +7,9 @@ import { build, files, version } from '$service-worker';
 
 declare let self: ServiceWorkerGlobalScope;
 
+// Disable caching in development (localhost)
+const IS_DEV = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+
 const CACHE_NAME = `spritebox-cache-${version}`;
 
 // Assets to cache immediately on install
@@ -15,8 +18,12 @@ const STATIC_ASSETS = [
 	...files  // static files from /static
 ];
 
-// Install: Cache static assets
+// Install: Cache static assets (skip in dev)
 self.addEventListener('install', (event) => {
+	if (IS_DEV) {
+		self.skipWaiting();
+		return;
+	}
 	event.waitUntil(
 		caches
 			.open(CACHE_NAME)
@@ -40,6 +47,9 @@ self.addEventListener('activate', (event) => {
 
 // Fetch: Network-first for API/socket, cache-first for static assets
 self.addEventListener('fetch', (event) => {
+	// In dev mode, always fetch from network (no caching)
+	if (IS_DEV) return;
+
 	const url = new URL(event.request.url);
 
 	// Skip non-GET requests

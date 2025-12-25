@@ -11,6 +11,7 @@ SpriteBox unterstützt mehrere Spielmodi mit unterschiedlichem Ablauf:
 |-------|--------------|-------------|
 | `pixel-battle` | Klassisch: Prompts zeichnen, Kunstwerke bewerten | 5-100 |
 | `copy-cat` | Memory: Referenzbild nachzeichnen | 2 (1v1) |
+| `copy-cat-solo` | Solo Memory-Training: Bilder alleine nachzeichnen | 1 (Solo) |
 | `pixel-guesser` | Pictionary: Einer zeichnet, andere raten | 2-20 |
 | `pixel-survivor` | Roguelike: Zeichne um 30 Tage zu überleben | 1 (Solo) |
 
@@ -146,6 +147,48 @@ genauigkeit = (übereinstimmendePixel / gesamtPixel) × 100
 // Höhere Genauigkeit gewinnt
 // Bei Gleichstand: schnellere Einreichung gewinnt
 ```
+
+## CopyCat Solo Modus
+
+CopyCat Solo ist ein Einzelspieler-Übungsmodus für memory-basierte Pixelkunst-Nachzeichnung.
+
+### CopyCat Solo Phasenablauf
+
+```text
+  LOBBY                    MEMORIZE (5s)            DRAWING (30s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  Spieler    │ Sofort   │  Referenz-  │          │  Aus dem    │
+  │  tritt bei  │ ───────► │  bild wird  │ ───────► │  Gedächtnis │
+  │  (Solo)     │  start   │  gezeigt    │          │  zeichnen   │
+  └─────────────┘          └─────────────┘          └─────────────┘
+                                                           │
+       ┌───────────────────────────────────────────────────┘
+       │
+       ▼
+  ERGEBNIS (8s)             NÄCHSTE RUNDE
+  ┌─────────────┐           ┌─────────────┐
+  │  Genauigkeit│  Nochmal  │  Zurück     │
+  │  angezeigt  │ ─────────►│  zur Lobby  │
+  │             │  spielen  │             │
+  └─────────────┘           └─────────────┘
+```
+
+### CopyCat Solo Phasen
+
+| Phase | Dauer | Beschreibung |
+|-------|-------|--------------|
+| Lobby | Sofort | Spiel startet sofort wenn Spieler beitritt |
+| Memorize | 5 Sekunden | Referenzbild wird gezeigt |
+| Drawing | 30 Sekunden | Aus dem Gedächtnis nachzeichnen |
+| Ergebnis | 8 Sekunden | Genauigkeit wird angezeigt |
+
+### Unterschiede zum 1v1 CopyCat
+
+- **Keine Countdown-Phase**: Startet sofort
+- **Kein Gegner**: In eigenem Tempo üben
+- **Kürzere Ergebnis-Phase**: 8s statt 10s
+- **Keine Revanche-Abstimmung**: Einfach nochmal spielen
+- **Keine privaten Räume**: Solo-Modus nutzt nur öffentliche Warteschlange
 
 ## Pixel Guesser Modus
 

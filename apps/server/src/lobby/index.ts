@@ -13,6 +13,7 @@ import { gameModes } from '../gameModes/index.js';
 import { StandardLobbyStrategy } from './strategies/StandardLobbyStrategy.js';
 import { PrivateLobbyStrategy } from './strategies/PrivateLobbyStrategy.js';
 import { CopyCatLobbyStrategy } from './strategies/CopyCatLobbyStrategy.js';
+import { CopyCatSoloLobbyStrategy } from './strategies/CopyCatSoloLobbyStrategy.js';
 
 // Re-export types
 export type {
@@ -26,6 +27,7 @@ export type {
 export { StandardLobbyStrategy } from './strategies/StandardLobbyStrategy.js';
 export { PrivateLobbyStrategy } from './strategies/PrivateLobbyStrategy.js';
 export { CopyCatLobbyStrategy } from './strategies/CopyCatLobbyStrategy.js';
+export { CopyCatSoloLobbyStrategy } from './strategies/CopyCatSoloLobbyStrategy.js';
 
 // Cache strategies by key (gameMode:instanceType)
 const lobbyStrategyCache = new Map<string, LobbyStrategy>();
@@ -66,6 +68,9 @@ export function getLobbyStrategyFor(
   // CopyCat mode uses its own strategy for both public and private
   if (gameModeId === 'copy-cat') {
     strategy = new CopyCatLobbyStrategy(config);
+  } else if (gameModeId === 'copy-cat-solo') {
+    // CopyCat Solo uses its own single-player strategy
+    strategy = new CopyCatSoloLobbyStrategy(config);
   } else if (gameModeId === 'pixel-guesser') {
     // PixelGuesser uses standard strategies (auto-start with threshold)
     if (instanceType === 'private') {

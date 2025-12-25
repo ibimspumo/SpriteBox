@@ -173,6 +173,8 @@ export const de: Translations = {
 		pixelBattleDesc: 'Zeichne 8×8 Pixel Art, vote für andere, steige im Elo-Ranking',
 		copyCat: 'CopyCat',
 		copyCatDesc: 'Merken und nachzeichnen - höchste Genauigkeit gewinnt!',
+		copyCatSolo: 'CopyCat Solo',
+		copyCatSoloDesc: 'Trainiere Gedächtnis und Genauigkeit - Einzelspieler-Training!',
 		pixelGuesser: 'Pixel Guesser',
 		pixelGuesserDesc: 'Zeichnen und raten - Pictionary mit Pixeln!',
 		pixelSurvivor: 'Pixel Survivor',
@@ -275,6 +277,10 @@ export const de: Translations = {
 		survivor: {
 			name: 'Pixel Survivor',
 			description: 'Einzelspieler-Roguelike - zeichne um zu überleben!',
+		},
+		copycatsolo: {
+			name: 'CopyCat Solo',
+			description: 'Trainiere Gedächtnis und Genauigkeit - Solo-Training!',
 		},
 	},
 

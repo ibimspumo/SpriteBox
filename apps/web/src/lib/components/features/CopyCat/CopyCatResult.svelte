@@ -11,13 +11,20 @@
   let isDraw = $derived($copyCat.isDraw);
   let user = $derived($currentUser);
 
+  // Solo mode detection (only 1 player in results)
+  let isSoloMode = $derived(results.length === 1);
   let isWinner = $derived(winner?.user.fullName === user?.fullName);
   let myResult = $derived(results.find(r => r.user.fullName === user?.fullName));
 </script>
 
 <div class="result-container">
   <div class="header">
-    {#if isDraw}
+    {#if isSoloMode}
+      <!-- Solo mode: show accuracy as the main result -->
+      <h1 class="title solo">
+        {myResult?.accuracy ?? 0}% {$t.copyCat.accuracy}
+      </h1>
+    {:else if isDraw}
       <h1 class="title draw">{$t.copyCat.draw}!</h1>
     {:else if isWinner}
       <h1 class="title winner">{$t.copyCat.youWon}</h1>
@@ -106,6 +113,11 @@
 
   .title.draw {
     color: var(--color-warning);
+  }
+
+  .title.solo {
+    color: var(--color-accent);
+    animation: celebrate 0.5s ease-out;
   }
 
   .timer-section {

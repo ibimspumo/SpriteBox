@@ -196,6 +196,7 @@ export interface GameModeInfo {
   i18nKey: string;
   players: PlayerLimits;
   description?: string;
+  allowPrivate: boolean;
 }
 
 /**
@@ -207,5 +208,6 @@ export function toGameModeInfo(config: GameModeConfig): GameModeInfo {
     displayName: config.displayName,
     i18nKey: config.i18nKey,
     players: config.players,
+    allowPrivate: config.rooms.allowPrivate,
   };
 }

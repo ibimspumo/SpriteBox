@@ -173,6 +173,8 @@ export const en: Translations = {
 		pixelBattleDesc: 'Draw 8×8 pixel art, vote on others, climb the Elo rankings',
 		copyCat: 'CopyCat',
 		copyCatDesc: 'Memorize and recreate - highest accuracy wins!',
+		copyCatSolo: 'CopyCat Solo',
+		copyCatSoloDesc: 'Practice memory and accuracy - single-player training!',
 		pixelGuesser: 'Pixel Guesser',
 		pixelGuesserDesc: 'Draw and guess - Pictionary with pixels!',
 		pixelSurvivor: 'Pixel Survivor',
@@ -275,6 +277,10 @@ export const en: Translations = {
 		survivor: {
 			name: 'Pixel Survivor',
 			description: 'Single-player roguelike - draw to survive!',
+		},
+		copycatsolo: {
+			name: 'CopyCat Solo',
+			description: 'Practice memory and accuracy - solo training!',
 		},
 	},
 

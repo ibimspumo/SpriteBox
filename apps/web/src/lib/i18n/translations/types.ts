@@ -196,6 +196,8 @@ export interface Translations {
 		pixelBattleDesc: string;
 		copyCat: string;
 		copyCatDesc: string;
+		copyCatSolo: string;
+		copyCatSoloDesc: string;
 		pixelGuesser: string;
 		pixelGuesserDesc: string;
 		pixelSurvivor: string;
@@ -301,6 +303,10 @@ export interface Translations {
 			description: string;
 		};
 		survivor: {
+			name: string;
+			description: string;
+		};
+		copycatsolo: {
 			name: string;
 			description: string;
 		};

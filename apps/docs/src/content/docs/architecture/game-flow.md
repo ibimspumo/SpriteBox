@@ -11,6 +11,7 @@ SpriteBox supports multiple game modes, each with its own phase flow:
 |------|-------------|--------------|
 | `pixel-battle` | Classic mode: draw prompts, vote on artwork | 5-100 |
 | `copy-cat` | Memory mode: recreate a reference image | 2 (1v1) |
+| `copy-cat-solo` | Solo memory practice: recreate images alone | 1 (solo) |
 | `pixel-guesser` | Pictionary mode: one draws, others guess | 2-20 |
 | `pixel-survivor` | Roguelike survival: draw to survive 30 days | 1 (solo) |
 
@@ -252,6 +253,48 @@ accuracy = (matchingPixels / totalPixels) × 100
 // Higher accuracy wins
 // Tie: faster submission wins
 ```
+
+## CopyCat Solo Mode
+
+CopyCat Solo is a single-player practice mode for memory-based pixel art recreation.
+
+### CopyCat Solo Phase Flow
+
+```text
+  LOBBY                    MEMORIZE (5s)            DRAWING (30s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  Player     │ Instant  │  Reference  │          │  Draw from  │
+  │  Joins      │ ───────► │  Image      │ ───────► │  Memory     │
+  │  (Solo)     │  start   │  Shown      │          │             │
+  └─────────────┘          └─────────────┘          └─────────────┘
+                                                           │
+       ┌───────────────────────────────────────────────────┘
+       │
+       ▼
+  RESULT (8s)               NEXT ROUND
+  ┌─────────────┐           ┌─────────────┐
+  │  Accuracy   │  Play     │  Back to    │
+  │  Shown      │ ─────────►│  Lobby      │
+  │             │  again    │             │
+  └─────────────┘           └─────────────┘
+```
+
+### CopyCat Solo Phases
+
+| Phase | Duration | Description |
+|-------|----------|-------------|
+| Lobby | Instant | Game starts immediately when player joins |
+| Memorize | 5 seconds | Reference image shown |
+| Drawing | 30 seconds | Recreate from memory |
+| Result | 8 seconds | Accuracy displayed |
+
+### Key Differences from 1v1 CopyCat
+
+- **No countdown phase**: Starts immediately
+- **No opponent**: Practice at your own pace
+- **Shorter result phase**: 8s instead of 10s
+- **No rematch voting**: Simply play again
+- **No private rooms**: Solo mode uses public queue only
 
 ## Pixel Guesser Mode
 

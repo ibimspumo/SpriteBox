@@ -224,6 +224,7 @@ export interface GameModeInfoData {
     max: number;
     privateMin?: number;
   };
+  allowPrivate: boolean;
 }
 
 export interface GameModesData {

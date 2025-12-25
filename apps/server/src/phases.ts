@@ -49,6 +49,20 @@ let io: Server | null = null;
 // Voting-State pro Instanz speichern
 const votingStates = new Map<string, VotingState>();
 
+/**
+ * Check if this is a CopyCat mode (including solo)
+ */
+function isCopyCatMode(instance: Instance): boolean {
+  return instance.gameMode === 'copy-cat' || instance.gameMode === 'copy-cat-solo';
+}
+
+/**
+ * Check if this is CopyCat Solo mode (single player)
+ */
+function isCopyCatSoloMode(instance: Instance): boolean {
+  return instance.gameMode === 'copy-cat-solo';
+}
+
 // === Phase Timing (Anti-Cheat) ===
 interface PhaseTimings {
   phaseStartedAt: number;
@@ -151,12 +165,18 @@ export function startGame(instance: Instance): void {
 
   log('Phase', `Starting game for instance ${instance.id} with ${instance.players.size} players [${instance.gameMode}]`);
 
-  // CopyCat mode has different initialization
-  if (instance.gameMode === 'copy-cat') {
+  // CopyCat mode (including solo) has different initialization
+  if (isCopyCatMode(instance)) {
     // Initialize CopyCat state with reference image
     initializeCopyCatState(instance);
-    // Start countdown for CopyCat
-    transitionTo(instance, 'countdown');
+
+    // Solo mode skips countdown - go directly to memorize
+    if (isCopyCatSoloMode(instance)) {
+      transitionTo(instance, 'memorize');
+    } else {
+      // 1v1 mode uses countdown
+      transitionTo(instance, 'countdown');
+    }
     return;
   }
 
@@ -258,8 +278,8 @@ function handleCountdown(instance: Instance): void {
   });
 
   instance.phaseTimer = setTimeout(() => {
-    // CopyCat mode goes to memorize phase after countdown
-    if (instance.gameMode === 'copy-cat') {
+    // CopyCat mode (including solo) goes to memorize phase after countdown
+    if (isCopyCatMode(instance)) {
       transitionTo(instance, 'memorize');
     } else if (instance.gameMode === 'pixel-guesser') {
       // PixelGuesser: go to guessing phase
@@ -286,7 +306,7 @@ function handleDrawing(instance: Instance): void {
   setPhaseTimings(instance.id, duration);
 
   // Set draw start time for CopyCat accuracy timing
-  if (instance.gameMode === 'copy-cat' && instance.copyCat) {
+  if (isCopyCatMode(instance) && instance.copyCat) {
     instance.copyCat.drawStartTime = Date.now();
   }
 
@@ -301,8 +321,8 @@ function handleDrawing(instance: Instance): void {
   });
 
   instance.phaseTimer = setTimeout(() => {
-    // CopyCat mode goes to copycat-result after drawing
-    if (instance.gameMode === 'copy-cat') {
+    // CopyCat mode (including solo) goes to copycat-result after drawing
+    if (isCopyCatMode(instance)) {
       endCopyCatDrawingPhase(instance);
     } else {
       endDrawingPhase(instance);
@@ -765,8 +785,14 @@ function handleCopyCatResult(instance: Instance): void {
   }
 
   instance.phaseTimer = setTimeout(() => {
-    // Transition to rematch prompt
-    transitionTo(instance, 'copycat-rematch');
+    // Solo mode: go back to lobby (no rematch voting needed)
+    if (isCopyCatSoloMode(instance)) {
+      cleanupCopyCatState(instance);
+      transitionTo(instance, 'lobby');
+    } else {
+      // Transition to rematch prompt for 1v1 mode
+      transitionTo(instance, 'copycat-rematch');
+    }
   }, duration);
 }
 
@@ -866,7 +892,7 @@ export function handleCopyCatSubmission(
   playerId: string,
   pixels: string
 ): { success: boolean; error?: string; allSubmitted?: boolean } {
-  if (instance.gameMode !== 'copy-cat') {
+  if (!isCopyCatMode(instance)) {
     return { success: false, error: 'Not a CopyCat game' };
   }
 
