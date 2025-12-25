@@ -585,7 +585,7 @@ export const en: Translations = {
 			enemyTurn: 'Enemy Turn',
 			encounterStart: 'A wild {monster} appears!',
 			playerAttack: 'You deal {damage} damage! (Roll: {roll})',
-			monsterAttack: '{monster} attacks for {damage} damage!',
+			monsterAttack: '{monster} attacks for {damage} damage! (Roll: {roll})',
 			criticalHit: 'CRITICAL HIT!',
 			criticalFail: 'Critical Fail...',
 			superEffective: "It's super effective!",

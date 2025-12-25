@@ -585,7 +585,7 @@ export const de: Translations = {
 			enemyTurn: 'Gegner-Zug',
 			encounterStart: 'Ein wilder {monster} erscheint!',
 			playerAttack: 'Du verursachst {damage} Schaden! (Wurf: {roll})',
-			monsterAttack: '{monster} greift an und verursacht {damage} Schaden!',
+			monsterAttack: '{monster} greift an und verursacht {damage} Schaden! (Wurf: {roll})',
 			criticalHit: 'KRITISCHER TREFFER!',
 			criticalFail: 'Kritischer Fehlschlag...',
 			superEffective: 'Das ist sehr effektiv!',

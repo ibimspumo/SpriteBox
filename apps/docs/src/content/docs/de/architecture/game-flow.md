@@ -410,16 +410,27 @@ Der D20-Wurf modifiziert den verursachten Schaden:
 #### Schadensformel
 
 ```typescript
-// 1. Basisschaden aus Angriffswert
-basisSchaden = angreifer.angriff
+// 1. Basisschaden (fester Wert + Eigenschaftsbonus)
+// Spieler: 5 + Eigenschaftsbonus (offensiv +1, defensiv -1, utility 0)
+// Monster: 5
+basisSchaden = 5 + eigenschaftsBonus
 
 // 2. D20-Modifikator anwenden
 d20Modifiziert = basisSchaden × d20Multiplikator
 
-// 3. Verteidigung abziehen (0.5 pro Punkt)
-nachVerteidigung = d20Modifiziert - (verteidiger.verteidigung × 0.5)
+// 3. Fähigkeits-Multiplikator anwenden (bei Spezialfähigkeit)
+nachFähigkeit = d20Modifiziert × fähigkeitsMultiplikator
 
-// 4. Element-Multiplikator anwenden
+// 4. Angriffswert-Multiplikator anwenden (1 + angriff/100)
+// Beispiele: 40 Angriff = 1.4×, 100 Angriff = 2.0×
+nachAngriff = nachFähigkeit × (1 + angriffswert / 100)
+
+// 5. Verteidigungs-Multiplikator anwenden (1 - verteidigung/100, gedeckelt)
+// Verteidigung ist standardmäßig auf 50% Reduktion begrenzt
+verteidigungsMultiplikator = max(0.1, 1 - min(verteidigung, 50) / 100)
+nachVerteidigung = nachAngriff × verteidigungsMultiplikator
+
+// 6. Element-Multiplikator anwenden
 endSchaden = max(1, nachVerteidigung × elementMultiplikator)
 ```
 

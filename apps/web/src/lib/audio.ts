@@ -12,6 +12,7 @@
 export const SOUNDS = {
   pixelPlace: '/audio/plop.mp3',
   click: '/audio/click.mp3',
+  attack: '/audio/attack.mp3',
 } as const;
 
 export type SoundName = keyof typeof SOUNDS;
@@ -20,6 +21,7 @@ export type SoundName = keyof typeof SOUNDS;
 const DEFAULT_VOLUMES: Record<SoundName, number> = {
   pixelPlace: 0.1,
   click: 0.2,
+  attack: 0.4,
 };
 
 // Web Audio API context and buffers

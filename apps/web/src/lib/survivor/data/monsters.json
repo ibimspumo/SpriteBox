@@ -11,7 +11,7 @@
 			"behavior": "aggressive",
 			"size": "medium",
 			"baseStats": {
-				"maxHp": 80,
+				"maxHp": 15,
 				"maxMana": 0,
 				"attack": 45,
 				"defense": 30,
@@ -35,7 +35,7 @@
 					"weight": 80
 				}
 			],
-			"baseXp": 25,
+			"baseXp": 50,
 			"loot": [],
 			"abilities": [
 				{

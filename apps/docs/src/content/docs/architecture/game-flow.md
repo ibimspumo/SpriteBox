@@ -516,16 +516,27 @@ The D20 roll modifies damage dealt:
 #### Damage Formula
 
 ```typescript
-// 1. Base damage from attack stat
-baseDamage = attacker.attack
+// 1. Base damage (fixed value + trait bonus)
+// Player: 5 + trait bonus (offensive +1, defensive -1, utility 0)
+// Monster: 5
+baseDamage = 5 + traitBonus
 
 // 2. Apply D20 modifier
 d20Modified = baseDamage × d20Multiplier
 
-// 3. Reduce by defense (0.5 per point)
-afterDefense = d20Modified - (defender.defense × 0.5)
+// 3. Apply ability multiplier (if using special ability)
+afterAbility = d20Modified × abilityMultiplier
 
-// 4. Apply element multiplier
+// 4. Apply attack stat multiplier (1 + attack/100)
+// Examples: 40 attack = 1.4×, 100 attack = 2.0×
+afterAttack = afterAbility × (1 + attackStat / 100)
+
+// 5. Apply defense multiplier (1 - defense/100, soft capped)
+// Defense is capped at 50% reduction by default
+defenseMultiplier = max(0.1, 1 - min(defense, 50) / 100)
+afterDefense = afterAttack × defenseMultiplier
+
+// 6. Apply element multiplier
 finalDamage = max(1, afterDefense × elementMultiplier)
 ```
 

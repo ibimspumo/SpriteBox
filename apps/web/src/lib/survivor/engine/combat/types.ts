@@ -61,6 +61,13 @@ export interface CombatParticipant {
 	speed: number;
 	luck: number;
 
+	/**
+	 * Base damage for attacks.
+	 * Player: 2 + trait bonus (+1 offensive, -1 defensive, 0 utility/balanced)
+	 * Monster: 1
+	 */
+	baseDamage: number;
+
 	/** Is still alive */
 	isAlive: boolean;
 }
@@ -332,11 +339,17 @@ export interface DamageCalculationInput {
 	/** Defender's element affinity */
 	defenderElement: ElementAffinity;
 
+	/** Base damage before any calculations (player: 2, monster: 1, modified by traits) */
+	baseDamage?: number;
+
 	/** Ability damage multiplier (if using ability) */
 	abilityMultiplier?: number;
 
 	/** Additional flat damage bonus */
 	bonusDamage?: number;
+
+	/** Override for defense reduction cap (special items can increase this) */
+	defenseCapOverride?: number;
 }
 
 /**
@@ -385,8 +398,8 @@ export interface CombatConfig {
 	/** Minimum damage that can be dealt (after reductions) */
 	minimumDamage: number;
 
-	/** Defense formula: how much 1 defense reduces damage */
-	defenseEffectiveness: number;
+	/** Soft cap for defense reduction percentage (default 50, max 100) */
+	defenseReductionCap: number;
 
 	/** Whether fleeing is allowed */
 	canFlee: boolean;
@@ -406,7 +419,7 @@ export interface CombatConfig {
  */
 export const DEFAULT_COMBAT_CONFIG: CombatConfig = {
 	minimumDamage: 1,
-	defenseEffectiveness: 0.5, // Each defense point reduces damage by 0.5
+	defenseReductionCap: 50, // Defense % reduction soft cap (50% default, items can increase)
 	canFlee: true,
 	baseFleeChance: 0.4,
 	attackAnimationDuration: 800,

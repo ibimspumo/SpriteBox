@@ -663,10 +663,15 @@ export class StatManager {
 
 	/**
 	 * Calculate XP required for a level.
-	 * Formula: level^2 * 100
+	 * Level 1->2: 100 XP, then each level requires 1.33x more.
+	 * Formula: 100 * (1.33^(level-1) - 1) / 0.33 (geometric series)
+	 * Level 1: 0, Level 2: 100, Level 3: 233, Level 4: 410, etc.
 	 */
 	private calculateXpForLevel(level: number): number {
-		return level * level * 100;
+		if (level <= 1) return 0;
+		const multiplier = 1.33;
+		const base = 100;
+		return Math.round(base * (Math.pow(multiplier, level - 1) - 1) / (multiplier - 1));
 	}
 
 	/**

@@ -24,6 +24,7 @@
 		type MonsterInstance
 	} from '$lib/survivor/engine';
 	import { D20Dice, rollD20, resetD20, d20RollState } from '$lib/survivor/engine';
+	import { playSound } from '$lib/audio';
 	import { onMount, onDestroy } from 'svelte';
 
 	interface Props {
@@ -32,20 +33,62 @@
 
 	let { onCombatEnd }: Props = $props();
 
+	// Log entry type for reactive i18n
+	type CombatLogKey = 'encounterStart' | 'playerAttack' | 'monsterAttack' | 'victory' | 'defeat' | 'fledSuccess' | 'fledFailed';
+	interface LogEntry {
+		key: CombatLogKey;
+		params: Record<string, string>;
+		prefix?: 'criticalHit' | 'criticalFail';
+		suffix?: 'superEffective' | 'notEffective';
+	}
+
 	// Combat state
 	let combatEngine = $state<CombatEngine | null>(null);
 	let combatState = $state<CombatState | null>(null);
 	let isRollingDice = $state(false);
+	let currentRoller = $state<'player' | 'monster' | null>(null); // Who is currently rolling
 	let showResult = $state(false);
 	let lastResult = $state<CombatActionResult | null>(null);
 	let resultMessage = $state('');
-	let combatLog = $state<string[]>([]);
+	let combatLogEntries = $state<LogEntry[]>([]);
+
+	// Reactive translated combat log
+	const combatLog = $derived(combatLogEntries.map(entry => {
+		const translations = $t.pixelSurvivor.combat;
+		let message = translations[entry.key] as string;
+
+		// Replace params
+		for (const [key, value] of Object.entries(entry.params)) {
+			message = message.replace(`{${key}}`, value);
+		}
+
+		// Add prefix (critical hit/fail)
+		if (entry.prefix) {
+			message = `${translations[entry.prefix]} ${message}`;
+		}
+
+		// Add suffix (element effectiveness)
+		if (entry.suffix) {
+			message = `${message} ${translations[entry.suffix]}`;
+		}
+
+		return message;
+	}));
 
 	// Current monster
 	let monster = $state<MonsterInstance | null>(null);
 
 	// D20 roll subscription
 	let d20Unsubscribe: (() => void) | null = null;
+
+	// Prevent duplicate monster turn timers
+	let monsterTurnTimerActive = $state(false);
+
+	// Attack animation states
+	let playerHit = $state(false);
+	let monsterHit = $state(false);
+	let playerAttacking = $state(false);
+	let monsterAttacking = $state(false);
 
 	// Initialize combat
 	onMount(() => {
@@ -85,26 +128,33 @@
 			return;
 		}
 
-		// Initialize combat
-		const state = engine.initializeCombat(character, [monster]);
-		combatEngine = engine;
-		combatState = state;
-
-		// Set up state change callback
+		// IMPORTANT: Set up state change callback BEFORE initializing combat
+		// This ensures we capture the initial phase change (e.g., monster_turn if monster is faster)
 		engine.setOnStateChange((newState) => {
 			combatState = newState;
 			handlePhaseChange(newState);
 		});
 
+		// Initialize combat - this triggers startNextTurn() which calls notifyStateChange()
+		const state = engine.initializeCombat(character, [monster]);
+		combatEngine = engine;
+		combatState = state;
+
 		// Add initial log entry
-		addLogMessage($t.pixelSurvivor.combat.encounterStart.replace('{monster}', getMonsterName()));
+		addLogEntry({ key: 'encounterStart', params: { monster: getMonsterName() } });
+
+		// Manually trigger phase check in case the callback fired before combatEngine was set
+		handlePhaseChange(state);
 	}
 
 	function handlePhaseChange(state: CombatState): void {
-		if (state.phase === 'monster_turn') {
-			// Auto-execute monster turn after delay
+		if (state.phase === 'monster_turn' && !monsterTurnTimerActive && !isRollingDice) {
+			// Auto-start monster dice roll after delay (with guard against duplicate timers)
+			monsterTurnTimerActive = true;
 			setTimeout(() => {
-				executeMonsterTurn();
+				monsterTurnTimerActive = false;
+				// Start the dice roll for monster attack
+				startDiceRoll('monster');
 			}, 1000);
 		}
 	}
@@ -115,33 +165,42 @@
 		return monster.definitionId.charAt(0).toUpperCase() + monster.definitionId.slice(1);
 	}
 
-	function addLogMessage(message: string): void {
-		combatLog = [...combatLog, message];
+	function addLogEntry(entry: LogEntry): void {
+		combatLogEntries = [...combatLogEntries, entry];
 		// Keep only last 5 messages
-		if (combatLog.length > 5) {
-			combatLog = combatLog.slice(-5);
+		if (combatLogEntries.length > 5) {
+			combatLogEntries = combatLogEntries.slice(-5);
 		}
 	}
 
-	// Player attack
-	async function handleAttack(): Promise<void> {
-		if (!combatEngine || !combatState || combatState.phase !== 'player_turn') return;
-
+	// Start dice roll for any attacker (player or monster)
+	function startDiceRoll(roller: 'player' | 'monster'): void {
+		currentRoller = roller;
 		isRollingDice = true;
 
-		// Roll D20
+		// Roll D20 visual
 		rollD20();
 
 		// Subscribe to D20 result
 		d20Unsubscribe = d20RollState.subscribe((state) => {
 			if (state.result !== null && !state.isRolling) {
+				// Create D20Roll with the visual result
 				const roll = combatEngine!.rollD20();
-				// Use the visual roll result
 				roll.value = state.result;
+				roll.isNat20 = state.result === 20;
+				roll.isNat1 = state.result === 1;
+				roll.damageMultiplier = state.result === 20 ? 2.0 : state.result === 1 ? 0.5 : 1.0;
 
-				executePlayerAttack(roll);
+				// Execute the appropriate attack
+				if (currentRoller === 'player') {
+					executePlayerAttack(roll);
+				} else {
+					executeMonsterAttack(roll);
+				}
+
 				resetD20();
 				isRollingDice = false;
+				currentRoller = null;
 
 				if (d20Unsubscribe) {
 					d20Unsubscribe();
@@ -149,6 +208,12 @@
 				}
 			}
 		});
+	}
+
+	// Player attack button handler
+	function handleAttack(): void {
+		if (!combatEngine || !combatState || combatState.phase !== 'player_turn') return;
+		startDiceRoll('player');
 	}
 
 	function executePlayerAttack(d20Roll: CombatD20Roll): void {
@@ -162,30 +227,48 @@
 		lastResult = result;
 		showResult = true;
 
-		// Build result message
-		let message = '';
-		if (result.success && result.damage !== undefined) {
-			const rollText = d20Roll.isNat20 ? $t.pixelSurvivor.combat.criticalHit :
-				d20Roll.isNat1 ? $t.pixelSurvivor.combat.criticalFail : '';
-
-			message = $t.pixelSurvivor.combat.playerAttack
-				.replace('{damage}', result.damage.toString())
-				.replace('{roll}', d20Roll.value.toString());
-
-			if (rollText) {
-				message = `${rollText} ${message}`;
-			}
-
-			// Check element effectiveness
-			if (result.elementMultiplier && result.elementMultiplier > 1) {
-				message += ` ${$t.pixelSurvivor.combat.superEffective}`;
-			} else if (result.elementMultiplier && result.elementMultiplier < 1) {
-				message += ` ${$t.pixelSurvivor.combat.notEffective}`;
-			}
+		// Trigger attack animations
+		if (result.success) {
+			playerAttacking = true;
+			setTimeout(() => {
+				playerAttacking = false;
+				monsterHit = true;
+				playSound('attack');
+				setTimeout(() => { monsterHit = false; }, 300);
+			}, 200);
 		}
 
-		addLogMessage(message);
-		resultMessage = message;
+		// Build log entry
+		if (result.success && result.damage !== undefined) {
+			const entry: LogEntry = {
+				key: 'playerAttack',
+				params: {
+					damage: result.damage.toString(),
+					roll: d20Roll.value.toString()
+				}
+			};
+
+			// Add crit prefix
+			if (d20Roll.isNat20) entry.prefix = 'criticalHit';
+			else if (d20Roll.isNat1) entry.prefix = 'criticalFail';
+
+			// Add element suffix
+			if (result.elementMultiplier && result.elementMultiplier > 1) {
+				entry.suffix = 'superEffective';
+			} else if (result.elementMultiplier && result.elementMultiplier < 1) {
+				entry.suffix = 'notEffective';
+			}
+
+			addLogEntry(entry);
+
+			// Build result message for display (using current translation)
+			let message = $t.pixelSurvivor.combat.playerAttack
+				.replace('{damage}', result.damage.toString())
+				.replace('{roll}', d20Roll.value.toString());
+			if (entry.prefix) message = `${$t.pixelSurvivor.combat[entry.prefix]} ${message}`;
+			if (entry.suffix) message = `${message} ${$t.pixelSurvivor.combat[entry.suffix]}`;
+			resultMessage = message;
+		}
 
 		// Hide result after delay
 		setTimeout(() => {
@@ -198,29 +281,53 @@
 		}, 1500);
 	}
 
-	function executeMonsterTurn(): void {
-		if (!combatEngine || !combatState || combatState.phase !== 'monster_turn') return;
+	// Monster attack with dice result
+	function executeMonsterAttack(d20Roll: CombatD20Roll): void {
+		if (!combatEngine || !combatState) return;
 
-		const result = combatEngine.executeMonsterTurn();
+		// Execute monster turn with our visual dice result
+		const result = combatEngine.executeMonsterTurn(d20Roll);
+
 		lastResult = result;
 		showResult = true;
+
+		// Trigger attack animations
+		if (result.success) {
+			monsterAttacking = true;
+			setTimeout(() => {
+				monsterAttacking = false;
+				playerHit = true;
+				playSound('attack');
+				setTimeout(() => { playerHit = false; }, 300);
+			}, 200);
+		}
 
 		if (result.success && result.damage !== undefined && result.d20Roll) {
 			// Apply damage to player's actual StatManager
 			const damageResult = applyPlayerDamage(result.damage);
 
-			const rollText = result.d20Roll.isNat20 ? $t.pixelSurvivor.combat.criticalHit :
-				result.d20Roll.isNat1 ? $t.pixelSurvivor.combat.criticalFail : '';
+			// Build log entry
+			const entry: LogEntry = {
+				key: 'monsterAttack',
+				params: {
+					monster: getMonsterName(),
+					damage: result.damage.toString(),
+					roll: result.d20Roll.value.toString()
+				}
+			};
 
+			// Add crit prefix
+			if (result.d20Roll.isNat20) entry.prefix = 'criticalHit';
+			else if (result.d20Roll.isNat1) entry.prefix = 'criticalFail';
+
+			addLogEntry(entry);
+
+			// Build result message for display
 			let message = $t.pixelSurvivor.combat.monsterAttack
 				.replace('{monster}', getMonsterName())
-				.replace('{damage}', result.damage.toString());
-
-			if (rollText) {
-				message = `${rollText} ${message}`;
-			}
-
-			addLogMessage(message);
+				.replace('{damage}', result.damage.toString())
+				.replace('{roll}', result.d20Roll.value.toString());
+			if (entry.prefix) message = `${$t.pixelSurvivor.combat[entry.prefix]} ${message}`;
 			resultMessage = message;
 
 			// Check for defeat
@@ -248,19 +355,19 @@
 		);
 
 		if (result.fleeSuccess) {
-			addLogMessage($t.pixelSurvivor.combat.fledSuccess);
+			addLogEntry({ key: 'fledSuccess', params: {} });
 			setTimeout(() => {
 				onCombatEnd?.('fled', 0);
 			}, 1000);
 		} else {
-			addLogMessage($t.pixelSurvivor.combat.fledFailed);
+			addLogEntry({ key: 'fledFailed', params: {} });
 		}
 	}
 
 	function handleVictory(): void {
 		const xp = combatState?.xpReward ?? 0;
 		addXp(xp);
-		addLogMessage($t.pixelSurvivor.combat.victory.replace('{xp}', xp.toString()));
+		addLogEntry({ key: 'victory', params: { xp: xp.toString() } });
 
 		setTimeout(() => {
 			onCombatEnd?.('victory', xp);
@@ -268,7 +375,7 @@
 	}
 
 	function handleDefeat(): void {
-		addLogMessage($t.pixelSurvivor.combat.defeat);
+		addLogEntry({ key: 'defeat', params: {} });
 
 		setTimeout(() => {
 			onCombatEnd?.('defeat', 0);
@@ -300,13 +407,16 @@
 	<div class="combat-arena">
 		<!-- Player Side -->
 		<div class="combatant player-side">
-			<div class="combatant-sprite">
+			<div class="combatant-sprite" class:attacking={playerAttacking} class:hit={playerHit}>
 				{#if $currentGameCharacter}
 					<PixelCanvas
 						pixelData={$currentGameCharacter.pixels}
 						size={80}
 						editable={false}
 					/>
+				{/if}
+				{#if playerHit}
+					<div class="hit-effect"></div>
 				{/if}
 			</div>
 			<div class="combatant-info">
@@ -325,13 +435,16 @@
 
 		<!-- Monster Side -->
 		<div class="combatant monster-side">
-			<div class="combatant-sprite monster-sprite">
+			<div class="combatant-sprite monster-sprite" class:attacking={monsterAttacking} class:hit={monsterHit}>
 				{#if monster}
 					<PixelCanvas
 						pixelData={monster.pixels}
 						size={80}
 						editable={false}
 					/>
+				{/if}
+				{#if monsterHit}
+					<div class="hit-effect"></div>
 				{/if}
 			</div>
 			<div class="combatant-info">
@@ -354,9 +467,9 @@
 		</div>
 	{/if}
 
-	<!-- D20 Dice -->
-	{#if isRollingDice}
-		<div class="dice-container">
+	<!-- D20 Dice (always visible during combat to avoid layout shifts) -->
+	{#if !isCombatOver}
+		<div class="dice-container" class:rolling={isRollingDice}>
 			<D20Dice size={150} />
 		</div>
 	{/if}
@@ -452,6 +565,74 @@
 
 	.monster-sprite {
 		transform: scaleX(-1); /* Face the player */
+	}
+
+	/* Attack Animations */
+	.combatant-sprite {
+		position: relative;
+		transition: transform 0.1s ease-out;
+	}
+
+	.combatant-sprite.attacking {
+		animation: attack-lunge 0.2s ease-out;
+	}
+
+	.player-side .combatant-sprite.attacking {
+		animation: attack-lunge-right 0.2s ease-out;
+	}
+
+	.monster-side .combatant-sprite.attacking {
+		animation: attack-lunge-left 0.2s ease-out;
+	}
+
+	.combatant-sprite.hit {
+		animation: hit-shake 0.3s ease-out;
+	}
+
+	.hit-effect {
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(circle, rgba(255, 100, 100, 0.8) 0%, transparent 70%);
+		border-radius: var(--radius-md);
+		animation: hit-flash 0.3s ease-out forwards;
+		pointer-events: none;
+	}
+
+	@keyframes attack-lunge-right {
+		0% { transform: translateX(0); }
+		50% { transform: translateX(20px) scale(1.1); }
+		100% { transform: translateX(0); }
+	}
+
+	@keyframes attack-lunge-left {
+		0% { transform: scaleX(-1) translateX(0); }
+		50% { transform: scaleX(-1) translateX(20px) scale(1.1); }
+		100% { transform: scaleX(-1) translateX(0); }
+	}
+
+	@keyframes hit-shake {
+		0%, 100% { transform: translateX(0); }
+		20% { transform: translateX(-8px); }
+		40% { transform: translateX(8px); }
+		60% { transform: translateX(-6px); }
+		80% { transform: translateX(4px); }
+	}
+
+	.monster-side .combatant-sprite.hit {
+		animation: hit-shake-monster 0.3s ease-out;
+	}
+
+	@keyframes hit-shake-monster {
+		0%, 100% { transform: scaleX(-1) translateX(0); }
+		20% { transform: scaleX(-1) translateX(-8px); }
+		40% { transform: scaleX(-1) translateX(8px); }
+		60% { transform: scaleX(-1) translateX(-6px); }
+		80% { transform: scaleX(-1) translateX(4px); }
+	}
+
+	@keyframes hit-flash {
+		0% { opacity: 1; }
+		100% { opacity: 0; }
 	}
 
 	.combatant-info {
@@ -552,7 +733,15 @@
 	.dice-container {
 		display: flex;
 		justify-content: center;
+		align-items: center;
 		padding: var(--space-4);
+		min-height: 180px;
+		opacity: 0.3;
+		transition: opacity 0.3s ease;
+	}
+
+	.dice-container.rolling {
+		opacity: 1;
 	}
 
 	/* Combat Log */

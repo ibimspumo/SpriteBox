@@ -237,7 +237,11 @@ export class CharacterFactory {
 			}
 		}
 
-		// 9. Generate name if not provided
+		// 9. After all modifiers applied, sync HP to the new maxHp value
+		// This ensures HP starts at 100% of the MODIFIED maxHp, not the base maxHp
+		statManager.fullRestore();
+
+		// 10. Generate name if not provided
 		const name = opts.name || generateCharacterName(elementDetection.element, trait);
 
 		return {
@@ -319,6 +323,9 @@ export class CharacterFactory {
 				);
 			}
 		}
+
+		// Sync HP to new maxHp after modifiers
+		character.statManager.fullRestore();
 	}
 }
 

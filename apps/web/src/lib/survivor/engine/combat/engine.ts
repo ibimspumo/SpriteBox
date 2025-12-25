@@ -24,8 +24,41 @@ import {
 import type { MonsterInstance } from './monsters/types.js';
 import type { GameCharacter } from '../character/types.js';
 import type { ElementAffinity, InteractionType } from '../core/elements/types.js';
+import type { TraitType } from '../character/traits/types.js';
+import { OFFENSIVE_TRAITS, DEFENSIVE_TRAITS } from '../character/traits/types.js';
 import { calculateElementMultiplier, createElementAffinity } from '../core/elements/index.js';
 import { calculateXpReward } from './monsters/registry.js';
+
+// ============================================
+// TRAIT DAMAGE BONUS
+// ============================================
+
+/**
+ * Calculate the trait-based damage bonus.
+ * Offensive traits: +1 damage
+ * Defensive traits: -1 damage
+ * Utility/balanced traits: +0 damage
+ */
+function getTraitDamageBonus(trait: TraitType): number {
+	if ((OFFENSIVE_TRAITS as readonly string[]).includes(trait)) {
+		return 1;
+	}
+	if ((DEFENSIVE_TRAITS as readonly string[]).includes(trait)) {
+		return -1;
+	}
+	return 0;
+}
+
+/**
+ * Calculate player base damage including trait bonus.
+ * Base: 5, modified by trait (+1/-1/0)
+ * Minimum base damage is 1.
+ */
+function calculatePlayerBaseDamage(trait: TraitType): number {
+	const base = 5;
+	const traitBonus = getTraitDamageBonus(trait);
+	return Math.max(1, base + traitBonus);
+}
 
 // ============================================
 // COMBAT ENGINE CLASS
@@ -77,6 +110,7 @@ export class CombatEngine {
 			defense: 0,
 			speed: 0,
 			luck: 0,
+			baseDamage: 5,
 			isAlive: false
 		};
 	}
@@ -128,6 +162,9 @@ export class CombatEngine {
 		player: GameCharacter,
 		monsters: MonsterInstance[]
 	): CombatState {
+		// Calculate player base damage (2 + trait bonus)
+		const playerBaseDamage = calculatePlayerBaseDamage(player.trait);
+
 		// Create player participant
 		const playerParticipant: CombatParticipant = {
 			id: player.id,
@@ -141,6 +178,7 @@ export class CombatEngine {
 			defense: player.statManager.getStat('defense'),
 			speed: player.statManager.getStat('speed'),
 			luck: player.statManager.getStat('luck'),
+			baseDamage: playerBaseDamage,
 			isAlive: true
 		};
 
@@ -282,32 +320,47 @@ export class CombatEngine {
 
 	/**
 	 * Calculate damage for an attack.
+	 *
+	 * Formula:
+	 * 1. Start with base damage (player: 2+trait, monster: 1)
+	 * 2. Apply D20 modifier
+	 * 3. Apply ability multiplier
+	 * 4. Apply attack stat multiplier (1 + attack/100, so 40 attack = 1.4x)
+	 * 5. Apply defense multiplier (1 - defense/100, capped at soft cap)
+	 * 6. Apply element modifier
+	 * 7. Add bonus damage
 	 */
 	public calculateDamage(input: DamageCalculationInput): DamageCalculationResult {
-		// Step 1: Base damage from attack stat
-		// Using a formula similar to Pokemon: (Attack * 0.5) + random(1-10)
-		const baseDamage = Math.floor(input.attackStat * 0.4) + 5;
+		// Step 1: Base damage (default 5 for monsters, 5 for players - passed via baseDamage)
+		const baseDamage = input.baseDamage ?? 5;
 
 		// Step 2: Apply D20 modifier
-		const d20ModifiedDamage = Math.floor(baseDamage * input.d20Roll.damageMultiplier);
+		const d20ModifiedDamage = Math.round(baseDamage * input.d20Roll.damageMultiplier);
 
 		// Step 3: Apply ability multiplier if present
 		const abilityMod = input.abilityMultiplier ?? 1.0;
-		const afterAbility = Math.floor(d20ModifiedDamage * abilityMod);
+		const afterAbility = Math.round(d20ModifiedDamage * abilityMod);
 
-		// Step 4: Apply defense reduction
-		// Defense reduces damage by (defense * effectiveness) but never below minimum
-		const defenseReduction = Math.floor(input.defenseStat * this.config.defenseEffectiveness);
-		const afterDefense = Math.max(this.config.minimumDamage, afterAbility - defenseReduction);
+		// Step 4: Apply attack stat multiplier (1 + attack/100)
+		// Examples: 40 attack = 1.4x, 100 attack = 2.0x, 0 attack = 1.0x
+		const attackMultiplier = 1 + input.attackStat / 100;
+		const afterAttack = Math.round(afterAbility * attackMultiplier);
 
-		// Step 5: Apply element modifier
+		// Step 5: Apply defense multiplier (1 - defense/100)
+		// Soft cap: defense reduction is capped (default 50%, can be increased by items)
+		const defenseCap = input.defenseCapOverride ?? this.config.defenseReductionCap;
+		const effectiveDefense = Math.min(input.defenseStat, defenseCap);
+		const defenseMultiplier = Math.max(0.1, 1 - effectiveDefense / 100);
+		const afterDefense = Math.max(this.config.minimumDamage, Math.round(afterAttack * defenseMultiplier));
+
+		// Step 6: Apply element modifier
 		const elementResult = calculateElementMultiplier(
 			input.attackerElement,
 			input.defenderElement
 		);
-		const afterElement = Math.floor(afterDefense * elementResult.multiplier);
+		const afterElement = Math.round(afterDefense * elementResult.multiplier);
 
-		// Step 6: Add bonus damage
+		// Step 7: Add bonus damage
 		const finalDamage = afterElement + (input.bonusDamage ?? 0);
 
 		// Build breakdown string
@@ -315,7 +368,8 @@ export class CombatEngine {
 			`Base: ${baseDamage}`,
 			`D20 (${input.d20Roll.value}): x${input.d20Roll.damageMultiplier}`,
 			abilityMod !== 1.0 ? `Ability: x${abilityMod}` : null,
-			`Defense: -${defenseReduction}`,
+			`Attack: x${attackMultiplier.toFixed(2)}`,
+			`Defense: x${defenseMultiplier.toFixed(2)}`,
 			elementResult.multiplier !== 1.0 ? `Element: x${elementResult.multiplier}` : null,
 			input.bonusDamage ? `Bonus: +${input.bonusDamage}` : null
 		]
@@ -329,7 +383,7 @@ export class CombatEngine {
 			afterDefense,
 			afterElement,
 			d20Multiplier: input.d20Roll.damageMultiplier,
-			defenseReduction,
+			defenseReduction: Math.floor((1 - defenseMultiplier) * 100),
 			elementMultiplier: elementResult.multiplier,
 			elementInteraction: elementResult.effectiveInteraction,
 			breakdown
@@ -443,7 +497,8 @@ export class CombatEngine {
 				: (target as CombatParticipant).defense,
 			d20Roll,
 			attackerElement: attacker.element,
-			defenderElement
+			defenderElement,
+			baseDamage: attacker.baseDamage
 		};
 
 		const damageResult = this.calculateDamage(damageInput);
@@ -539,8 +594,9 @@ export class CombatEngine {
 
 	/**
 	 * Execute monster turn (AI).
+	 * @param externalD20Roll - Optional external D20 roll (e.g., from visual dice). If not provided, rolls internally.
 	 */
-	public executeMonsterTurn(): CombatActionResult {
+	public executeMonsterTurn(externalD20Roll?: CombatD20Roll): CombatActionResult {
 		if (this.state.phase !== 'monster_turn') {
 			return {
 				action: { type: 'attack', actorId: '' },
@@ -561,10 +617,10 @@ export class CombatEngine {
 			};
 		}
 
-		// Simple AI: Just attack
-		const d20Roll = this.rollD20();
+		// Use external D20 roll if provided, otherwise roll internally
+		const d20Roll = externalD20Roll ?? this.rollD20();
 
-		// Create monster participant for attack
+		// Create monster participant for attack (base damage is 1 for monsters)
 		const monsterParticipant: CombatParticipant = {
 			id: monster.instanceId,
 			name: monster.name,
@@ -577,6 +633,7 @@ export class CombatEngine {
 			defense: monster.defense,
 			speed: monster.speed,
 			luck: monster.luck,
+			baseDamage: 5,
 			isAlive: monster.isAlive
 		};
 

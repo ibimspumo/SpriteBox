@@ -6,6 +6,7 @@
 	 * Uses quaternion-only rotation for reliable face detection.
 	 */
 	import { onMount, onDestroy } from 'svelte';
+	import { get } from 'svelte/store';
 	import * as THREE from 'three';
 	import { d20RollState, completeRoll, type D20RollState } from './store.js';
 
@@ -492,8 +493,20 @@
 		renderer.render(scene, camera);
 	}
 
+	// Track if scene is initialized
+	let sceneInitialized = false;
+	// Store pending roll if triggered before scene init
+	let pendingRoll = false;
+
 	// Start a roll with a predetermined result
 	function startRoll(result: number): void {
+		// Guard: Don't start if scene not ready
+		if (!sceneInitialized || !camera || !diceGroup) {
+			console.warn('D20: Scene not ready, queueing roll');
+			pendingRoll = true;
+			return;
+		}
+
 		targetResult = result;
 		targetQuaternion = getQuaternionForValue(result, false); // No random rotation for clarity
 
@@ -503,6 +516,7 @@
 		displayResult = null;
 		animationStartTime = Date.now();
 		phase = 'rolling';
+		pendingRoll = false;
 
 		console.log(`D20: Rolling for ${result}...`);
 	}
@@ -521,6 +535,16 @@
 
 	onMount(() => {
 		initScene();
+		sceneInitialized = true;
+
+		// Check if a roll was requested before scene was ready
+		if (pendingRoll) {
+			const state = get(d20RollState);
+			if (state.isRolling) {
+				const randomResult = Math.floor(Math.random() * 20) + 1;
+				startRoll(randomResult);
+			}
+		}
 	});
 
 	onDestroy(() => {
