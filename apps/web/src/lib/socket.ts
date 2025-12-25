@@ -126,6 +126,7 @@ export interface PixelGuesserFinalResultsData {
 
 export interface ClientToServerEvents {
   ping: (callback: (time: number) => void) => void;
+  'activity-ping': () => void;  // Lightweight ping to prevent idle timeout
   'join-public': (data?: { gameMode?: string }) => void;
   'create-room': (data?: { password?: string; gameMode?: string }) => void;
   'join-room': (data: { code: string; password?: string }) => void;

@@ -46,6 +46,7 @@ All real-time communication uses Socket.io. Events follow the pattern: `noun-ver
 | `restore-user` | `{ displayName: string }` | Restore username from localStorage (discriminator is always new) |
 | `restore-session` | `{ sessionId: string }` | Restore session after reconnect |
 | `ping` | `callback` | Latency check |
+| `activity-ping` | `{}` | Lightweight ping to prevent idle timeout |
 
 ## Server → Client Events
 

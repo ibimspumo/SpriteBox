@@ -46,6 +46,7 @@ Alle Echtzeit-Kommunikation nutzt Socket.io. Events folgen dem Muster: `noun-ver
 | `restore-user` | `{ displayName: string }` | Benutzername aus localStorage wiederherstellen |
 | `restore-session` | `{ sessionId: string }` | Session nach Neuverbindung wiederherstellen |
 | `ping` | `callback` | Latenz-Check |
+| `activity-ping` | `{}` | Leichtgewichtiger Ping zur Verhinderung von Idle-Timeout |
 
 ## Server → Client Events
 

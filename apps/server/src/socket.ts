@@ -903,8 +903,8 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
       return;
     }
 
-    // CopyCat mode has special submission handling
-    if (instance.gameMode === 'copy-cat') {
+    // CopyCat mode (including solo) has special submission handling
+    if (instance.gameMode === 'copy-cat' || instance.gameMode === 'copy-cat-solo') {
       const copyCatResult = handleCopyCatSubmission(instance, player.id, validation.data.pixels);
       if (!copyCatResult.success) {
         socket.emit('error', { code: 'SUBMIT_FAILED', message: copyCatResult.error });

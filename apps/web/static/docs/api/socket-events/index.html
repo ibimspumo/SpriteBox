@@ -226,7 +226,12 @@ svg:where(.astro-3mtursu4){color:var(--sl-icon-color);font-size:var(--sl-icon-si
 
 
 
-<table><thead><tr><th>Event</th><th>Payload</th><th>Description</th></tr></thead><tbody><tr><td><code dir="auto">change-name</code></td><td><code dir="auto">{ name: string }</code></td><td>Change display name (1-20 chars)</td></tr><tr><td><code dir="auto">restore-user</code></td><td><code dir="auto">{ displayName: string }</code></td><td>Restore username from localStorage (discriminator is always new)</td></tr><tr><td><code dir="auto">restore-session</code></td><td><code dir="auto">{ sessionId: string }</code></td><td>Restore session after reconnect</td></tr><tr><td><code dir="auto">ping</code></td><td><code dir="auto">callback</code></td><td>Latency check</td></tr></tbody></table>
+
+
+
+
+
+<table><thead><tr><th>Event</th><th>Payload</th><th>Description</th></tr></thead><tbody><tr><td><code dir="auto">change-name</code></td><td><code dir="auto">{ name: string }</code></td><td>Change display name (1-20 chars)</td></tr><tr><td><code dir="auto">restore-user</code></td><td><code dir="auto">{ displayName: string }</code></td><td>Restore username from localStorage (discriminator is always new)</td></tr><tr><td><code dir="auto">restore-session</code></td><td><code dir="auto">{ sessionId: string }</code></td><td>Restore session after reconnect</td></tr><tr><td><code dir="auto">ping</code></td><td><code dir="auto">callback</code></td><td>Latency check</td></tr><tr><td><code dir="auto">activity-ping</code></td><td><code dir="auto">{}</code></td><td>Lightweight ping to prevent idle timeout</td></tr></tbody></table>
 <h2 id="server--client-events">Server → Client Events</h2>
 <h3 id="connection--errors">Connection &#x26; Errors</h3>
 

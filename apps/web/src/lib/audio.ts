@@ -5,6 +5,7 @@
  * - Sounds are preloaded as AudioBuffers (stored in memory)
  * - Unlimited concurrent playback (no pooling needed)
  * - Zero latency, no main thread blocking
+ * - Mobile-friendly: Handles iOS/Safari autoplay restrictions
  */
 
 // Sound definitions - add new sounds here
@@ -26,6 +27,7 @@ let audioContext: AudioContext | null = null;
 let gainNode: GainNode | null = null;
 const audioBuffers: Map<SoundName, AudioBuffer> = new Map();
 let isInitialized = false;
+let isUnlocked = false;
 
 // Global volume multiplier
 let globalVolume = 1.0;
@@ -49,10 +51,56 @@ function initAudioContext(): void {
 
 /**
  * Resume audio context if suspended (required after user interaction)
+ * Returns true if context is ready for playback
  */
-async function resumeAudioContext(): Promise<void> {
-  if (audioContext?.state === 'suspended') {
-    await audioContext.resume();
+async function resumeAudioContext(): Promise<boolean> {
+  if (!audioContext) return false;
+
+  if (audioContext.state === 'suspended') {
+    try {
+      await audioContext.resume();
+    } catch {
+      console.warn('Failed to resume AudioContext');
+      return false;
+    }
+  }
+
+  return audioContext.state === 'running';
+}
+
+/**
+ * Unlock audio on mobile browsers (iOS/Safari)
+ * Must be called from a user gesture (touch/click) event handler
+ * Call this early (e.g., on first touch anywhere in the app)
+ */
+export async function unlockAudio(): Promise<void> {
+  if (isUnlocked) return;
+
+  // Initialize context if needed
+  initAudioContext();
+
+  if (!audioContext) return;
+
+  // Resume the context
+  const isReady = await resumeAudioContext();
+
+  if (isReady) {
+    isUnlocked = true;
+
+    // On iOS, we need to play a silent sound to fully unlock
+    // Create and play a silent buffer
+    try {
+      const silentBuffer = audioContext.createBuffer(1, 1, 22050);
+      const source = audioContext.createBufferSource();
+      source.buffer = silentBuffer;
+      source.connect(audioContext.destination);
+      source.start(0);
+
+      // Preload sounds after unlocking
+      await preloadSounds();
+    } catch {
+      // Silent buffer creation failed, but context may still work
+    }
   }
 }
 
@@ -79,15 +127,22 @@ async function loadSound(soundName: SoundName): Promise<void> {
  * @param volumeOverride - Optional volume (0-1) to override default
  */
 export function playSound(soundName: SoundName, volumeOverride?: number): void {
-  // Lazy init on first play (handles autoplay policy)
-  if (!audioContext) {
-    initAudioContext();
+  // Audio must be unlocked first via user interaction
+  if (!isUnlocked || !audioContext || !gainNode) {
+    // Try lazy init, but sound won't play until unlocked
+    if (!audioContext) {
+      initAudioContext();
+    }
+    return;
   }
 
-  if (!audioContext || !gainNode) return;
-
-  // Resume if suspended
-  resumeAudioContext();
+  // Ensure context is running (may have been suspended by browser)
+  if (audioContext.state === 'suspended') {
+    audioContext.resume().catch(() => {
+      // Ignore resume errors - just skip this sound
+    });
+    return;
+  }
 
   const buffer = audioBuffers.get(soundName);
   if (!buffer) {

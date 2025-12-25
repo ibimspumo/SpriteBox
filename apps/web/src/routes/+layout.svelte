@@ -1,12 +1,12 @@
 <!-- apps/web/src/routes/+layout.svelte -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { browser } from '$app/environment';
   import { initSocketBridge } from '$lib/socketBridge';
   import { getSocket } from '$lib/socket';
   import { connectionStatus, lastError, lobby, idleWarning } from '$lib/stores';
   import { t } from '$lib/i18n';
-  import { preloadSounds } from '$lib/audio';
+  import { preloadSounds, unlockAudio } from '$lib/audio';
   import DebugPanel from '$lib/components/debug/DebugPanel.svelte';
   import PixelEditor from '$lib/components/debug/PixelEditor.svelte';
   import { CookieNotice } from '$lib/components/organisms';
@@ -20,6 +20,11 @@
   let showPixelEditor = $state(false);
   let errorToast = $state<{ message: string; code: string } | null>(null);
   let errorTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Activity tracking for idle timeout
+  let lastActivityPing = 0;
+  let activityPingInterval: ReturnType<typeof setInterval> | null = null;
+  const ACTIVITY_PING_INTERVAL = 60_000; // Send ping every 60s if active
 
   // Watch for errors and show toast
   $effect(() => {
@@ -72,10 +77,55 @@
     return messages[code] || $t.errors.genericError;
   }
 
+  // Handle first user interaction to unlock audio (mobile browsers require this)
+  function handleFirstInteraction() {
+    unlockAudio();
+    // Remove listeners after first interaction
+    document.removeEventListener('touchstart', handleFirstInteraction);
+    document.removeEventListener('click', handleFirstInteraction);
+    document.removeEventListener('keydown', handleFirstInteraction);
+  }
+
+  // Track user activity and send periodic pings to prevent idle timeout
+  function handleUserActivity() {
+    const now = Date.now();
+    // Only send ping if enough time has passed since last ping
+    if (now - lastActivityPing >= ACTIVITY_PING_INTERVAL) {
+      lastActivityPing = now;
+      const socket = getSocket();
+      if (socket?.connected) {
+        socket.emit('activity-ping');
+      }
+    }
+  }
+
   onMount(() => {
     if (browser) {
       initSocketBridge();
       preloadSounds();
+
+      // Listen for first user interaction to unlock audio (mobile browsers)
+      document.addEventListener('touchstart', handleFirstInteraction, { passive: true });
+      document.addEventListener('click', handleFirstInteraction, { passive: true });
+      document.addEventListener('keydown', handleFirstInteraction, { passive: true });
+
+      // Listen for user activity to prevent idle timeout
+      // These events indicate the user is actively using the app
+      document.addEventListener('touchstart', handleUserActivity, { passive: true });
+      document.addEventListener('mousedown', handleUserActivity, { passive: true });
+      document.addEventListener('keydown', handleUserActivity, { passive: true });
+      document.addEventListener('scroll', handleUserActivity, { passive: true });
+
+      // Also send activity pings periodically when in a game
+      activityPingInterval = setInterval(() => {
+        // Only ping if user has been active recently (within last 2 minutes)
+        if (Date.now() - lastActivityPing < 120_000) {
+          const socket = getSocket();
+          if (socket?.connected) {
+            socket.emit('activity-ping');
+          }
+        }
+      }, ACTIVITY_PING_INTERVAL);
 
       // Dev-only keyboard shortcut: Ctrl+Shift+E to toggle Pixel Editor
       if (dev) {
@@ -87,6 +137,23 @@
         }
         window.addEventListener('keydown', handleGlobalKeyDown);
         return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+      }
+    }
+  });
+
+  onDestroy(() => {
+    if (browser) {
+      // Cleanup activity listeners
+      document.removeEventListener('touchstart', handleFirstInteraction);
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleUserActivity);
+      document.removeEventListener('mousedown', handleUserActivity);
+      document.removeEventListener('keydown', handleUserActivity);
+      document.removeEventListener('scroll', handleUserActivity);
+
+      if (activityPingInterval) {
+        clearInterval(activityPingInterval);
       }
     }
   });

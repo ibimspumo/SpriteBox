@@ -178,10 +178,16 @@ function setupEventHandlers(socket: AppSocket): void {
     currentUser.set(data.user);
     currentSessionId = data.sessionId;
 
-    // Save user for persistence across reloads
-    saveUser(data.user);
-
-    // Note: Stats are stored client-side only in localStorage
+    // Note: Don't save user here! The server gives us a random name initially.
+    // We only save after:
+    // 1. User manually changes their name (name-changed event)
+    // 2. We have no saved name yet (first visit)
+    const savedUser = loadUser();
+    if (!savedUser) {
+      // First visit - save the random name
+      saveUser(data.user);
+    }
+    // Otherwise, restore-user will be sent and name-changed will save the restored name
 
     // Check for room code in URL and auto-join
     if (browser) {

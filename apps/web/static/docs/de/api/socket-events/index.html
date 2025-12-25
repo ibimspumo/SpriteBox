@@ -226,7 +226,12 @@ svg:where(.astro-3mtursu4){color:var(--sl-icon-color);font-size:var(--sl-icon-si
 
 
 
-<table><thead><tr><th>Event</th><th>Payload</th><th>Beschreibung</th></tr></thead><tbody><tr><td><code dir="auto">change-name</code></td><td><code dir="auto">{ name: string }</code></td><td>Anzeigenamen ändern (1-20 Zeichen)</td></tr><tr><td><code dir="auto">restore-user</code></td><td><code dir="auto">{ displayName: string }</code></td><td>Benutzername aus localStorage wiederherstellen</td></tr><tr><td><code dir="auto">restore-session</code></td><td><code dir="auto">{ sessionId: string }</code></td><td>Session nach Neuverbindung wiederherstellen</td></tr><tr><td><code dir="auto">ping</code></td><td><code dir="auto">callback</code></td><td>Latenz-Check</td></tr></tbody></table>
+
+
+
+
+
+<table><thead><tr><th>Event</th><th>Payload</th><th>Beschreibung</th></tr></thead><tbody><tr><td><code dir="auto">change-name</code></td><td><code dir="auto">{ name: string }</code></td><td>Anzeigenamen ändern (1-20 Zeichen)</td></tr><tr><td><code dir="auto">restore-user</code></td><td><code dir="auto">{ displayName: string }</code></td><td>Benutzername aus localStorage wiederherstellen</td></tr><tr><td><code dir="auto">restore-session</code></td><td><code dir="auto">{ sessionId: string }</code></td><td>Session nach Neuverbindung wiederherstellen</td></tr><tr><td><code dir="auto">ping</code></td><td><code dir="auto">callback</code></td><td>Latenz-Check</td></tr><tr><td><code dir="auto">activity-ping</code></td><td><code dir="auto">{}</code></td><td>Leichtgewichtiger Ping zur Verhinderung von Idle-Timeout</td></tr></tbody></table>
 <h2 id="server--client-events">Server → Client Events</h2>
 <h3 id="verbindung--fehler">Verbindung &#x26; Fehler</h3>
 
