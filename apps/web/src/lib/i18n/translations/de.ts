@@ -256,6 +256,17 @@ export const de: Translations = {
 		pixelCanvasReadonly: '8x8 Pixel Art Canvas (schreibgeschützt)',
 		closeModal: 'Modal schließen',
 		shareRoom: 'Raumlink teilen',
+		shareArt: 'Dieses Kunstwerk teilen',
+	},
+
+	sharePage: {
+		title: 'Geteilte Pixel Art',
+		shareText: 'Schau dir meine Pixel Art auf SpriteBox an!',
+		canYouDoBetter: 'Kannst du es besser?',
+		playNow: 'Jetzt spielen',
+		invalidLink: 'Dieser Link ist ungültig oder abgelaufen.',
+		createdBy: 'Erstellt von',
+		createdOn: 'am',
 	},
 
 	modeSelection: {

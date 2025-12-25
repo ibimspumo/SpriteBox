@@ -256,6 +256,17 @@ export const en: Translations = {
 		pixelCanvasReadonly: '8x8 pixel art canvas (readonly)',
 		closeModal: 'Close modal',
 		shareRoom: 'Share room link',
+		shareArt: 'Share this artwork',
+	},
+
+	sharePage: {
+		title: 'Shared Pixel Art',
+		shareText: 'Check out my pixel art on SpriteBox!',
+		canYouDoBetter: 'Can you do better?',
+		playNow: 'Play Now',
+		invalidLink: 'This share link is invalid or expired.',
+		createdBy: 'Created by',
+		createdOn: 'on',
 	},
 
 	modeSelection: {

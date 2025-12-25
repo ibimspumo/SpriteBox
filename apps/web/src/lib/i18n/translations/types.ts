@@ -283,6 +283,18 @@ export interface Translations {
 		pixelCanvasReadonly: string;
 		closeModal: string;
 		shareRoom: string;
+		shareArt: string;
+	};
+
+	// Share page
+	sharePage: {
+		title: string;
+		shareText: string;
+		canYouDoBetter: string;
+		playNow: string;
+		invalidLink: string;
+		createdBy: string;
+		createdOn: string;
 	};
 
 	// Mode selection page

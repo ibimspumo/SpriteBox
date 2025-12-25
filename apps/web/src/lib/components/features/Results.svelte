@@ -5,7 +5,7 @@
   import { results, currentUser, localizedResultsPrompt } from '$lib/stores';
   import { returnToLobby } from '$lib/socketBridge';
   import { t } from '$lib/i18n';
-  import { Badge, Button } from '../atoms';
+  import { Badge, Button, ShareButton } from '../atoms';
   import { PromptDisplay } from '../molecules';
   import { GalleryGrid } from '../organisms';
   import { PixelCanvas } from '../utility';
@@ -90,9 +90,12 @@
                   <span class="vote-count">{entry.finalVotes}</span>
                   <span class="vote-label">{$t.results.votes}</span>
                 </div>
-                {#if isOwn}
-                  <Badge variant="success" text={`${$t.common.you}!`} />
-                {/if}
+                <div class="player-actions">
+                  {#if isOwn}
+                    <Badge variant="success" text={`${$t.common.you}!`} />
+                  {/if}
+                  <ShareButton pixels={entry.pixels} username={entry.user.fullName} size="sm" />
+                </div>
               </div>
             </div>
           </div>
@@ -113,9 +116,12 @@
                 </div>
                 <span class="rank-badge">#{entry.place}</span>
                 <span class="gallery-name">{entry.user.fullName}</span>
-                {#if isOwn}
-                  <Badge variant="success" text={$t.common.you} />
-                {/if}
+                <div class="gallery-actions">
+                  {#if isOwn}
+                    <Badge variant="success" text={$t.common.you} />
+                  {/if}
+                  <ShareButton pixels={entry.pixels} username={entry.user.fullName} size="sm" />
+                </div>
               </div>
             {/each}
           </GalleryGrid>
@@ -334,6 +340,13 @@
     letter-spacing: 1px;
   }
 
+  .player-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+  }
+
   /* ===== Gallery Section ===== */
   .gallery-section {
     width: 100%;
@@ -416,6 +429,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .gallery-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
   }
 
   /* ===== Next Round Section ===== */
