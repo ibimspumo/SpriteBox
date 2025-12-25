@@ -2,7 +2,6 @@
 <script lang="ts">
   import { pixelGuesser, currentUser } from '$lib/stores';
   import { t } from '$lib/i18n';
-  import { Badge } from '../../atoms';
   import { Timer } from '../../utility';
 
   let scores = $derived($pixelGuesser.scores);
@@ -12,50 +11,51 @@
   // Sort by total score descending
   let rankings = $derived([...scores].sort((a, b) => b.score - a.score));
 
-  // Get podium (top 3)
-  let podium = $derived(rankings.slice(0, 3));
-
-  // Check if current user is winner
-  let isWinner = $derived(rankings[0]?.user.fullName === user?.fullName);
+  // Winner info
+  let winner = $derived(rankings[0]);
+  let winnerIsCurrentUser = $derived(winner?.user.fullName === user?.fullName);
+  let isDraw = $derived(rankings.length >= 2 && rankings[0]?.score === rankings[1]?.score);
 </script>
 
 <div class="final-results">
   <div class="header">
-    <h1 class="title">{$t.pixelGuesser.finalResults}</h1>
+    {#if isDraw}
+      <h1 class="title draw">{$t.pixelGuesser.draw}</h1>
+    {:else if winnerIsCurrentUser}
+      <h1 class="title winner">{$t.pixelGuesser.youWin}</h1>
+    {:else}
+      <h1 class="title">{$t.pixelGuesser.finalResults}</h1>
+    {/if}
     <Timer />
   </div>
 
-  <!-- Podium -->
-  <div class="podium">
-    {#each podium as entry, index (entry.playerId)}
-      {@const place = index + 1}
-      {@const isCurrentUser = entry.user.fullName === user?.fullName}
-      <div class="podium-spot place-{place}" class:you={isCurrentUser}>
-        <div class="place-indicator">
-          {#if place === 1}
-            <span class="crown">👑</span>
-          {/if}
-          <span class="place-number">#{place}</span>
-        </div>
-        <div class="player-name">
-          {isCurrentUser ? $t.common.you : entry.user.displayName}
-        </div>
-        <div class="score">
-          <span class="score-value">{entry.score}</span>
-          <span class="score-label">{$t.pixelGuesser.points}</span>
-        </div>
+  <!-- Winner Card (only if not a draw) -->
+  {#if winner && !isDraw}
+    <div class="winner-card">
+      <div class="winner-crown">👑</div>
+      <div class="winner-info">
+        <span class="winner-label">#1</span>
+        <span class="winner-name">{winnerIsCurrentUser ? $t.common.you : winner.user.displayName}</span>
       </div>
-    {/each}
-  </div>
+      <div class="winner-score">
+        <span class="winner-score-value">{winner.score}</span>
+        <span class="winner-score-label">{$t.pixelGuesser.points}</span>
+      </div>
+    </div>
+  {/if}
 
-  <!-- Full Rankings -->
+  <!-- Full Rankings List -->
   <div class="rankings">
-    <h3 class="rankings-title">{$t.pixelGuesser.totalScore}</h3>
     <div class="rankings-list">
       {#each rankings as entry, index (entry.playerId)}
         {@const isCurrentUser = entry.user.fullName === user?.fullName}
-        <div class="ranking-entry" class:you={isCurrentUser} class:top3={index < 3}>
-          <span class="rank">#{index + 1}</span>
+        {@const isFirst = index === 0}
+        <div
+          class="ranking-entry"
+          class:you={isCurrentUser}
+          class:winner={isFirst && !isDraw}
+        >
+          <span class="rank" class:gold={isFirst && !isDraw}>#{index + 1}</span>
           <span class="name">{isCurrentUser ? $t.common.you : entry.user.displayName}</span>
           <span class="points">{entry.score} {$t.pixelGuesser.points}</span>
         </div>
@@ -64,7 +64,7 @@
   </div>
 
   <div class="rounds-played">
-    {totalRounds} {$t.pixelGuesser.round}s
+    {totalRounds} {totalRounds === 1 ? $t.pixelGuesser.round : $t.pixelGuesser.rounds}
   </div>
 </div>
 
@@ -73,10 +73,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-6);
+    gap: var(--space-5);
     padding: var(--space-6);
     width: 100%;
-    max-width: 600px;
+    max-width: 400px;
     margin: 0 auto;
   }
 
@@ -97,120 +97,85 @@
     animation: fadeSlideUp 0.5s ease-out;
   }
 
-  .podium {
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    gap: var(--space-3);
-    width: 100%;
-    max-width: 400px;
-    min-height: 200px;
+  .title.winner {
+    color: var(--color-success);
   }
 
-  .podium-spot {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-4);
-    background: var(--color-bg-secondary);
-    border-radius: var(--radius-md);
-    border: 3px solid var(--color-bg-tertiary);
-    transition: all 0.3s ease;
-    animation: slideUp 0.5s ease-out;
-  }
-
-  .podium-spot.you {
-    border-color: var(--color-accent);
-    background: rgba(var(--color-accent-rgb), 0.1);
-  }
-
-  .podium-spot.place-1 {
-    order: 2;
-    min-height: 180px;
-    border-color: var(--color-warning);
-    background: rgba(var(--color-warning-rgb), 0.1);
-    animation-delay: 0.2s;
-  }
-
-  .podium-spot.place-2 {
-    order: 1;
-    min-height: 140px;
-    animation-delay: 0.1s;
-  }
-
-  .podium-spot.place-3 {
-    order: 3;
-    min-height: 100px;
-    animation-delay: 0.3s;
-  }
-
-  .place-indicator {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-1);
-  }
-
-  .crown {
-    font-size: 32px;
-    animation: bounce 1s ease-in-out infinite;
-  }
-
-  .place-number {
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-bold);
-    color: var(--color-accent);
-  }
-
-  .place-1 .place-number {
+  .title.draw {
     color: var(--color-warning);
   }
 
-  .player-name {
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    color: var(--color-text-primary);
-    text-align: center;
-    max-width: 100px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  /* === Winner Card === */
+  .winner-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    width: 100%;
+    padding: var(--space-4);
+    background: linear-gradient(
+      135deg,
+      rgba(var(--color-warning-rgb), 0.15) 0%,
+      rgba(var(--color-warning-rgb), 0.05) 100%
+    );
+    border: 3px solid var(--color-warning);
+    border-radius: var(--radius-lg);
+    animation: scaleIn 0.4s ease-out;
   }
 
-  .score {
+  .winner-crown {
+    font-size: 40px;
+    animation: bounce 1s ease-in-out infinite;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  }
+
+  .winner-info {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: var(--space-1);
   }
 
-  .score-value {
+  .winner-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-warning);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .winner-name {
     font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+  }
+
+  .winner-score {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-1);
+  }
+
+  .winner-score-value {
+    font-size: var(--font-size-2xl);
     font-weight: var(--font-weight-bold);
     color: var(--color-success);
   }
 
-  .score-label {
+  .winner-score-label {
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
     text-transform: uppercase;
+    letter-spacing: 1px;
   }
 
+  /* === Rankings List === */
   .rankings {
     width: 100%;
-    max-width: 400px;
     background: var(--color-bg-secondary);
     border-radius: var(--radius-md);
-    padding: var(--space-4);
-  }
-
-  .rankings-title {
-    margin: 0 0 var(--space-3);
-    font-size: var(--font-size-lg);
-    color: var(--color-text-primary);
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    padding: var(--space-3);
+    animation: fadeSlideUp 0.5s ease-out 0.2s backwards;
   }
 
   .rankings-list {
@@ -223,42 +188,43 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
     background: var(--color-bg-tertiary);
     border-radius: var(--radius-sm);
-    border-left: 3px solid transparent;
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
   }
 
-  .ranking-entry.you {
+  .ranking-entry.winner {
+    border-left-color: var(--color-warning);
+    background: rgba(var(--color-warning-rgb), 0.1);
+  }
+
+  .ranking-entry.you:not(.winner) {
     border-left-color: var(--color-accent);
     background: rgba(var(--color-accent-rgb), 0.1);
   }
 
-  .ranking-entry.top3 {
-    border-left-color: var(--color-warning);
-  }
-
-  .ranking-entry.top3.you {
-    border-left-color: var(--color-accent);
-  }
-
   .rank {
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-bold);
-    color: var(--color-accent);
-    min-width: 30px;
+    color: var(--color-text-muted);
+    min-width: 32px;
   }
 
-  .ranking-entry.top3 .rank {
+  .rank.gold {
     color: var(--color-warning);
   }
 
   .name {
     flex: 1;
+    font-size: var(--font-size-md);
     color: var(--color-text-primary);
     font-weight: 500;
   }
 
   .points {
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-bold);
     color: var(--color-success);
   }
@@ -268,22 +234,64 @@
     color: var(--color-text-muted);
   }
 
+  /* === Animations === */
+  @keyframes fadeSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+
+  /* === Mobile === */
   @media (max-width: 400px) {
     .final-results {
       padding: var(--space-4);
+      gap: var(--space-4);
     }
 
-    .podium {
-      gap: var(--space-2);
-    }
-
-    .podium-spot {
+    .winner-card {
       padding: var(--space-3);
+      gap: var(--space-3);
     }
 
-    .player-name {
-      font-size: var(--font-size-sm);
-      max-width: 70px;
+    .winner-crown {
+      font-size: 32px;
+    }
+
+    .winner-name {
+      font-size: var(--font-size-lg);
+    }
+
+    .winner-score-value {
+      font-size: var(--font-size-xl);
+    }
+
+    .ranking-entry {
+      padding: var(--space-2) var(--space-3);
     }
   }
 </style>

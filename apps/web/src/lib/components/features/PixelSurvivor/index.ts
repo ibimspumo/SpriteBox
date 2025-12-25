@@ -7,3 +7,5 @@ export { default as SurvivorStatistics } from './Statistics.svelte';
 export { default as HowToPlay } from './HowToPlay.svelte';
 export { default as StatLegendModal } from './StatLegendModal.svelte';
 export { default as GameplayDemo } from './GameplayDemo.svelte';
+export { default as Gameplay } from './Gameplay.svelte';
+export { default as Combat } from './Combat.svelte';

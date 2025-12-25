@@ -317,3 +317,54 @@ export {
 	D20Dice,
 	D20Tester
 } from './dice-visual/index.js';
+
+// ============================================
+// COMBAT SYSTEM
+// ============================================
+
+export {
+	// Combat Types
+	type CombatPhase,
+	type CombatParticipant,
+	type D20RollCategory,
+	type CombatD20Roll,
+	type CombatActionType,
+	type CombatAction,
+	type CombatActionResult,
+	type CombatLogEntry,
+	type CombatState,
+	type DamageCalculationInput as CombatDamageInput,
+	type DamageCalculationResult as CombatDamageResult,
+	type CombatConfig,
+	type CombatEventType,
+	type CombatEvent,
+	getCombatD20Result,
+	DEFAULT_COMBAT_CONFIG,
+	// Combat Engine
+	CombatEngine,
+	createCombatEngine,
+	// Monster Types
+	type MonsterRarity,
+	type MonsterBehavior,
+	type MonsterSize,
+	type MonsterZone,
+	type LootDrop,
+	type MonsterAbility,
+	type MonsterDefinition,
+	type MonsterInstance,
+	type MonstersJsonData,
+	type ZoneDefinition,
+	type MonsterSpawnRequest,
+	type MonsterSpawnResult,
+	// Monster Registry
+	initializeMonsterRegistry,
+	getMonsterDefinition,
+	getAllMonsterDefinitions,
+	getMonstersForZone,
+	getMonstersByRarity,
+	hasMonster,
+	calculateMonsterStats,
+	createMonsterInstance,
+	spawnMonster,
+	calculateXpReward
+} from './combat/index.js';

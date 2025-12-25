@@ -411,6 +411,130 @@ Handles skill checks and damage calculations:
 - Damage rolls with modifiers
 - Critical hit/miss system
 
+### Combat System
+
+The gameplay loop centers around turn-based combat using a D20 dice system.
+
+#### Combat Flow
+
+```text
+  ENCOUNTER                 PLAYER TURN              RESOLUTION
+  ┌─────────────┐           ┌─────────────┐          ┌─────────────┐
+  │  Monster    │  Init     │  Choose     │  Roll    │  Apply      │
+  │  Spawns     │ ─────────►│  Action     │ ───────► │  Damage     │
+  │             │           │             │          │             │
+  └─────────────┘           └─────────────┘          └─────────────┘
+                                                            │
+       ┌────────────────────────────────────────────────────┘
+       │
+       ▼
+  MONSTER TURN              CHECK                    OUTCOME
+  ┌─────────────┐           ┌─────────────┐          ┌─────────────┐
+  │  Monster    │           │  Victory?   │   Yes    │  XP + Loot  │
+  │  Attacks    │ ─────────►│  Defeat?    │ ───────► │  or         │
+  │             │           │  Continue?  │          │  Game Over  │
+  └─────────────┘           └─────────────┘          └─────────────┘
+```
+
+#### Combat Phases
+
+| Phase | Description |
+|-------|-------------|
+| `player_turn` | Player chooses an action |
+| `player_rolling` | D20 dice roll animation |
+| `player_attack` | Attack animation plays |
+| `monster_turn` | Monster AI decides action |
+| `monster_attack` | Monster attack animation |
+| `victory` | Player defeated the monster |
+| `defeat` | Player was defeated |
+| `fled` | Player successfully escaped |
+
+#### Combat Actions
+
+| Action | Description |
+|--------|-------------|
+| `attack` | Basic attack using stats |
+| `defend` | Defensive stance (+defense) |
+| `ability` | Use special ability |
+| `flee` | Attempt to escape (40% base chance) |
+
+#### D20 Damage Modifiers
+
+The D20 roll modifies damage dealt:
+
+| Roll | Category | Damage Modifier |
+|------|----------|-----------------|
+| 1 | Critical Failure | -50% damage |
+| 2-5 | Poor | -20% damage |
+| 6-14 | Normal | No modifier |
+| 15-19 | Good | +20% damage |
+| 20 | Critical Hit | +50% damage |
+
+#### Damage Formula
+
+```typescript
+// 1. Base damage from attack stat
+baseDamage = attacker.attack
+
+// 2. Apply D20 modifier
+d20Modified = baseDamage × d20Multiplier
+
+// 3. Reduce by defense (0.5 per point)
+afterDefense = d20Modified - (defender.defense × 0.5)
+
+// 4. Apply element multiplier
+finalDamage = max(1, afterDefense × elementMultiplier)
+```
+
+### Monster System
+
+Monsters are the primary enemies in Pixel Survivor.
+
+#### Monster Properties
+
+| Property | Description |
+|----------|-------------|
+| `element` | Fire, Water, Earth, Air, Light, Dark, Neutral |
+| `rarity` | common, uncommon, rare, epic, legendary, boss |
+| `behavior` | aggressive, defensive, balanced, berserker, tactical |
+| `size` | tiny, small, medium, large, huge |
+
+#### Monster Rarity Effects
+
+| Rarity | Spawn Rate | XP Multiplier | Stat Bonus |
+|--------|------------|---------------|------------|
+| Common | High | 1.0× | None |
+| Uncommon | Medium | 1.25× | +10% |
+| Rare | Low | 1.5× | +25% |
+| Epic | Very Low | 2.0× | +50% |
+| Legendary | Rare | 3.0× | +100% |
+| Boss | Scripted | 5.0× | +200% |
+
+#### Zone System
+
+Monsters spawn based on zones and round progression:
+
+```typescript
+interface ZoneDefinition {
+  id: string;           // 'forest', 'cave', 'volcano'
+  startRound: number;   // When zone becomes available
+  endRound: number;     // When zone ends (-1 = unlimited)
+  monsterIds: string[]; // Which monsters can spawn
+  environmentElement?: ElementType; // Element bonus
+}
+```
+
+#### Monster Abilities
+
+Monsters can have special abilities:
+
+| Ability Type | Example | Effect |
+|--------------|---------|--------|
+| Damage | Bite | 1.5× damage multiplier |
+| Buff | Howl | Increases own attack |
+| Heal | Regenerate | Recover HP over time |
+| Debuff | Poison | Deal damage over time |
+
 ### Technical Notes
 
 - **Single-player**: Runs entirely client-side

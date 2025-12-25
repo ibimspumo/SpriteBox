@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"monsters": [
+		{
+			"id": "wolf",
+			"nameKey": "pixelSurvivor.monsters.wolf.name",
+			"descriptionKey": "pixelSurvivor.monsters.wolf.description",
+			"pixels": "0200002023200232033333300313313003333330003113000003300000033000",
+			"element": "neutral",
+			"rarity": "common",
+			"behavior": "aggressive",
+			"size": "medium",
+			"baseStats": {
+				"maxHp": 80,
+				"maxMana": 0,
+				"attack": 45,
+				"defense": 30,
+				"speed": 55,
+				"luck": 20
+			},
+			"statGrowth": 0.12,
+			"minLevel": 1,
+			"maxLevel": -1,
+			"zones": [
+				{
+					"id": "forest",
+					"minRound": 1,
+					"maxRound": 20,
+					"weight": 100
+				},
+				{
+					"id": "plains",
+					"minRound": 1,
+					"maxRound": 40,
+					"weight": 80
+				}
+			],
+			"baseXp": 25,
+			"loot": [],
+			"abilities": [
+				{
+					"id": "bite",
+					"nameKey": "pixelSurvivor.monsters.wolf.abilities.bite",
+					"descriptionKey": "pixelSurvivor.monsters.wolf.abilities.biteDesc",
+					"cooldown": 0,
+					"damageMultiplier": 1.0
+				},
+				{
+					"id": "howl",
+					"nameKey": "pixelSurvivor.monsters.wolf.abilities.howl",
+					"descriptionKey": "pixelSurvivor.monsters.wolf.abilities.howlDesc",
+					"cooldown": 3,
+					"damageMultiplier": 0,
+					"selfBuff": "attack_up"
+				}
+			],
+			"icon": "🐺"
+		}
+	]
+}

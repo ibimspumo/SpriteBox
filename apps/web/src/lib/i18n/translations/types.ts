@@ -259,6 +259,9 @@ export interface Translations {
 		noOneGuessed: string;
 		finalResults: string;
 		totalScore: string;
+		youWin: string;
+		draw: string;
+		rounds: string;
 	};
 
 	// Landing page
@@ -585,6 +588,55 @@ export interface Translations {
 			placeholder: string;
 			placeholderHint: string;
 			backToMenu: string;
+		};
+		// Combat
+		combat: {
+			attack: string;
+			flee: string;
+			defend: string;
+			yourTurn: string;
+			enemyTurn: string;
+			encounterStart: string;
+			playerAttack: string;
+			monsterAttack: string;
+			criticalHit: string;
+			criticalFail: string;
+			superEffective: string;
+			notEffective: string;
+			victory: string;
+			victoryTitle: string;
+			defeat: string;
+			defeatTitle: string;
+			fledSuccess: string;
+			fledFailed: string;
+			fledTitle: string;
+		};
+		// Gameplay (exploration / combat flow)
+		gameplay: {
+			round: string;
+			exploringText: string;
+			findEnemy: string;
+			backToMenu: string;
+			victoryTitle: string;
+			xpGained: string;
+			monstersDefeated: string;
+			continue: string;
+			defeatTitle: string;
+			roundsReached: string;
+			returnToMenu: string;
+		};
+		// Monsters
+		monsters: {
+			wolf: {
+				name: string;
+				description: string;
+				abilities: {
+					bite: string;
+					biteDesc: string;
+					howl: string;
+					howlDesc: string;
+				};
+			};
 		};
 	};
 }

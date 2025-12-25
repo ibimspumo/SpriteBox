@@ -234,6 +234,9 @@ export const en: Translations = {
 		noOneGuessed: 'No one guessed correctly',
 		finalResults: 'Final Results',
 		totalScore: 'Total Score',
+		youWin: 'You Win!',
+		draw: 'Draw!',
+		rounds: 'Rounds',
 	},
 
 	landing: {
@@ -555,6 +558,55 @@ export const en: Translations = {
 			placeholder: 'Game content will appear here',
 			placeholderHint: 'This is a demo of the game shell UI',
 			backToMenu: 'Back to Menu',
+		},
+		// Combat
+		combat: {
+			attack: 'Attack',
+			flee: 'Flee',
+			defend: 'Defend',
+			yourTurn: 'Your Turn',
+			enemyTurn: 'Enemy Turn',
+			encounterStart: 'A wild {monster} appears!',
+			playerAttack: 'You deal {damage} damage! (Roll: {roll})',
+			monsterAttack: '{monster} attacks for {damage} damage!',
+			criticalHit: 'CRITICAL HIT!',
+			criticalFail: 'Critical Fail...',
+			superEffective: "It's super effective!",
+			notEffective: "It's not very effective...",
+			victory: 'Victory! +{xp} XP',
+			victoryTitle: 'VICTORY!',
+			defeat: 'You were defeated...',
+			defeatTitle: 'DEFEAT',
+			fledSuccess: 'Got away safely!',
+			fledFailed: "Couldn't escape!",
+			fledTitle: 'ESCAPED',
+		},
+		// Monsters
+		monsters: {
+			wolf: {
+				name: 'Wolf',
+				description: 'A fierce wild wolf with sharp fangs.',
+				abilities: {
+					bite: 'Bite',
+					biteDesc: 'A vicious bite attack.',
+					howl: 'Howl',
+					howlDesc: 'Lets out a fearsome howl, boosting attack.',
+				},
+			},
+		},
+		// Gameplay (exploration / combat flow)
+		gameplay: {
+			round: 'Round',
+			exploringText: 'You venture deeper into the unknown...',
+			findEnemy: 'Find Enemy',
+			backToMenu: 'Back to Menu',
+			victoryTitle: 'Victory!',
+			xpGained: 'XP Gained',
+			monstersDefeated: 'Monsters Defeated',
+			continue: 'Continue',
+			defeatTitle: 'Defeated...',
+			roundsReached: 'Rounds Reached',
+			returnToMenu: 'Return to Menu',
 		},
 	},
 };

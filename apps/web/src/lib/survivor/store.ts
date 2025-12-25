@@ -526,6 +526,22 @@ export function enterGameplay(): void {
 		console.error('Cannot enter gameplay: no active run or character');
 		return;
 	}
+
+	// Initialize gameplay state if not present
+	if (!run.gameplay) {
+		updateRun((r) => ({
+			...r,
+			gameplay: {
+				subPhase: 'exploring',
+				round: 1,
+				monstersDefeated: 0,
+				totalXpEarned: 0,
+				currentZone: 'forest',
+				gold: 0
+			}
+		}));
+	}
+
 	setPhase('survivor-gameplay');
 }
 
@@ -534,6 +550,95 @@ export function enterGameplay(): void {
  */
 export function exitGameplay(): void {
 	setPhase('survivor-menu');
+}
+
+// ============================================
+// GAMEPLAY STATE ACTIONS
+// ============================================
+
+/**
+ * Set the gameplay sub-phase
+ */
+export function setGameplaySubPhase(subPhase: import('./types.js').GameplaySubPhase): void {
+	updateRun((run) => ({
+		...run,
+		gameplay: run.gameplay
+			? { ...run.gameplay, subPhase }
+			: { subPhase, round: 1, monstersDefeated: 0, totalXpEarned: 0, currentZone: 'forest', gold: 0 }
+	}));
+}
+
+/**
+ * Start a combat encounter
+ */
+export function startCombat(): void {
+	setGameplaySubPhase('combat');
+}
+
+/**
+ * Handle combat victory
+ */
+export function onCombatVictory(xpGained: number): void {
+	updateRun((run) => ({
+		...run,
+		gameplay: run.gameplay
+			? {
+					...run.gameplay,
+					subPhase: 'victory',
+					monstersDefeated: run.gameplay.monstersDefeated + 1,
+					totalXpEarned: run.gameplay.totalXpEarned + xpGained
+				}
+			: undefined
+	}));
+}
+
+/**
+ * Handle combat defeat
+ */
+export function onCombatDefeat(): void {
+	setGameplaySubPhase('defeat');
+}
+
+/**
+ * Handle fleeing from combat
+ */
+export function onCombatFled(): void {
+	setGameplaySubPhase('exploring');
+}
+
+/**
+ * Proceed to next round after victory
+ */
+export function proceedToNextRound(): void {
+	updateRun((run) => ({
+		...run,
+		gameplay: run.gameplay
+			? {
+					...run.gameplay,
+					subPhase: 'exploring',
+					round: run.gameplay.round + 1
+				}
+			: undefined
+	}));
+}
+
+/**
+ * Add gold to the player
+ */
+export function addGold(amount: number): void {
+	updateRun((run) => ({
+		...run,
+		gameplay: run.gameplay
+			? { ...run.gameplay, gold: run.gameplay.gold + amount }
+			: undefined
+	}));
+}
+
+/**
+ * Get current gameplay state
+ */
+export function getGameplayState(): import('./types.js').GameplayState | undefined {
+	return get(survivorRun)?.gameplay;
 }
 
 // ============================================

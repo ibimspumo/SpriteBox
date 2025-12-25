@@ -305,6 +305,130 @@ Verarbeitet Skill-Checks und Schadensberechnungen:
 - Schadenswürfe mit Modifiern
 - Kritisches Treffen/Verfehlen System
 
+### Kampfsystem
+
+Der Gameplay-Loop dreht sich um rundenbasierte Kämpfe mit einem D20-Würfelsystem.
+
+#### Kampfablauf
+
+```text
+  BEGEGNUNG                 SPIELERZUG               AUFLÖSUNG
+  ┌─────────────┐           ┌─────────────┐          ┌─────────────┐
+  │  Monster    │  Init     │  Aktion     │  Würfel  │  Schaden    │
+  │  erscheint  │ ─────────►│  wählen     │ ───────► │  anwenden   │
+  │             │           │             │          │             │
+  └─────────────┘           └─────────────┘          └─────────────┘
+                                                            │
+       ┌────────────────────────────────────────────────────┘
+       │
+       ▼
+  MONSTERZUG                PRÜFUNG                  ERGEBNIS
+  ┌─────────────┐           ┌─────────────┐          ┌─────────────┐
+  │  Monster    │           │  Sieg?      │   Ja     │  XP + Beute │
+  │  greift an  │ ─────────►│  Niederlage?│ ───────► │  oder       │
+  │             │           │  Weiter?    │          │  Game Over  │
+  └─────────────┘           └─────────────┘          └─────────────┘
+```
+
+#### Kampfphasen
+
+| Phase | Beschreibung |
+|-------|--------------|
+| `player_turn` | Spieler wählt eine Aktion |
+| `player_rolling` | D20-Würfel-Animation |
+| `player_attack` | Angriffsanimation |
+| `monster_turn` | Monster-KI entscheidet |
+| `monster_attack` | Monster-Angriffsanimation |
+| `victory` | Spieler hat das Monster besiegt |
+| `defeat` | Spieler wurde besiegt |
+| `fled` | Spieler ist erfolgreich geflohen |
+
+#### Kampfaktionen
+
+| Aktion | Beschreibung |
+|--------|--------------|
+| `attack` | Basisangriff mit Stats |
+| `defend` | Verteidigungshaltung (+Verteidigung) |
+| `ability` | Spezialfähigkeit nutzen |
+| `flee` | Fluchtversuch (40% Basischance) |
+
+#### D20 Schadensmodifikatoren
+
+Der D20-Wurf modifiziert den verursachten Schaden:
+
+| Wurf | Kategorie | Schadensmodifikator |
+|------|-----------|---------------------|
+| 1 | Kritischer Fehlschlag | -50% Schaden |
+| 2-5 | Schwach | -20% Schaden |
+| 6-14 | Normal | Kein Modifikator |
+| 15-19 | Gut | +20% Schaden |
+| 20 | Kritischer Treffer | +50% Schaden |
+
+#### Schadensformel
+
+```typescript
+// 1. Basisschaden aus Angriffswert
+basisSchaden = angreifer.angriff
+
+// 2. D20-Modifikator anwenden
+d20Modifiziert = basisSchaden × d20Multiplikator
+
+// 3. Verteidigung abziehen (0.5 pro Punkt)
+nachVerteidigung = d20Modifiziert - (verteidiger.verteidigung × 0.5)
+
+// 4. Element-Multiplikator anwenden
+endSchaden = max(1, nachVerteidigung × elementMultiplikator)
+```
+
+### Monstersystem
+
+Monster sind die primären Gegner in Pixel Survivor.
+
+#### Monster-Eigenschaften
+
+| Eigenschaft | Beschreibung |
+|-------------|--------------|
+| `element` | Feuer, Wasser, Erde, Luft, Licht, Dunkel, Neutral |
+| `rarity` | common, uncommon, rare, epic, legendary, boss |
+| `behavior` | aggressive, defensive, balanced, berserker, tactical |
+| `size` | tiny, small, medium, large, huge |
+
+#### Monster-Seltenheitseffekte
+
+| Seltenheit | Spawnrate | XP-Multiplikator | Stat-Bonus |
+|------------|-----------|------------------|------------|
+| Common | Hoch | 1.0× | Keiner |
+| Uncommon | Mittel | 1.25× | +10% |
+| Rare | Niedrig | 1.5× | +25% |
+| Epic | Sehr niedrig | 2.0× | +50% |
+| Legendary | Selten | 3.0× | +100% |
+| Boss | Geskriptet | 5.0× | +200% |
+
+#### Zonensystem
+
+Monster spawnen basierend auf Zonen und Rundenfortschritt:
+
+```typescript
+interface ZoneDefinition {
+  id: string;           // 'forest', 'cave', 'volcano'
+  startRound: number;   // Wann Zone verfügbar wird
+  endRound: number;     // Wann Zone endet (-1 = unbegrenzt)
+  monsterIds: string[]; // Welche Monster spawnen können
+  environmentElement?: ElementType; // Element-Bonus
+}
+```
+
+#### Monster-Fähigkeiten
+
+Monster können Spezialfähigkeiten haben:
+
+| Fähigkeitstyp | Beispiel | Effekt |
+|---------------|----------|--------|
+| Schaden | Biss | 1.5× Schadensmultiplikator |
+| Buff | Heulen | Erhöht eigenen Angriff |
+| Heilung | Regeneration | HP über Zeit wiederherstellen |
+| Debuff | Gift | Schaden über Zeit verursachen |
+
 ### Technische Hinweise
 
 - **Einzelspieler**: Läuft komplett clientseitig

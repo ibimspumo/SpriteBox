@@ -234,6 +234,9 @@ export const de: Translations = {
 		noOneGuessed: 'Niemand hat richtig geraten',
 		finalResults: 'Endergebnisse',
 		totalScore: 'Gesamtpunktzahl',
+		youWin: 'Du gewinnst!',
+		draw: 'Unentschieden!',
+		rounds: 'Runden',
 	},
 
 	landing: {
@@ -555,6 +558,55 @@ export const de: Translations = {
 			placeholder: 'Hier wird der Spielinhalt erscheinen',
 			placeholderHint: 'Dies ist eine Demo der Spiel-UI',
 			backToMenu: 'Zurück zum Menü',
+		},
+		// Combat
+		combat: {
+			attack: 'Angriff',
+			flee: 'Fliehen',
+			defend: 'Verteidigen',
+			yourTurn: 'Dein Zug',
+			enemyTurn: 'Gegner-Zug',
+			encounterStart: 'Ein wilder {monster} erscheint!',
+			playerAttack: 'Du verursachst {damage} Schaden! (Wurf: {roll})',
+			monsterAttack: '{monster} greift an und verursacht {damage} Schaden!',
+			criticalHit: 'KRITISCHER TREFFER!',
+			criticalFail: 'Kritischer Fehlschlag...',
+			superEffective: 'Das ist sehr effektiv!',
+			notEffective: 'Das ist nicht sehr effektiv...',
+			victory: 'Sieg! +{xp} EP',
+			victoryTitle: 'SIEG!',
+			defeat: 'Du wurdest besiegt...',
+			defeatTitle: 'NIEDERLAGE',
+			fledSuccess: 'Erfolgreich geflohen!',
+			fledFailed: 'Flucht fehlgeschlagen!',
+			fledTitle: 'GEFLOHEN',
+		},
+		// Monsters
+		monsters: {
+			wolf: {
+				name: 'Wolf',
+				description: 'Ein wilder Wolf mit scharfen Fängen.',
+				abilities: {
+					bite: 'Biss',
+					biteDesc: 'Ein brutaler Biss-Angriff.',
+					howl: 'Heulen',
+					howlDesc: 'Lässt ein furchteinflößendes Heulen ertönen und erhöht Angriff.',
+				},
+			},
+		},
+		// Gameplay (exploration / combat flow)
+		gameplay: {
+			round: 'Runde',
+			exploringText: 'Du wagst dich tiefer ins Unbekannte...',
+			findEnemy: 'Feind suchen',
+			backToMenu: 'Zurück zum Menü',
+			victoryTitle: 'Sieg!',
+			xpGained: 'EP erhalten',
+			monstersDefeated: 'Monster besiegt',
+			continue: 'Weiter',
+			defeatTitle: 'Besiegt...',
+			roundsReached: 'Runden erreicht',
+			returnToMenu: 'Zurück zum Menü',
 		},
 	},
 };

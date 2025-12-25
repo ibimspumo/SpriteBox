@@ -213,11 +213,19 @@ function setupEventHandlers(socket: AppSocket): void {
   socket.on('game-modes', (data: GameModesData) => {
     availableGameModes.set(data.available);
     defaultGameMode.set(data.default);
-    selectedGameMode.set(data.default);
+    // Only set selectedGameMode to default if current selection is not a valid mode
+    // This prevents overwriting URL-based mode selection (e.g., /play/copycat)
+    const currentMode = get(selectedGameMode);
+    const isValidMode = data.available.some(m => m.id === currentMode);
+    if (!isValidMode) {
+      selectedGameMode.set(data.default);
+    }
   });
 
   // === Lobby Events ===
   socket.on('lobby-joined', (data: LobbyJoinedData) => {
+    // Set selected game mode to match joined lobby
+    selectedGameMode.set(data.gameMode);
     lobby.set({
       instanceId: data.instanceId,
       type: data.type,
@@ -470,6 +478,8 @@ function setupEventHandlers(socket: AppSocket): void {
     clearSession();
 
     currentUser.set(data.user);
+    // Set selected game mode to match restored session
+    selectedGameMode.set(data.gameMode);
     lobby.set({
       instanceId: data.instanceId,
       type: 'public',
@@ -781,7 +791,7 @@ function setupEventHandlers(socket: AppSocket): void {
       scores: data.rankings,
     }));
     startTimer(data.duration, data.endsAt);
-    game.update((g) => ({ ...g, phase: 'results' }));
+    game.update((g) => ({ ...g, phase: 'pixelguesser-results' }));
 
     // Record stats for PixelGuesser
     const user = get(currentUser);

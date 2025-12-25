@@ -15,7 +15,7 @@
   } from '$lib/stores';
   import { joinPrivateRoom } from '$lib/socketBridge';
   import { emitViewMode, emitLeaveMode } from '$lib/socket';
-  import { Lobby, Drawing, Voting, Finale, Results, Memorize, CopyCatResult, CopyCatRematch } from '$lib/components/features';
+  import { Lobby, Drawing, Voting, Finale, Results, Memorize, CopyCatResult, CopyCatRematch, Guessing, Reveal, FinalResults } from '$lib/components/features';
   import { Timer } from '$lib/components/utility';
   import { PromptDisplay, PasswordInput } from '$lib/components/molecules';
   import { Button } from '$lib/components/atoms';
@@ -169,6 +169,12 @@
           <CopyCatResult />
         {:else if $game.phase === 'copycat-rematch'}
           <CopyCatRematch />
+        {:else if $game.phase === 'guessing'}
+          <Guessing />
+        {:else if $game.phase === 'reveal'}
+          <Reveal />
+        {:else if $game.phase === 'pixelguesser-results'}
+          <FinalResults />
         {/if}
       </div>
     {/if}

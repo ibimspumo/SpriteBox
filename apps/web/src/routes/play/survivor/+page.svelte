@@ -7,11 +7,12 @@
     CharacterCreation,
     SurvivorStatistics,
     HowToPlay,
-    GameplayDemo,
+    Gameplay,
   } from '$lib/components/features';
   import { SurvivorGameShell } from '$lib/components/organisms';
   import {
     survivorPhase,
+    survivorRun,
     showStatsScreen,
     showTutorial,
     initializeSurvivor,
@@ -36,6 +37,9 @@
   // Is this a gameplay phase that needs the shell?
   const isGameplayPhase = $derived(phase === 'survivor-gameplay');
 
+  // Get gold from gameplay state
+  const gold = $derived($survivorRun?.gameplay?.gold ?? 0);
+
   function handleHomeClick(): void {
     exitGameplay();
   }
@@ -45,11 +49,11 @@
   {#if isGameplayPhase}
     <!-- Gameplay phases use the persistent game shell -->
     <SurvivorGameShell
-      gold={125}
+      gold={gold}
       showSidebar={true}
       onhome={handleHomeClick}
     >
-      <GameplayDemo />
+      <Gameplay />
     </SurvivorGameShell>
   {:else}
     <!-- Non-gameplay phases (menu, character creation) have their own layout -->

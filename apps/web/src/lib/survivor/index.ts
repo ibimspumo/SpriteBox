@@ -79,6 +79,13 @@ export {
   heal,
   takeDamage,
   addXp,
+  // Gameplay actions
+  startCombat,
+  onCombatVictory,
+  onCombatDefeat,
+  onCombatFled,
+  proceedToNextRound,
+  addGold,
 } from './store.js';
 
 // Analysis (Character Creation) - Now uses engine

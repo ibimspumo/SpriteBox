@@ -98,14 +98,9 @@ export class CopyCatLobbyStrategy implements LobbyStrategy {
     return true;
   }
 
-  onPlayerLeave(instance: Instance, _playerId: string): boolean {
-    // If a player leaves during countdown, cancel the timer
-    if (instance.lobbyTimer && instance.players.size < 2) {
-      clearTimeout(instance.lobbyTimer);
-      instance.lobbyTimer = undefined;
-      instance.lobbyTimerEndsAt = undefined;
-      return true;
-    }
+  onPlayerLeave(_instance: Instance, _playerId: string): boolean {
+    // Timer cancellation is handled by checkCancelLobbyTimer() in instance.ts
+    // which emits the 'lobby-timer-cancelled' event to notify clients
     return true;
   }
 

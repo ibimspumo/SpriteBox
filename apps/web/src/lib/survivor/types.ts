@@ -19,6 +19,15 @@ export type PixelSurvivorPhase =
 	| 'survivor-character'
 	| 'survivor-gameplay';
 
+// === Gameplay Sub-Phase ===
+export type GameplaySubPhase =
+	| 'exploring'      // Between encounters, can trigger events
+	| 'combat'         // In active combat
+	| 'victory'        // Just won a combat
+	| 'defeat'         // Lost the run
+	| 'event'          // Random event happening
+	| 'reward';        // Choosing rewards
+
 // === Legacy Types (kept for compatibility) ===
 // These map to the new engine types
 
@@ -75,6 +84,30 @@ export interface PixelSurvivorRun {
 
 	// Current State
 	phase: PixelSurvivorPhase;
+
+	// Gameplay State (when in survivor-gameplay phase)
+	gameplay?: GameplayState;
+}
+
+// === Gameplay State ===
+export interface GameplayState {
+	/** Current sub-phase */
+	subPhase: GameplaySubPhase;
+
+	/** Current round number (starts at 1) */
+	round: number;
+
+	/** Total monsters defeated this run */
+	monstersDefeated: number;
+
+	/** Total XP earned this run */
+	totalXpEarned: number;
+
+	/** Current zone ID */
+	currentZone: string;
+
+	/** Gold earned */
+	gold: number;
 }
 
 // === Statistics ===
