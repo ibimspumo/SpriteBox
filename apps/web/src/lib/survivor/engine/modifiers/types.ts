@@ -8,6 +8,7 @@
  */
 
 import type { StatType } from '../stats/types.js';
+import { secureRandomString } from '../core/random.js';
 
 // ============================================
 // MODIFIER SOURCE TYPES
@@ -257,7 +258,7 @@ export function createModifier(
 	idPrefix: string = 'mod'
 ): StatModifier {
 	return {
-		id: `${idPrefix}_${source.id}_${template.stat}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+		id: `${idPrefix}_${source.id}_${template.stat}_${Date.now()}_${secureRandomString(5)}`,
 		stat: template.stat,
 		operation: template.operation,
 		value: template.value,

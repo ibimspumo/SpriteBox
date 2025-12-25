@@ -593,6 +593,12 @@ export interface Translations {
 			buffs: string;
 			debuffs: string;
 		};
+		// Common UI strings
+		playDemo: string;
+		unknownName: string;
+		levelAbbr: string;
+		levelFormat: string;
+		xpGained: string;
 		// Gameplay Demo
 		gameplayDemo: {
 			eventTitle: string;

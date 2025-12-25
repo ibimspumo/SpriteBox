@@ -9,6 +9,7 @@
 	import { get } from 'svelte/store';
 	import * as THREE from 'three';
 	import { d20RollState, completeRoll, type D20RollState } from './store.js';
+	import { secureRandomInt, secureRandomFloat } from '../core/random.js';
 
 	// Props
 	interface Props {
@@ -215,7 +216,7 @@
 		if (addRandomRotation) {
 			// Add rotation around Z axis (camera axis) - this keeps the face visible
 			// but rotates how the number appears (like rotating a clock)
-			const randomAngle = Math.random() * Math.PI * 2;
+			const randomAngle = secureRandomFloat() * Math.PI * 2;
 			const zRotation = new THREE.Quaternion();
 			zRotation.setFromAxisAngle(FRONT_DIRECTION, randomAngle);
 			result.premultiply(zRotation);
@@ -524,8 +525,8 @@
 	// Subscribe to store
 	const unsubscribe = d20RollState.subscribe((state: D20RollState) => {
 		if (state.isRolling && phase !== 'rolling' && phase !== 'pause' && phase !== 'zoom') {
-			// Generate random result (1-20)
-			const randomResult = Math.floor(Math.random() * 20) + 1;
+			// Generate random result (1-20) using secure randomness
+			const randomResult = secureRandomInt(1, 20);
 			startRoll(randomResult);
 		}
 		if (!state.isRolling && state.result !== null && phase === 'done') {
@@ -541,7 +542,7 @@
 		if (pendingRoll) {
 			const state = get(d20RollState);
 			if (state.isRolling) {
-				const randomResult = Math.floor(Math.random() * 20) + 1;
+				const randomResult = secureRandomInt(1, 20);
 				startRoll(randomResult);
 			}
 		}
@@ -587,7 +588,7 @@
 		transform: translateX(-50%);
 		font-size: var(--font-size-2xl);
 		font-weight: bold;
-		font-family: var(--font-mono, monospace);
+		font-family: var(--font-family-mono);
 		color: var(--color-text-primary);
 		text-shadow: 2px 2px 0 var(--color-bg-primary), -1px -1px 0 var(--color-bg-primary);
 		animation: result-pop 0.3s ease-out;
@@ -601,18 +602,5 @@
 
 	.result.fumble {
 		color: var(--color-error);
-	}
-
-	@keyframes result-pop {
-		0% { transform: translateX(-50%) scale(0); opacity: 0; }
-		60% { transform: translateX(-50%) scale(1.2); }
-		100% { transform: translateX(-50%) scale(1); opacity: 1; }
-	}
-
-	@keyframes crit-pop {
-		0% { transform: translateX(-50%) scale(0); opacity: 0; }
-		50% { transform: translateX(-50%) scale(1.4); }
-		75% { transform: translateX(-50%) scale(0.9); }
-		100% { transform: translateX(-50%) scale(1); opacity: 1; }
 	}
 </style>

@@ -125,7 +125,7 @@
 
         <!-- Play Button (main action) -->
         <Button variant="action" size="lg" fullWidth onclick={handlePlayGame}>
-          Play Demo →
+          {$t.pixelSurvivor.playDemo} →
         </Button>
 
         <!-- View Character -->

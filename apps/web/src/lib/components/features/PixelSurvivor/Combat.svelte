@@ -160,9 +160,11 @@
 	}
 
 	function getMonsterName(): string {
-		if (!monster) return 'Monster';
-		// TODO: Use i18n for monster names
-		return monster.definitionId.charAt(0).toUpperCase() + monster.definitionId.slice(1);
+		if (!monster) return $t.pixelSurvivor.unknownName;
+		// Try to get translated name, fallback to capitalized definitionId
+		const monsters = $t.pixelSurvivor.monsters as Record<string, { name: string; description: string }>;
+		const translatedName = monsters[monster.definitionId]?.name;
+		return translatedName ?? monster.definitionId.charAt(0).toUpperCase() + monster.definitionId.slice(1);
 	}
 
 	function addLogEntry(entry: LogEntry): void {
@@ -450,7 +452,7 @@
 			<div class="combatant-info">
 				<div class="monster-header">
 					<span class="combatant-name">{getMonsterName()}</span>
-					<Badge variant="warning" text={`Lv.${monster?.level ?? 1}`} />
+					<Badge variant="warning" text={$t.pixelSurvivor.levelFormat.replace('{level}', String(monster?.level ?? 1))} />
 				</div>
 				<div class="hp-bar-container">
 					<div class="hp-bar monster-hp" style:width="{monsterHpPercent}%" class:low={monsterHpPercent < 25}></div>
@@ -516,7 +518,7 @@
 		<div class="combat-over">
 			{#if combatState?.phase === 'victory'}
 				<span class="victory-text">{$t.pixelSurvivor.combat.victoryTitle}</span>
-				<span class="xp-gained">+{combatState.xpReward} XP</span>
+				<span class="xp-gained">{$t.pixelSurvivor.xpGained.replace('{xp}', String(combatState.xpReward))}</span>
 			{:else if combatState?.phase === 'defeat'}
 				<span class="defeat-text">{$t.pixelSurvivor.combat.defeatTitle}</span>
 			{:else}

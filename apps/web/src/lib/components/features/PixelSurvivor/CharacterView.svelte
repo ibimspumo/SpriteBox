@@ -29,7 +29,7 @@
   // Character data
   const character = $derived($survivorRun?.character);
   const pixels = $derived(character?.pixels);
-  const name = $derived(character?.name ?? 'Unknown');
+  const name = $derived(character?.name ?? $t.pixelSurvivor.unknownName);
 
   // Stats config
   const COMBAT_STATS = [
@@ -81,7 +81,7 @@
       <!-- Level -->
       <div class="level-section">
         <span class="level-badge">
-          <span class="level-label">LVL</span>
+          <span class="level-label">{$t.pixelSurvivor.levelAbbr}</span>
           <span class="level-value">{$playerLevel}</span>
         </span>
       </div>
@@ -93,14 +93,14 @@
           <div class="resource-item">
             <Icon name="heart" size="md" />
             <div class="resource-info">
-              <span class="resource-label">HP</span>
+              <span class="resource-label">{$t.pixelSurvivor.stats.hp}</span>
               <span class="resource-value hp">{$currentHp} / {$maxHp}</span>
             </div>
           </div>
           <div class="resource-item">
             <Icon name="drop" size="md" />
             <div class="resource-info">
-              <span class="resource-label">Mana</span>
+              <span class="resource-label">{$t.pixelSurvivor.stats.mana}</span>
               <span class="resource-value mana">{$currentMana} / {$maxMana}</span>
             </div>
           </div>

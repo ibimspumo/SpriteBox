@@ -72,3 +72,18 @@ export type {
 	DamageModifierType,
 	DamageModifierCondition
 } from './damage/index.js';
+
+// ============================================
+// RANDOM
+// ============================================
+
+export {
+	secureRandomInt,
+	secureRandomFloat,
+	secureRandomString,
+	secureRandomHex,
+	secureShuffleArray,
+	secureRandomChoice,
+	secureWeightedChoice,
+	generateSecureId
+} from './random.js';

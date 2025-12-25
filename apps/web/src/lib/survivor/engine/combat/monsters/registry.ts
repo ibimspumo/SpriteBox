@@ -14,6 +14,7 @@ import type {
 	MonsterRarity,
 	MonstersJsonData
 } from './types.js';
+import { secureRandomInt, secureRandomFloat, secureWeightedChoice } from '../../core/random.js';
 
 // Import monster data
 import monstersData from '../../../data/monsters.json';
@@ -35,14 +36,45 @@ let isInitialized = false;
 export function initializeMonsterRegistry(): void {
 	if (isInitialized) return;
 
-	const data = monstersData as MonstersJsonData;
+	try {
+		const data = monstersData as MonstersJsonData;
 
-	for (const monster of data.monsters) {
-		monsterRegistry.set(monster.id, monster);
+		// Validate data structure
+		if (!data || typeof data !== 'object') {
+			console.error('Monster registry initialization failed: Invalid data format');
+			return;
+		}
+
+		if (!Array.isArray(data.monsters)) {
+			console.error('Monster registry initialization failed: monsters array is missing or invalid');
+			return;
+		}
+
+		if (typeof data.version !== 'number') {
+			console.warn('Monster registry: version field is missing or invalid');
+		}
+
+		for (const monster of data.monsters) {
+			// Validate each monster has required fields
+			if (!monster || typeof monster.id !== 'string') {
+				console.warn('Monster registry: Skipping invalid monster entry (missing or invalid id)');
+				continue;
+			}
+
+			if (typeof monster.pixels !== 'string' || monster.pixels.length !== 64) {
+				console.warn(`Monster registry: Monster '${monster.id}' has invalid pixels data`);
+			}
+
+			monsterRegistry.set(monster.id, monster);
+		}
+
+		isInitialized = true;
+		console.log(`Monster registry initialized with ${monsterRegistry.size} monsters`);
+	} catch (error) {
+		console.error('Monster registry initialization failed:', error);
+		// Mark as initialized to prevent repeated failed attempts
+		isInitialized = true;
 	}
-
-	isInitialized = true;
-	console.log(`Monster registry initialized with ${monsterRegistry.size} monsters`);
 }
 
 /**
@@ -196,7 +228,7 @@ export function spawnMonster(request: MonsterSpawnRequest): MonsterSpawnResult {
 		level = request.level;
 	} else {
 		const range = request.level;
-		level = range.min + Math.floor(Math.random() * (range.max - range.min + 1));
+		level = secureRandomInt(range.min, range.max);
 	}
 
 	// If specific monster requested
@@ -259,22 +291,8 @@ export function spawnMonster(request: MonsterSpawnRequest): MonsterSpawnResult {
 		weights.push(weight);
 	}
 
-	const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-	const randomValue = Math.random() * totalWeight;
-
-	let cumulative = 0;
-	let selectedMonster: MonsterDefinition | undefined;
-	for (let i = 0; i < eligibleMonsters.length; i++) {
-		cumulative += weights[i];
-		if (randomValue <= cumulative) {
-			selectedMonster = eligibleMonsters[i];
-			break;
-		}
-	}
-
-	if (!selectedMonster) {
-		selectedMonster = eligibleMonsters[0];
-	}
+	// Use secure weighted choice for monster selection
+	const selectedMonster = secureWeightedChoice(eligibleMonsters, weights) ?? eligibleMonsters[0];
 
 	return {
 		success: true,

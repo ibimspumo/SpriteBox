@@ -89,6 +89,15 @@
 		return colors[element] ?? colors.neutral;
 	}
 
+	// Get translated effect name from definition
+	// Effect names are stored as "pixelSurvivor.effects.<key>" paths
+	function getTranslatedEffectName(definitionName: string): string {
+		const parts = definitionName.split('.');
+		const effectKey = parts[parts.length - 1] ?? definitionName;
+		const effects = $t.pixelSurvivor.effects as Record<string, string>;
+		return effects[effectKey] ?? definitionName;
+	}
+
 	function handleSettings(): void {
 		showStatsScreen?.set(true);
 	}
@@ -142,7 +151,7 @@
 			<!-- Level & XP -->
 			<div class="level-xp">
 				<span class="level-badge">
-					<span class="level-label">LVL</span>
+					<span class="level-label">{$t.pixelSurvivor.levelAbbr}</span>
 					<span class="level-value">{$playerLevel}</span>
 				</span>
 				<div class="xp-bar">
@@ -195,7 +204,7 @@
 						</div>
 					{/if}
 					<div class="character-details">
-						<span class="char-name">{characterName ?? 'Unknown'}</span>
+						<span class="char-name">{characterName ?? $t.pixelSurvivor.unknownName}</span>
 						<span class="char-element" style="color: {getElementColor($currentElement)}">
 							{$t.pixelSurvivor.elements[$currentElement] ?? $currentElement}
 						</span>
@@ -227,13 +236,15 @@
 						<h3 class="section-title">{$t.pixelSurvivor.gameShell.effects}</h3>
 						<div class="effects-list">
 							{#each $activeBuffs as buff}
-								<span class="effect-badge buff" title={buff.definition.name}>
-									{buff.definition.name.slice(0, 3)}
+								{@const effectName = getTranslatedEffectName(buff.definition.name)}
+								<span class="effect-badge buff" title={effectName}>
+									{effectName.slice(0, 3)}
 								</span>
 							{/each}
 							{#each $activeDebuffs as debuff}
-								<span class="effect-badge debuff" title={debuff.definition.name}>
-									{debuff.definition.name.slice(0, 3)}
+								{@const effectName = getTranslatedEffectName(debuff.definition.name)}
+								<span class="effect-badge debuff" title={effectName}>
+									{effectName.slice(0, 3)}
 								</span>
 							{/each}
 						</div>

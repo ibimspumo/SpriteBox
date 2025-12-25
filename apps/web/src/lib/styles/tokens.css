@@ -118,6 +118,7 @@
   --shadow-pixel-lg: 6px 6px 0 rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px var(--color-glow);
   --shadow-glow-sm: 0 0 10px var(--color-glow);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.3);
 
   /* ===== Borders - Pixel Style ===== */
   --border-width: 3px;
@@ -222,6 +223,19 @@ img[src*="logo"],
 @keyframes scaleBounce {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
+}
+
+@keyframes result-pop {
+  0% { transform: translateX(-50%) scale(0); opacity: 0; }
+  60% { transform: translateX(-50%) scale(1.2); }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+@keyframes crit-pop {
+  0% { transform: translateX(-50%) scale(0); opacity: 0; }
+  50% { transform: translateX(-50%) scale(1.4); }
+  75% { transform: translateX(-50%) scale(0.9); }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
 /* ===== Utility Classes ===== */

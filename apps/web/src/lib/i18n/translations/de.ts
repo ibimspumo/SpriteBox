@@ -562,6 +562,12 @@ export const de: Translations = {
 			buffs: 'Buffs',
 			debuffs: 'Debuffs',
 		},
+		// Common UI strings
+		playDemo: 'Demo spielen',
+		unknownName: 'Unbekannt',
+		levelAbbr: 'LVL',
+		levelFormat: 'Lv.{level}',
+		xpGained: '+{xp} EP',
 		// Gameplay Demo
 		gameplayDemo: {
 			eventTitle: 'Zufälliges Ereignis',

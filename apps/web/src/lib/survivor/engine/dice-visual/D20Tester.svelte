@@ -260,7 +260,7 @@
 	.stat .value {
 		font-size: var(--font-size-lg);
 		font-weight: bold;
-		font-family: var(--font-mono, monospace);
+		font-family: var(--font-family-mono);
 	}
 
 	.stat.crit .value {
@@ -299,7 +299,7 @@
 		background: var(--color-bg-secondary);
 		font-size: var(--font-size-xs);
 		font-weight: bold;
-		font-family: var(--font-mono, monospace);
+		font-family: var(--font-family-mono);
 	}
 
 	.result.crit {

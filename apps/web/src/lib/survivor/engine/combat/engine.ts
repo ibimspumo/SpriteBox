@@ -28,6 +28,7 @@ import type { TraitType } from '../character/traits/types.js';
 import { OFFENSIVE_TRAITS, DEFENSIVE_TRAITS } from '../character/traits/types.js';
 import { calculateElementMultiplier, createElementAffinity } from '../core/elements/index.js';
 import { calculateXpReward } from './monsters/registry.js';
+import { generateSecureId, secureRandomFloat, secureRandomInt } from '../core/random.js';
 
 // ============================================
 // TRAIT DAMAGE BONUS
@@ -71,6 +72,7 @@ export class CombatEngine {
 	private state: CombatState;
 	private config: CombatConfig;
 	private onStateChange?: (state: CombatState) => void;
+	private activeTimers: Set<ReturnType<typeof setTimeout>> = new Set();
 
 	constructor(config: Partial<CombatConfig> = {}) {
 		this.config = { ...DEFAULT_COMBAT_CONFIG, ...config };
@@ -129,7 +131,7 @@ export class CombatEngine {
 	 * Generate a unique log entry ID.
 	 */
 	private generateLogEntryId(): string {
-		return `log_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+		return generateSecureId('log', 6);
 	}
 
 	/**
@@ -191,7 +193,7 @@ export class CombatEngine {
 		// Sort by speed (highest first), with random tiebreaker
 		participants.sort((a, b) => {
 			if (b.speed !== a.speed) return b.speed - a.speed;
-			return Math.random() - 0.5;
+			return secureRandomFloat() - 0.5;
 		});
 
 		const turnOrder = participants.map((p) => p.id);
@@ -221,6 +223,7 @@ export class CombatEngine {
 	private startNextTurn(): void {
 		// Check if combat is over
 		if (!this.state.player.isAlive) {
+			this.cleanup();
 			this.state.phase = 'defeat';
 			this.state.endedAt = Date.now();
 			this.notifyStateChange();
@@ -249,6 +252,9 @@ export class CombatEngine {
 	 * Handle player victory.
 	 */
 	private handleVictory(): void {
+		// Clean up any pending timers
+		this.cleanup();
+
 		// Calculate total XP reward
 		let totalXp = 0;
 		const playerLevel = 1; // TODO: Get from player stats
@@ -443,9 +449,11 @@ export class CombatEngine {
 			this.notifyStateChange();
 
 			// After animation, advance to next turn
-			setTimeout(() => {
+			const timerId = setTimeout(() => {
+				this.activeTimers.delete(timerId);
 				this.advanceTurn();
 			}, this.config.attackAnimationDuration);
+			this.activeTimers.add(timerId);
 		}
 
 		return result;
@@ -573,10 +581,11 @@ export class CombatEngine {
 
 		fleeChance = Math.max(0.1, Math.min(0.9, fleeChance));
 
-		const roll = Math.random();
+		const roll = secureRandomFloat();
 		const success = roll < fleeChance;
 
 		if (success) {
+			this.cleanup();
 			this.state.phase = 'fled';
 			this.state.endedAt = Date.now();
 			this.notifyStateChange();
@@ -650,6 +659,7 @@ export class CombatEngine {
 
 		// Check for player defeat
 		if (!this.state.player.isAlive) {
+			this.cleanup();
 			this.state.phase = 'defeat';
 			this.state.endedAt = Date.now();
 			this.notifyStateChange();
@@ -660,9 +670,11 @@ export class CombatEngine {
 		this.state.phase = 'monster_attack';
 		this.notifyStateChange();
 
-		setTimeout(() => {
+		const timerId = setTimeout(() => {
+			this.activeTimers.delete(timerId);
 			this.advanceTurn();
 		}, this.config.attackAnimationDuration);
+		this.activeTimers.add(timerId);
 
 		return result;
 	}
@@ -735,11 +747,23 @@ export class CombatEngine {
 		this.state.player.isAlive = this.state.player.currentHp > 0;
 
 		if (!this.state.player.isAlive) {
+			this.cleanup();
 			this.state.phase = 'defeat';
 			this.state.endedAt = Date.now();
 		}
 
 		this.notifyStateChange();
+	}
+
+	/**
+	 * Cleanup all active timers.
+	 * Should be called when combat ends or when the engine is being destroyed.
+	 */
+	public cleanup(): void {
+		for (const timerId of this.activeTimers) {
+			clearTimeout(timerId);
+		}
+		this.activeTimers.clear();
 	}
 }
 

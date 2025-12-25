@@ -9,6 +9,7 @@
 
 import type { StatType } from '../stats/types.js';
 import type { ModifierTemplate, ModifierSource } from '../modifiers/types.js';
+import { generateSecureId } from '../core/random.js';
 
 // ============================================
 // EFFECT TRIGGERS
@@ -463,7 +464,7 @@ export interface SerializedActiveEffect {
  * Generate a unique effect instance ID.
  */
 export function generateEffectInstanceId(): string {
-	return `eff_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+	return generateSecureId('eff', 7);
 }
 
 /**

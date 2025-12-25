@@ -80,7 +80,7 @@
 						</div>
 						<div class="stat-item">
 							<Icon name="star" size="md" />
-							<span class="stat-value">Lv.{$playerLevel}</span>
+							<span class="stat-value">{$t.pixelSurvivor.levelFormat.replace('{level}', String($playerLevel))}</span>
 						</div>
 						<div class="stat-item">
 							<Icon name="skull" size="md" />
@@ -119,7 +119,7 @@
 					<div class="rewards">
 						<div class="reward-item">
 							<span class="reward-label">{$t.pixelSurvivor.gameplay.xpGained}</span>
-							<span class="reward-value xp">+{lastXpGained} XP</span>
+							<span class="reward-value xp">{$t.pixelSurvivor.xpGained.replace('{xp}', String(lastXpGained))}</span>
 						</div>
 						<div class="reward-item">
 							<span class="reward-label">{$t.pixelSurvivor.gameplay.monstersDefeated}</span>
