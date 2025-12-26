@@ -2,11 +2,21 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { dev } from '$app/environment';
   import { t } from '$lib/i18n';
   import { onlineCountByMode, availableGameModes, selectedGameMode, currentUser } from '$lib/stores';
   import { ModeCard, UsernameEditor } from '$lib/components/molecules';
   import { Button } from '$lib/components/atoms';
   import { getSlugFromMode } from '$lib/modeRoutes';
+
+  // Filter out dev-only modes (like pixel-survivor) in production
+  const visibleGameModes = $derived(
+    $availableGameModes.filter(mode => {
+      // pixel-survivor is dev-only
+      if (mode.id === 'pixel-survivor') return dev;
+      return true;
+    })
+  );
 
   let mounted = $state(false);
 
@@ -41,7 +51,7 @@
     <h1 class="title">{$t.modeSelection.title}</h1>
 
     <div class="mode-grid">
-      {#each $availableGameModes as mode, i}
+      {#each visibleGameModes as mode, i}
         <div
           class="mode-card-wrapper"
           style="animation-delay: {0.1 + i * 0.1}s"
