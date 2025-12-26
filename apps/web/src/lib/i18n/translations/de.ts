@@ -295,6 +295,8 @@ export const de: Translations = {
 		players: 'Spieler',
 		multiplayer: 'Mehrspieler',
 		solo: 'Solo',
+		online: 'online',
+		soloTag: 'SOLO',
 		classic: {
 			name: 'Klassisch',
 			description: '5-100 Spieler, Elo-Voting, steige im Ranking auf',

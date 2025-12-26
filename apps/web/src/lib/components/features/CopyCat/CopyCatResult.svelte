@@ -558,6 +558,15 @@
       flex-direction: column;
       width: 100%;
     }
+
+    .stats {
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .stat {
+      width: 100%;
+    }
   }
 
   /* Reduce motion */

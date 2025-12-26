@@ -1,4 +1,4 @@
-<!-- ModeCard Molecule - Game mode selection card (Mobile-first redesign) -->
+<!-- ModeCard Molecule - Game mode selection card (Native mobile-first) -->
 <script lang="ts">
   import { Badge } from '$lib/components/atoms';
   import { t } from '$lib/i18n';
@@ -80,17 +80,18 @@
   {onclick}
   aria-label={$t.gameModes.selectMode}
 >
-  <!-- Pixel border decoration -->
-  <div class="pixel-corner top-left"></div>
-  <div class="pixel-corner top-right"></div>
-  <div class="pixel-corner bottom-left"></div>
-  <div class="pixel-corner bottom-right"></div>
+  <!-- Left accent bar -->
+  <div class="accent-bar"></div>
 
+  <!-- Icon container -->
+  <div class="icon-container">
+    <span class="mode-icon">{modePixelIcon()}</span>
+  </div>
+
+  <!-- Main content -->
   <div class="card-content">
-    <!-- Icon & Title Row -->
-    <div class="mode-header">
-      <span class="mode-icon">{modePixelIcon()}</span>
-      <div class="title-group">
+    <div class="content-top">
+      <div class="title-row">
         <h3 class="mode-name">
           {#if mode.i18nKey === 'gameModes.pixelBattle'}
             {$t.modeSelection.classic.name}
@@ -112,120 +113,119 @@
           <Badge variant="warning" size="sm" text={$t.common.alpha} />
         {/if}
       </div>
+      <p class="mode-description">
+        {#if mode.i18nKey === 'gameModes.pixelBattle'}
+          {$t.modeSelection.classic.description}
+        {:else if mode.i18nKey === 'gameModes.copyCat'}
+          {$t.modeSelection.copycat.description}
+        {:else if mode.i18nKey === 'gameModes.pixelGuesser'}
+          {$t.modeSelection.pixelguesser.description}
+        {:else if mode.i18nKey === 'gameModes.pixelSurvivor'}
+          {$t.modeSelection.survivor.description}
+        {:else if mode.i18nKey === 'gameModes.copyCatSolo'}
+          {$t.modeSelection.copycatsolo.description}
+        {:else if mode.i18nKey === 'gameModes.colordle'}
+          {$t.modeSelection.colordle.description}
+        {:else}
+          {mode.displayName}
+        {/if}
+      </p>
     </div>
 
-    <!-- Description -->
-    <p class="mode-description">
-      {#if mode.i18nKey === 'gameModes.pixelBattle'}
-        {$t.modeSelection.classic.description}
-      {:else if mode.i18nKey === 'gameModes.copyCat'}
-        {$t.modeSelection.copycat.description}
-      {:else if mode.i18nKey === 'gameModes.pixelGuesser'}
-        {$t.modeSelection.pixelguesser.description}
-      {:else if mode.i18nKey === 'gameModes.pixelSurvivor'}
-        {$t.modeSelection.survivor.description}
-      {:else if mode.i18nKey === 'gameModes.copyCatSolo'}
-        {$t.modeSelection.copycatsolo.description}
-      {:else if mode.i18nKey === 'gameModes.colordle'}
-        {$t.modeSelection.colordle.description}
-      {:else}
-        {mode.displayName}
-      {/if}
-    </p>
-
-    <!-- Footer: Player count & active indicator -->
-    <div class="mode-footer">
+    <!-- Meta info -->
+    <div class="meta-row">
       {#if !isSoloMode}
-        <span class="player-range">
+        <span class="player-info">
           <span class="player-icon">👥</span>
-          {playerRange()} {$t.modeSelection.players}
+          <span class="player-text">{playerRange()}</span>
         </span>
-        <div class="active-players" class:has-active={playerCount > 0}>
-          <span class="pulse-dot"></span>
-          <span class="count">{playerCount}</span>
-          <span class="label">{$t.modeSelection.playersActive}</span>
-        </div>
+        {#if playerCount > 0}
+          <span class="active-badge">
+            <span class="pulse-dot"></span>
+            <span>{playerCount} {$t.modeSelection.online}</span>
+          </span>
+        {/if}
       {:else}
-        <div class="solo-badge">
-          <span>SOLO</span>
-        </div>
+        <span class="solo-tag">{$t.modeSelection.soloTag}</span>
       {/if}
     </div>
   </div>
 
-  <!-- Hover glow effect -->
-  <div class="glow-effect"></div>
+  <!-- Arrow indicator -->
+  <div class="arrow-indicator">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M9 18l6-6-6-6"/>
+    </svg>
+  </div>
 </button>
 
 <style>
   .mode-card {
     position: relative;
+    display: flex;
+    align-items: stretch;
     width: 100%;
-    min-height: 140px;
-    padding: var(--space-4);
-    background: linear-gradient(
-      135deg,
-      var(--color-bg-secondary) 0%,
-      var(--color-bg-tertiary) 100%
-    );
-    border: 3px solid var(--color-bg-elevated);
-    border-radius: var(--radius-lg);
+    min-height: 88px;
+    padding: 0;
+    background: var(--color-bg-secondary);
+    border: 2px solid var(--color-bg-elevated);
+    border-radius: var(--radius-md);
     cursor: pointer;
     font-family: var(--font-family);
     color: var(--color-text-primary);
     text-align: left;
     overflow: hidden;
     transition:
-      transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-      border-color 0.2s ease,
-      box-shadow 0.2s ease;
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      transform 0.15s ease;
   }
 
-  /* Pixel corner decorations */
-  .pixel-corner {
-    position: absolute;
-    width: 8px;
-    height: 8px;
+  /* Left accent bar */
+  .accent-bar {
+    width: 4px;
+    min-height: 100%;
     background: var(--mode-accent);
-    opacity: 0.6;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    flex-shrink: 0;
   }
 
-  .top-left { top: 6px; left: 6px; }
-  .top-right { top: 6px; right: 6px; }
-  .bottom-left { bottom: 6px; left: 6px; }
-  .bottom-right { bottom: 6px; right: 6px; }
+  /* Icon container */
+  .icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    flex-shrink: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      transparent 100%
+    );
+  }
 
-  .mode-card:hover .pixel-corner,
-  .mode-card:focus-visible .pixel-corner {
-    opacity: 1;
-    transform: scale(1.25);
+  .mode-icon {
+    font-size: 1.5rem;
+    line-height: 1;
   }
 
   /* Card content */
   .card-content {
-    position: relative;
-    z-index: 1;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
-    height: 100%;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-2) var(--space-3) 0;
+    min-width: 0;
   }
 
-  /* Header with icon and title */
-  .mode-header {
+  .content-top {
     display: flex;
-    align-items: center;
-    gap: var(--space-3);
+    flex-direction: column;
+    gap: 2px;
   }
 
-  .mode-icon {
-    font-size: 2rem;
-    line-height: 1;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-  }
-
-  .title-group {
+  .title-row {
     display: flex;
     align-items: center;
     gap: var(--space-2);
@@ -234,143 +234,120 @@
 
   .mode-name {
     margin: 0;
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     color: var(--color-text-primary);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
 
-  /* Description */
   .mode-description {
     margin: 0;
-    font-size: var(--font-size-xs);
-    color: var(--color-text-secondary);
-    line-height: var(--line-height-normal);
-    flex: 1;
-  }
-
-  /* Footer */
-  .mode-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    margin-top: auto;
-    padding-top: var(--space-2);
-    border-top: 1px solid var(--color-border);
-  }
-
-  .player-range {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: var(--font-size-xs);
+    font-size: 10px;
     color: var(--color-text-muted);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Meta row */
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-1);
+  }
+
+  .player-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--color-text-muted);
+  }
+
+  .player-icon {
+    font-size: 11px;
+  }
+
+  .player-text {
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
-  .player-icon {
-    font-size: 0.875rem;
-  }
-
-  /* Active players indicator */
-  .active-players {
+  .active-badge {
     display: flex;
     align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-1) var(--space-2);
-    background: var(--color-bg-primary);
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
-    transition: all 0.2s ease;
-  }
-
-  .active-players.has-active {
+    gap: 4px;
+    padding: 2px 6px;
     background: rgba(74, 222, 128, 0.15);
+    border-radius: var(--radius-sm);
+    font-size: 9px;
     color: var(--color-success);
+    font-weight: var(--font-weight-bold);
   }
 
   .pulse-dot {
-    width: 6px;
-    height: 6px;
-    background: var(--color-text-muted);
-    border-radius: var(--radius-full);
-    transition: background 0.2s ease;
-  }
-
-  .active-players.has-active .pulse-dot {
+    width: 5px;
+    height: 5px;
     background: var(--color-success);
+    border-radius: var(--radius-full);
     animation: pulse 2s ease-in-out infinite;
   }
 
-  .count {
-    font-weight: var(--font-weight-bold);
-    min-width: 1ch;
-  }
-
-  .label {
-    opacity: 0.8;
-  }
-
-  /* Solo badge */
-  .solo-badge {
-    padding: var(--space-1) var(--space-2);
+  .solo-tag {
+    padding: 2px 6px;
     background: linear-gradient(135deg, var(--mode-accent), color-mix(in srgb, var(--mode-accent) 70%, white));
     border-radius: var(--radius-sm);
-    font-size: var(--font-size-xs);
+    font-size: 9px;
     font-weight: var(--font-weight-bold);
     color: var(--color-bg-primary);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
   }
 
-  /* Hover glow effect */
-  .glow-effect {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(
-      circle at 50% 50%,
-      var(--mode-accent) 0%,
-      transparent 70%
-    );
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
+  /* Arrow indicator */
+  .arrow-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    transition: color 0.15s ease, transform 0.15s ease;
   }
 
-  /* States */
+  .arrow-indicator svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Hover/Active states */
   .mode-card:hover,
   .mode-card:focus-visible {
-    transform: translateY(-4px) scale(1.02);
     border-color: var(--mode-accent);
-    box-shadow:
-      0 8px 24px rgba(0, 0, 0, 0.3),
-      0 0 0 1px var(--mode-accent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    background: var(--color-bg-tertiary);
   }
 
-  .mode-card:hover .glow-effect,
-  .mode-card:focus-visible .glow-effect {
-    opacity: 0.08;
+  .mode-card:hover .arrow-indicator,
+  .mode-card:focus-visible .arrow-indicator {
+    color: var(--mode-accent);
+    transform: translateX(2px);
   }
 
   .mode-card:active {
-    transform: translateY(-2px) scale(1.01);
-    transition-duration: 0.1s;
+    transform: scale(0.99);
+    transition-duration: 0.05s;
   }
 
   .mode-card.selected {
     border-color: var(--color-success);
-    box-shadow:
-      0 4px 16px rgba(74, 222, 128, 0.2),
-      0 0 0 2px var(--color-success),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    background: var(--color-bg-tertiary);
   }
 
-  .mode-card.selected .pixel-corner {
+  .mode-card.selected .accent-bar {
     background: var(--color-success);
-    opacity: 1;
   }
 
   /* Focus visible outline */
@@ -383,17 +360,111 @@
     outline: none;
   }
 
-  /* Players active glow for cards with active players */
-  .mode-card.has-players::after {
+  /* Players active indicator dot */
+  .mode-card.has-players::before {
     content: '';
     position: absolute;
-    top: -1px;
-    right: -1px;
-    width: 12px;
-    height: 12px;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
     background: var(--color-success);
     border-radius: var(--radius-full);
-    box-shadow: 0 0 8px var(--color-success);
+    box-shadow: 0 0 6px var(--color-success);
     animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* Tablet and above - larger cards */
+  @media (min-width: 640px) {
+    .mode-card {
+      min-height: 120px;
+      border-radius: var(--radius-lg);
+    }
+
+    .accent-bar {
+      width: 5px;
+    }
+
+    .icon-container {
+      width: 72px;
+    }
+
+    .mode-icon {
+      font-size: 2rem;
+    }
+
+    .card-content {
+      padding: var(--space-4) var(--space-3) var(--space-4) 0;
+      gap: var(--space-2);
+    }
+
+    .mode-name {
+      font-size: var(--font-size-md);
+    }
+
+    .mode-description {
+      font-size: var(--font-size-xs);
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
+
+    .meta-row {
+      gap: var(--space-4);
+    }
+
+    .player-info {
+      font-size: var(--font-size-xs);
+    }
+
+    .active-badge {
+      font-size: 10px;
+      padding: 3px 8px;
+    }
+
+    .solo-tag {
+      font-size: 10px;
+      padding: 3px 8px;
+    }
+
+    .arrow-indicator {
+      width: 40px;
+    }
+
+    .arrow-indicator svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  /* Desktop - expanded cards with more room */
+  @media (min-width: 1024px) {
+    .mode-card {
+      min-height: 140px;
+    }
+
+    .icon-container {
+      width: 80px;
+    }
+
+    .mode-icon {
+      font-size: 2.25rem;
+    }
+
+    .mode-name {
+      font-size: var(--font-size-lg);
+    }
+
+    .mode-description {
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+    }
+
+    .mode-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .mode-card:active {
+      transform: translateY(-1px) scale(0.995);
+    }
   }
 </style>

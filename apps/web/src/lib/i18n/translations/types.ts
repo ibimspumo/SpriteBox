@@ -325,6 +325,8 @@ export interface Translations {
 		players: string;
 		multiplayer: string;
 		solo: string;
+		online: string;
+		soloTag: string;
 		classic: {
 			name: string;
 			description: string;
