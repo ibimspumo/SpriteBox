@@ -148,6 +148,13 @@ export const PixelGuesserGuessSchema = z.object({
 });
 
 /**
+ * Zombie Pixel movement validation (includes diagonal directions)
+ */
+export const ZombieMoveSchema = z.object({
+  direction: z.enum(['up', 'down', 'left', 'right', 'up-left', 'up-right', 'down-left', 'down-right']),
+});
+
+/**
  * Helper function: Validate with schema
  */
 export function validate<T>(

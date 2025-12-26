@@ -20,6 +20,10 @@
   );
   let playersNeeded = $derived(Math.max(0, minPlayers - $lobby.players.length));
 
+  // Zombie Pixel mode fills with bots (100 max players)
+  let isZombiePixel = $derived($lobby.gameMode === 'zombie-pixel');
+  let botsCount = $derived(isZombiePixel ? 100 - $lobby.players.length : 0);
+
   function getRoomShareUrl(): string {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     if ($lobby.code && $lobby.gameMode) {
@@ -180,7 +184,13 @@
 
     {:else if $lobby.type === 'public'}
       <!-- Public Lobby Status -->
-      {#if playersNeeded > 0}
+      {#if isZombiePixel}
+        <!-- Zombie Pixel shows bot fill message -->
+        <div class="status-message ready">
+          <span class="status-dot"></span>
+          {$t.zombiePixel.lobby.fillingWithBots.replace('{count}', String(botsCount))}
+        </div>
+      {:else if playersNeeded > 0}
         <div class="status-message waiting">
           <span class="status-dot"></span>
           {playersNeeded === 1

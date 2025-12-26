@@ -42,7 +42,9 @@ export type GamePhase =
   | 'survivor-result'
   | 'survivor-levelup'
   | 'survivor-gameover'
-  | 'survivor-victory';
+  | 'survivor-victory'
+  // ZombiePixel mode phases (real-time infection)
+  | 'active';
 
 export interface Instance {
   id: string;
@@ -67,6 +69,8 @@ export interface Instance {
   copyCat?: CopyCatState;
   // PixelGuesser mode fields
   pixelGuesser?: PixelGuesserState;
+  // ZombiePixel mode fields
+  zombiePixel?: import('./gameModes/zombiePixel/types.js').ZombiePixelState;
 }
 
 // === CopyCat Mode Types ===
@@ -341,6 +345,51 @@ export interface ServerToClientEvents {
     duration: number;
     endsAt: number;
   }) => void;
+  // ZombiePixel mode events
+  'zombie-game-state': (data: {
+    players: Array<{
+      id: string;
+      name: string;
+      x: number;
+      y: number;
+      isZombie: boolean;
+      isBot: boolean;
+    }>;
+    timeRemaining: number;
+    survivorCount: number;
+    zombieCount: number;
+  }) => void;
+  'zombie-roles-assigned': (data: {
+    yourId: string;
+    yourRole: 'zombie' | 'survivor';
+    yourPosition: { x: number; y: number };
+    zombieCount: number;
+    survivorCount: number;
+  }) => void;
+  'zombie-infection': (data: {
+    victimId: string;
+    victimName: string;
+    zombieId: string;
+    zombieName: string;
+    survivorsRemaining: number;
+  }) => void;
+  'zombie-game-end': (data: {
+    winner: { id: string; name: string; isBot: boolean } | null;
+    zombiesWin: boolean;
+    duration: number;
+    stats: {
+      totalInfections: number;
+      gameDuration: number;
+      firstInfectionTime: number | null;
+      mostInfections: { playerId: string; name: string; count: number } | null;
+      longestSurvivor: { playerId: string; name: string; survivalTime: number } | null;
+    };
+  }) => void;
+  'zombie-lobby-update': (data: {
+    realPlayers: number;
+    botCount: number;
+    totalPlayers: number;
+  }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -366,6 +415,8 @@ export interface ClientToServerEvents {
   // PixelGuesser mode events
   'pixelguesser-draw': (data: { pixels: string }) => void;
   'pixelguesser-guess': (data: { guess: string }) => void;
+  // ZombiePixel mode events
+  'zombie-move': (data: { direction: 'up' | 'down' | 'left' | 'right' }) => void;
 }
 
 // === Helper types ===

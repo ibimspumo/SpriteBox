@@ -44,6 +44,12 @@ export interface ServerToClientEvents {
   'pixelguesser-correct-guess': (data: PixelGuesserCorrectGuessData) => void;
   'pixelguesser-reveal': (data: PixelGuesserRevealData) => void;
   'pixelguesser-final-results': (data: PixelGuesserFinalResultsData) => void;
+  // ZombiePixel mode events
+  'zombie-game-state': (data: ZombieGameStateData) => void;
+  'zombie-roles-assigned': (data: ZombieRolesAssignedData) => void;
+  'zombie-infection': (data: ZombieInfectionData) => void;
+  'zombie-game-end': (data: ZombieGameEndData) => void;
+  'zombie-lobby-update': (data: ZombieLobbyUpdateData) => void;
 }
 
 // Persistent stats per game mode
@@ -124,6 +130,56 @@ export interface PixelGuesserFinalResultsData {
   endsAt: number;
 }
 
+// ZombiePixel mode types
+export interface ZombiePixelPlayerData {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  isZombie: boolean;
+  isBot: boolean;
+}
+
+export interface ZombieGameStateData {
+  players: ZombiePixelPlayerData[];
+  timeRemaining: number;
+  survivorCount: number;
+  zombieCount: number;
+}
+
+export interface ZombieRolesAssignedData {
+  yourId: string;
+  yourRole: 'zombie' | 'survivor';
+  yourPosition: { x: number; y: number };
+  survivorCount: number;
+  zombieCount: number;
+}
+
+export interface ZombieInfectionData {
+  victimName: string;
+  zombieName: string;
+  survivorsRemaining: number;
+}
+
+export interface ZombiePixelStatsData {
+  totalInfections: number;
+  gameDuration: number;
+  firstInfectionTime: number | null;
+  mostInfections: { playerId: string; name: string; count: number } | null;
+  longestSurvivor: { playerId: string; name: string; survivalTime: number } | null;
+}
+
+export interface ZombieGameEndData {
+  winner: { id: string; name: string; isBot: boolean } | null;
+  zombiesWin: boolean;
+  stats: ZombiePixelStatsData;
+}
+
+export interface ZombieLobbyUpdateData {
+  playerCount: number;
+  readyCount: number;
+}
+
 export interface ClientToServerEvents {
   ping: (callback: (time: number) => void) => void;
   'activity-ping': () => void;  // Lightweight ping to prevent idle timeout
@@ -146,6 +202,8 @@ export interface ClientToServerEvents {
   // PixelGuesser mode events
   'pixelguesser-draw': (data: { pixels: string }) => void;
   'pixelguesser-guess': (data: { guess: string }) => void;
+  // ZombiePixel mode events
+  'zombie-move': (data: { direction: 'up' | 'down' | 'left' | 'right' | 'up-left' | 'up-right' | 'down-left' | 'down-right' }) => void;
 }
 
 export interface SessionRestoredData {

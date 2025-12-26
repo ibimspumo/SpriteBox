@@ -14,6 +14,7 @@ SpriteBox supports multiple game modes, each with its own phase flow:
 | `copy-cat-solo` | Solo memory practice: recreate images alone | 1 (solo) |
 | `pixel-guesser` | Pictionary mode: one draws, others guess | 2-20 |
 | `pixel-survivor` | Roguelike survival: draw to survive 30 days | 1 (solo) |
+| `zombie-pixel` | Infection game: zombies chase survivors | 1-100 (bots fill) |
 
 ## Game Phases (Pixel Battle)
 
@@ -595,3 +596,68 @@ Monsters can have special abilities:
 - **LocalStorage**: Character and run data persisted locally
 - **No server rooms**: Registered as game mode for consistency
 - **Real-time preview**: Stats update as you draw
+
+## Zombie Pixel Mode
+
+Zombie Pixel is a real-time infection game on a 50x50 grid arena. One player starts as a zombie and must infect all survivors before time runs out.
+
+### Zombie Pixel Phase Flow
+
+```text
+  LOBBY                    COUNTDOWN (3s)           GAMEPLAY (90s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  Players    │  Bots    │   Roles     │          │  Zombies    │
+  │  Join       │ ───────► │   Assigned  │ ───────► │  Chase      │
+  │  (1-100)    │  fill    │             │          │  Survivors  │
+  └─────────────┘          └─────────────┘          └─────────────┘
+                                                           │
+       ┌───────────────────────────────────────────────────┘
+       │
+       ▼
+  RESULTS
+  ┌─────────────┐
+  │  Winner +   │
+  │  Stats      │
+  │  Shown      │
+  └─────────────┘
+```
+
+### Zombie Pixel Phases
+
+| Phase | Duration | Description |
+|-------|----------|-------------|
+| Lobby | Until ready | Bots fill to 100 players, auto-start |
+| Countdown | 3 seconds | Roles assigned, positions revealed |
+| Gameplay | 90 seconds | Real-time movement and infection |
+| Results | 10 seconds | Winner announced with game stats |
+
+### How It Works
+
+1. **Bot Filling**: Lobby fills with AI bots up to 100 players
+2. **Role Assignment**: One random player starts as zombie
+3. **Movement**: 8-directional movement via keyboard, touch joystick, or swipe
+4. **Infection**: Zombies infect survivors by touching them on the grid
+5. **Win Condition**: Last survivor wins, or zombies win if all infected
+
+### Controls
+
+| Input | Method |
+|-------|--------|
+| Keyboard | Arrow keys or WASD for 8-directional movement |
+| Touch | Virtual joystick or swipe gestures |
+| Gamepad | D-pad or left stick |
+
+### Game Mechanics
+
+- **Grid Size**: 50x50 cells
+- **Viewport**: 13x13 visible area centered on player
+- **Infection**: Zombie and survivor on same cell = infection
+- **Movement Rate**: Server-controlled tick rate (100ms)
+- **Bot AI**: Zombies chase nearest survivor, survivors flee from zombies
+
+### Technical Notes
+
+- **Real-time**: Uses Socket.io for low-latency game state sync
+- **Server authoritative**: All movement validated on server
+- **Bot system**: Server-side AI fills empty slots
+- **Rate limited**: Movement commands rate-limited to prevent spam

@@ -222,6 +222,10 @@ export interface Translations {
 		soloPractice: string;
 		soloPracticeDesc: string;
 		selectMode: string;
+		zombiePixel: {
+			name: string;
+			description: string;
+		};
 	};
 
 	// CopyCat mode
@@ -351,6 +355,10 @@ export interface Translations {
 			name: string;
 			description: string;
 		};
+		zombiepixel: {
+			name: string;
+			description: string;
+		};
 	};
 
 	// Stats
@@ -366,6 +374,45 @@ export interface Translations {
 		totalStats: string;
 		modeStats: string;
 		noStatsYet: string;
+	};
+
+	// Zombie Pixel mode
+	zombiePixel: {
+		youAreZombie: string;
+		youAreSurvivor: string;
+		survivorsRemaining: string;
+		zombiesCount: string;
+		timeRemaining: string;
+		infected: string;
+		youWereInfected: string;
+		youWin: string;
+		youLose: string;
+		zombiesWin: string;
+		survivorWins: string;
+		noSurvivors: string;
+		waiting: string;
+		gameStarting: string;
+		controls: {
+			swipe: string;
+			tap: string;
+			keyboard: string;
+			joystick: string;
+		};
+		stats: {
+			title: string;
+			totalInfections: string;
+			gameDuration: string;
+			firstInfection: string;
+			mostInfections: string;
+			longestSurvival: string;
+		};
+		lobby: {
+			playersJoined: string;
+			waitingForPlayers: string;
+			botsCount: string;
+			startingSoon: string;
+			fillingWithBots: string;
+		};
 	};
 
 	// Pixel Survivor mode (simplified - character creation only)

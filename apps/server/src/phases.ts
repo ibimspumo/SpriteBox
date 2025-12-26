@@ -42,6 +42,14 @@ import {
   cleanupPixelGuesserState,
   isPixelGuesserMode,
 } from './pixelGuesser.js';
+import {
+  initializeZombiePixelState,
+  assignZombieRoles,
+  startGameLoop,
+  stopGameLoop,
+  cleanupZombiePixelState,
+  checkGameTimeout,
+} from './gameModes/zombiePixel/index.js';
 
 // IO instance (set by index.ts)
 let io: Server | null = null;
@@ -189,6 +197,15 @@ export function startGame(instance: Instance): void {
     return;
   }
 
+  // ZombiePixel mode has different initialization
+  if (instance.gameMode === 'zombie-pixel' && io) {
+    // Initialize ZombiePixel state (bots, positions, etc.)
+    initializeZombiePixelState(instance, io);
+    // Start countdown
+    transitionTo(instance, 'countdown');
+    return;
+  }
+
   // Standard mode: Generate prompt indices for client-side localization
   instance.promptIndices = generatePromptIndices();
   // Also generate the English text for server logging
@@ -246,6 +263,10 @@ export function transitionTo(instance: Instance, phase: GamePhase): void {
     case 'reveal':
       handleReveal(instance);
       break;
+    // ZombiePixel mode phases
+    case 'active':
+      handleZombieActive(instance);
+      break;
   }
 }
 
@@ -286,6 +307,9 @@ function handleCountdown(instance: Instance): void {
       // Note: Round is already set up by initializePixelGuesserState (round 1)
       // or advanceToNextRound (rounds 2+), so just transition
       transitionTo(instance, 'guessing');
+    } else if (instance.gameMode === 'zombie-pixel') {
+      // ZombiePixel: go to active phase
+      transitionTo(instance, 'active');
     } else {
       transitionTo(instance, 'drawing');
     }
@@ -1228,4 +1252,84 @@ export function handlePixelGuesserGuess(
     close: result.close,
     points: result.points,
   };
+}
+
+// === ZombiePixel Mode Phases ===
+
+/**
+ * Active phase for ZombiePixel mode
+ * Real-time gameplay with zombies chasing survivors
+ */
+function handleZombieActive(instance: Instance): void {
+  if (!io) {
+    log('Phase', 'No IO instance for ZombiePixel active phase');
+    transitionTo(instance, 'results');
+    return;
+  }
+
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('active') ?? 60_000;
+
+  // Assign zombie roles
+  assignZombieRoles(instance, io);
+
+  // Start the game loop (handles bot AI, collisions, broadcasting)
+  startGameLoop(instance, io);
+
+  // Set phase timing
+  setPhaseTimings(instance.id, duration);
+
+  const endsAt = Date.now() + duration;
+
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'active',
+    duration,
+    endsAt,
+  });
+
+  log('Phase', `ZombiePixel active phase started for instance ${instance.id}`);
+
+  // Set up timeout to end the game
+  instance.phaseTimer = setTimeout(() => {
+    checkGameTimeout(instance, io!);
+    // Game ends via checkGameTimeout -> endGame which emits zombie-game-end
+    // After timeout, transition to results
+    handleZombieResults(instance);
+  }, duration);
+}
+
+/**
+ * Results phase for ZombiePixel mode
+ */
+function handleZombieResults(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('results') ?? 15_000;
+
+  // Stop the game loop
+  stopGameLoop(instance);
+
+  instance.phase = 'results';
+
+  const endsAt = Date.now() + duration;
+
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'results',
+    duration,
+    endsAt,
+  });
+
+  log('Phase', `ZombiePixel results phase for instance ${instance.id}`);
+
+  // Clean up ZombiePixel state
+  cleanupZombiePixelState(instance);
+
+  // Return spectators to players for next game
+  for (const [id, spectator] of instance.spectators) {
+    instance.players.set(id, spectator);
+  }
+  instance.spectators.clear();
+
+  instance.phaseTimer = setTimeout(() => {
+    resetForNextRound(instance);
+  }, duration);
 }

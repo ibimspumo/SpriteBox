@@ -96,7 +96,9 @@ export type GamePhase =
   | 'survivor-result'
   | 'survivor-levelup'
   | 'survivor-gameover'
-  | 'survivor-victory';
+  | 'survivor-victory'
+  // ZombiePixel mode (real-time infection)
+  | 'active';
 
 export interface GameState {
   phase: GamePhase;
@@ -258,6 +260,7 @@ export function resetLobbyState(): void {
   resetGameState();
   resetCopyCatState();
   resetPixelGuesserState();
+  resetZombiePixelState();
 }
 
 // === CopyCat Mode State ===
@@ -375,4 +378,61 @@ export function resetPixelGuesserState(): void {
     scores: [],
     lastGuessResult: null,
   });
+}
+
+// === ZombiePixel Mode State ===
+export interface ZombiePixelPlayerClient {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  isZombie: boolean;
+  isBot: boolean;
+}
+
+export interface ZombiePixelStats {
+  totalInfections: number;
+  gameDuration: number;
+  firstInfectionTime: number | null;
+  mostInfections: { playerId: string; name: string; count: number } | null;
+  longestSurvivor: { playerId: string; name: string; survivalTime: number } | null;
+}
+
+export interface ZombiePixelState {
+  players: ZombiePixelPlayerClient[];
+  yourId: string | null;
+  yourRole: 'zombie' | 'survivor' | null;
+  yourPosition: { x: number; y: number } | null;
+  timeRemaining: number;
+  survivorCount: number;
+  zombieCount: number;
+  isGameActive: boolean;
+  winner: { id: string; name: string; isBot: boolean } | null;
+  zombiesWin: boolean;
+  stats: ZombiePixelStats | null;
+  lastInfection: {
+    victimName: string;
+    zombieName: string;
+  } | null;
+}
+
+const initialZombiePixelState: ZombiePixelState = {
+  players: [],
+  yourId: null,
+  yourRole: null,
+  yourPosition: null,
+  timeRemaining: 60,
+  survivorCount: 0,
+  zombieCount: 0,
+  isGameActive: false,
+  winner: null,
+  zombiesWin: false,
+  stats: null,
+  lastInfection: null,
+};
+
+export const zombiePixel = writable<ZombiePixelState>(initialZombiePixelState);
+
+export function resetZombiePixelState(): void {
+  zombiePixel.set(initialZombiePixelState);
 }

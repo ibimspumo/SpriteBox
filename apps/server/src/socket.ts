@@ -38,11 +38,12 @@ import { getMemoryInfo } from './serverConfig.js';
 import { generateId, generateDiscriminator, createFullName, log } from './utils.js';
 import { MIN_PLAYERS_TO_START, CANVAS, DOS, TIMERS } from './constants.js';
 import { gameModes } from './gameModes/index.js';
-import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, CopyCatRematchVoteSchema, PixelGuesserDrawSchema, PixelGuesserGuessSchema, validate, validateMinPixels } from './validation.js';
+import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, CopyCatRematchVoteSchema, PixelGuesserDrawSchema, PixelGuesserGuessSchema, ZombieMoveSchema, validate, validateMinPixels } from './validation.js';
 import { getVotingState, isWithinPhaseTime, getPhaseTimings, checkAndTriggerEarlyVotingEnd, checkAndTriggerEarlyFinaleEnd, handleCopyCatSubmission, handleCopyCatRematchVote, handlePixelGuesserDrawUpdate, handlePixelGuesserGuess } from './phases.js';
 import { processVote, processFinaleVote } from './voting.js';
 import { checkRateLimit, checkConnectionRateLimit } from './rateLimit.js';
 import { checkMultiAccount, removeSocketFingerprint, isBrowserInInstance, trackBrowserInInstance, untrackBrowserFromInstance } from './fingerprint.js';
+import { handlePlayerMove } from './gameModes/zombiePixel/index.js';
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -1205,6 +1206,33 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
     if (!result.success && result.error) {
       socket.emit('error', { code: 'GUESS_FAILED', message: result.error });
     }
+  });
+
+  // ZombiePixel: Player movement
+  socket.on('zombie-move', (data) => {
+    const instanceId = socket.data.instanceId;
+    if (!instanceId || instanceId === 'pending') {
+      return; // Silently ignore - high frequency event
+    }
+
+    const instance = findInstance(instanceId);
+    if (!instance || instance.gameMode !== 'zombie-pixel' || instance.phase !== 'active') {
+      return; // Silently ignore
+    }
+
+    // Rate limit (higher limit for movement updates)
+    if (!checkRateLimit(socket, 'zombie-move')) {
+      return; // Silently ignore rate limit
+    }
+
+    // Validate
+    const validation = validate(ZombieMoveSchema, data);
+    if (!validation.success) {
+      return; // Silently ignore invalid data
+    }
+
+    // Process movement
+    handlePlayerMove(instance, player.id, validation.data.direction);
   });
 
   // Session restoration (for reconnects)

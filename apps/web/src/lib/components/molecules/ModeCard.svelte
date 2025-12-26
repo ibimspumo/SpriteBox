@@ -42,6 +42,8 @@
         return '🎯';
       case 'colordle':
         return '🎨';
+      case 'zombie-pixel':
+        return '🧟';
       default:
         return '🎮';
     }
@@ -62,6 +64,8 @@
         return 'var(--color-stat-mana)';
       case 'colordle':
         return 'var(--color-accent)';
+      case 'zombie-pixel':
+        return '#22c55e';  // Zombie green
       default:
         return 'var(--color-accent)';
     }
@@ -105,11 +109,13 @@
             {$t.modeSelection.copycatsolo.name}
           {:else if mode.i18nKey === 'gameModes.colordle'}
             {$t.modeSelection.colordle.name}
+          {:else if mode.i18nKey === 'gameModes.zombiePixel'}
+            {$t.modeSelection.zombiepixel.name}
           {:else}
             {mode.displayName}
           {/if}
         </h3>
-        {#if mode.i18nKey === 'gameModes.pixelSurvivor'}
+        {#if mode.i18nKey === 'gameModes.pixelSurvivor' || mode.i18nKey === 'gameModes.zombiePixel'}
           <Badge variant="warning" size="sm" text={$t.common.alpha} />
         {/if}
       </div>
@@ -126,6 +132,8 @@
           {$t.modeSelection.copycatsolo.description}
         {:else if mode.i18nKey === 'gameModes.colordle'}
           {$t.modeSelection.colordle.description}
+        {:else if mode.i18nKey === 'gameModes.zombiePixel'}
+          {$t.modeSelection.zombiepixel.description}
         {:else}
           {mode.displayName}
         {/if}

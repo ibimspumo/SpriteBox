@@ -37,6 +37,7 @@ Alle Echtzeit-Kommunikation nutzt Socket.io. Events folgen dem Muster: `noun-ver
 | `copycat-rematch-vote` | `{ wantsRematch: boolean }` | CopyCat-Modus: Für Revanche stimmen |
 | `pixelguesser-draw` | `{ pixels: string }` | PixelGuesser: Künstler sendet Zeichnungs-Update |
 | `pixelguesser-guess` | `{ guess: string }` | PixelGuesser: Spieler gibt einen Tipp ab |
+| `zombie-move` | `{ direction: Direction }` | ZombiePixel: Spieler bewegen (8 Richtungen) |
 
 ### Benutzer-Verwaltung
 

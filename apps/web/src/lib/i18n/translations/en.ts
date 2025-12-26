@@ -198,6 +198,10 @@ export const en: Translations = {
 		soloPractice: 'Solo Practice',
 		soloPracticeDesc: 'Practice your pixel art skills without time pressure',
 		selectMode: 'Select Game Mode',
+		zombiePixel: {
+			name: 'Zombie Pixel',
+			description: 'Survive the infection! Last survivor wins.',
+		},
 	},
 
 	copyCat: {
@@ -321,6 +325,10 @@ export const en: Translations = {
 			name: 'Colordle',
 			description: 'Wordle with colors - guess the 6-color sequence!',
 		},
+		zombiepixel: {
+			name: 'Zombie Pixel',
+			description: 'Survive the zombie invasion on a 50x50 grid!',
+		},
 	},
 
 	stats: {
@@ -335,6 +343,44 @@ export const en: Translations = {
 		totalStats: 'Total Stats',
 		modeStats: 'Stats by Mode',
 		noStatsYet: 'No stats yet - play a game!',
+	},
+
+	zombiePixel: {
+		youAreZombie: 'You are a ZOMBIE!',
+		youAreSurvivor: 'You are a SURVIVOR!',
+		survivorsRemaining: 'Survivors: {count}',
+		zombiesCount: 'Zombies: {count}',
+		timeRemaining: '{seconds}s',
+		infected: '{name} was infected!',
+		youWereInfected: 'You were infected!',
+		youWin: 'YOU WIN!',
+		youLose: 'Game Over',
+		zombiesWin: 'Zombies Win!',
+		survivorWins: '{name} survived!',
+		noSurvivors: 'All infected!',
+		waiting: 'Waiting for game to start...',
+		gameStarting: 'Game starting in {seconds}s',
+		controls: {
+			swipe: 'Swipe to move',
+			tap: 'Tap edges to move',
+			keyboard: 'to move',
+			joystick: 'Movement joystick',
+		},
+		stats: {
+			title: 'Game Stats',
+			totalInfections: 'Total Infections',
+			gameDuration: 'Game Duration',
+			firstInfection: 'First Infection',
+			mostInfections: 'Most Infections',
+			longestSurvival: 'Longest Survival',
+		},
+		lobby: {
+			playersJoined: '{count} players ready',
+			waitingForPlayers: 'Waiting for players...',
+			botsCount: '{count} bots',
+			startingSoon: 'Starting in {seconds}s',
+			fillingWithBots: 'Lobby fills with {count} bots',
+		},
 	},
 
 	pixelSurvivor: {

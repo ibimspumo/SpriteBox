@@ -37,6 +37,7 @@ All real-time communication uses Socket.io. Events follow the pattern: `noun-ver
 | `copycat-rematch-vote` | `{ wantsRematch: boolean }` | CopyCat mode: vote for rematch |
 | `pixelguesser-draw` | `{ pixels: string }` | PixelGuesser: artist sends drawing update |
 | `pixelguesser-guess` | `{ guess: string }` | PixelGuesser: player submits a guess |
+| `zombie-move` | `{ direction: Direction }` | ZombiePixel: move player (8 directions) |
 
 ### User Management
 
@@ -249,6 +250,64 @@ PixelGuesser is a Pictionary-style game where one player draws while others gues
   totalRounds: number;
   duration: number;
   endsAt: number;
+}
+```
+
+### ZombiePixel Mode Events
+
+ZombiePixel is a real-time infection game on a 50x50 grid.
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `zombie-game-state` | See below | Game state update (players, time, counts) |
+| `zombie-roles-assigned` | See below | Initial role and position assignment |
+| `zombie-infection` | `{ victimName, zombieName, survivorsRemaining }` | Player was infected |
+| `zombie-game-end` | See below | Game ended with winner/stats |
+| `zombie-lobby-update` | `{ playerCount, readyCount }` | Lobby player count update |
+
+**`zombie-game-state` payload:**
+
+```typescript
+{
+  players: Array<{
+    id: string;
+    name: string;
+    x: number;
+    y: number;
+    isZombie: boolean;
+    isBot: boolean;
+  }>;
+  timeRemaining: number;
+  survivorCount: number;
+  zombieCount: number;
+}
+```
+
+**`zombie-roles-assigned` payload:**
+
+```typescript
+{
+  yourId: string;
+  yourRole: 'zombie' | 'survivor';
+  yourPosition: { x: number; y: number };
+  survivorCount: number;
+  zombieCount: number;
+}
+```
+
+**`zombie-game-end` payload:**
+
+```typescript
+{
+  winner: { id: string; name: string; isBot: boolean } | null;
+  zombiesWin: boolean;
+  stats: {
+    totalInfections: number;
+    gameDuration: number;
+    firstInfectionTime: number | null;
+    mostInfections: { playerId: string; name: string; count: number } | null;
+    longestSurvivor: { playerId: string; name: string; survivalTime: number } | null;
+  };
 }
 ```
 

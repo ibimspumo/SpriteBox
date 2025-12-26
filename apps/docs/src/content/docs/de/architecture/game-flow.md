@@ -14,6 +14,7 @@ SpriteBox unterstützt mehrere Spielmodi mit unterschiedlichem Ablauf:
 | `copy-cat-solo` | Solo Memory-Training: Bilder alleine nachzeichnen | 1 (Solo) |
 | `pixel-guesser` | Pictionary: Einer zeichnet, andere raten | 2-20 |
 | `pixel-survivor` | Roguelike: Zeichne um 30 Tage zu überleben | 1 (Solo) |
+| `zombie-pixel` | Infektionsspiel: Zombies jagen Überlebende | 1-100 (Bots füllen) |
 
 ## Phasen-Überblick (Pixel Battle)
 
@@ -489,6 +490,70 @@ Monster können Spezialfähigkeiten haben:
 - **LocalStorage**: Charakter- und Run-Daten lokal gespeichert
 - **Keine Server-Räume**: Als Spielmodus registriert für Konsistenz
 - **Echtzeit-Vorschau**: Stats aktualisieren sich während des Zeichnens
+
+## Zombie Pixel Modus
+
+Zombie Pixel ist ein Echtzeit-Infektionsspiel auf einer 50x50 Gitter-Arena. Ein Spieler startet als Zombie und muss alle Überlebenden infizieren, bevor die Zeit abläuft.
+
+### Zombie Pixel Phasenablauf
+
+```text
+  LOBBY                    COUNTDOWN (3s)           GAMEPLAY (90s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  Spieler    │  Bots    │   Rollen    │          │  Zombies    │
+  │  beitreten  │ ───────► │   zuweisen  │ ───────► │  jagen      │
+  │  (1-100)    │  füllen  │             │          │  Überleb.   │
+  └─────────────┘          └─────────────┘          └─────────────┘
+                                                           │
+       ┌───────────────────────────────────────────────────┘
+       │
+       ▼
+  ERGEBNISSE
+  ┌─────────────┐
+  │  Gewinner + │
+  │  Statistik  │
+  └─────────────┘
+```
+
+### Zombie Pixel Phasen
+
+| Phase | Dauer | Beschreibung |
+|-------|-------|--------------|
+| Lobby | Bis bereit | Bots füllen auf 100 Spieler, Auto-Start |
+| Countdown | 3 Sekunden | Rollen zugewiesen, Positionen enthüllt |
+| Gameplay | 90 Sekunden | Echtzeit-Bewegung und Infektion |
+| Ergebnisse | 10 Sekunden | Gewinner mit Spielstatistiken angezeigt |
+
+### So funktioniert es
+
+1. **Bot-Auffüllung**: Lobby füllt sich mit KI-Bots bis zu 100 Spielern
+2. **Rollenzuweisung**: Ein zufälliger Spieler startet als Zombie
+3. **Bewegung**: 8-Richtungen via Tastatur, Touch-Joystick oder Wischen
+4. **Infektion**: Zombies infizieren Überlebende durch Berührung auf dem Gitter
+5. **Siegbedingung**: Letzter Überlebender gewinnt, oder Zombies gewinnen wenn alle infiziert
+
+### Steuerung
+
+| Eingabe | Methode |
+|---------|---------|
+| Tastatur | Pfeiltasten oder WASD für 8-Richtungs-Bewegung |
+| Touch | Virtueller Joystick oder Wisch-Gesten |
+| Gamepad | D-Pad oder linker Stick |
+
+### Spielmechaniken
+
+- **Gittergröße**: 50x50 Zellen
+- **Sichtfeld**: 13x13 sichtbarer Bereich zentriert auf Spieler
+- **Infektion**: Zombie und Überlebender auf gleicher Zelle = Infektion
+- **Bewegungsrate**: Server-kontrollierte Tick-Rate (100ms)
+- **Bot-KI**: Zombies jagen nächsten Überlebenden, Überlebende fliehen vor Zombies
+
+### Technische Hinweise
+
+- **Echtzeit**: Nutzt Socket.io für latenzarme Spielzustands-Synchronisation
+- **Server-autoritativ**: Alle Bewegungen auf Server validiert
+- **Bot-System**: Server-seitige KI füllt leere Plätze
+- **Rate-limitiert**: Bewegungsbefehle rate-limitiert gegen Spam
 
 ## Nächste Schritte
 

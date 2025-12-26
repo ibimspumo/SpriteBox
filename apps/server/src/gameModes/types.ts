@@ -26,6 +26,8 @@ export interface GameModeTimers {
   eventIntro?: number | null;
   eventResult?: number | null;
   levelUp?: number | null;
+  // ZombiePixel mode timers
+  active?: number | null;
 }
 
 /**

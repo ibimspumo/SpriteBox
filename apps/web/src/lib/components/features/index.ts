@@ -25,3 +25,6 @@ export {
 
 // Colordle mode components
 export { ColordleGame } from './Colordle';
+
+// ZombiePixel mode components
+export { ZombiePixelGame, ZombieGrid, ZombieControls, ZombieHUD, ZombieResults } from './ZombiePixel';

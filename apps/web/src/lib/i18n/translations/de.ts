@@ -198,6 +198,10 @@ export const de: Translations = {
 		soloPractice: 'Solo Übung',
 		soloPracticeDesc: 'Übe deine Pixel Art Fähigkeiten ohne Zeitdruck',
 		selectMode: 'Spielmodus wählen',
+		zombiePixel: {
+			name: 'Zombie Pixel',
+			description: 'Überlebe die Infektion! Der letzte Überlebende gewinnt.',
+		},
 	},
 
 	copyCat: {
@@ -321,6 +325,10 @@ export const de: Translations = {
 			name: 'Colordle',
 			description: 'Wordle mit Farben - errate die 6-Farben-Sequenz!',
 		},
+		zombiepixel: {
+			name: 'Zombie Pixel',
+			description: 'Überlebe die Zombie-Invasion auf einem 50x50 Grid!',
+		},
 	},
 
 	stats: {
@@ -335,6 +343,44 @@ export const de: Translations = {
 		totalStats: 'Gesamtstatistik',
 		modeStats: 'Statistik nach Modus',
 		noStatsYet: 'Noch keine Statistiken - spiel ein Spiel!',
+	},
+
+	zombiePixel: {
+		youAreZombie: 'Du bist ein ZOMBIE!',
+		youAreSurvivor: 'Du bist ein ÜBERLEBENDER!',
+		survivorsRemaining: 'Überlebende: {count}',
+		zombiesCount: 'Zombies: {count}',
+		timeRemaining: '{seconds}s',
+		infected: '{name} wurde infiziert!',
+		youWereInfected: 'Du wurdest infiziert!',
+		youWin: 'DU GEWINNST!',
+		youLose: 'Spiel vorbei',
+		zombiesWin: 'Zombies gewinnen!',
+		survivorWins: '{name} hat überlebt!',
+		noSurvivors: 'Alle infiziert!',
+		waiting: 'Warte auf Spielstart...',
+		gameStarting: 'Spiel startet in {seconds}s',
+		controls: {
+			swipe: 'Wischen zum Bewegen',
+			tap: 'Tippe auf den Rand zum Bewegen',
+			keyboard: 'zum Bewegen',
+			joystick: 'Bewegungs-Joystick',
+		},
+		stats: {
+			title: 'Spielstatistik',
+			totalInfections: 'Infektionen gesamt',
+			gameDuration: 'Spieldauer',
+			firstInfection: 'Erste Infektion',
+			mostInfections: 'Meiste Infektionen',
+			longestSurvival: 'Längste Überlebenszeit',
+		},
+		lobby: {
+			playersJoined: '{count} Spieler bereit',
+			waitingForPlayers: 'Warte auf Spieler...',
+			botsCount: '{count} Bots',
+			startingSoon: 'Start in {seconds}s',
+			fillingWithBots: 'Lobby wird mit {count} Bots gefüllt',
+		},
 	},
 
 	pixelSurvivor: {

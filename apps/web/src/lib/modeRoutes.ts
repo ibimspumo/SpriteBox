@@ -10,6 +10,7 @@ export const MODE_SLUGS: Record<string, string> = {
   guesser: 'pixel-guesser',
   'copycat-solo': 'copy-cat-solo',
   survivor: 'pixel-survivor',
+  zombie: 'zombie-pixel',
 } as const;
 
 /**
@@ -21,6 +22,7 @@ export const SLUG_FROM_MODE: Record<string, string> = {
   'pixel-guesser': 'guesser',
   'copy-cat-solo': 'copycat-solo',
   'pixel-survivor': 'survivor',
+  'zombie-pixel': 'zombie',
 } as const;
 
 /**

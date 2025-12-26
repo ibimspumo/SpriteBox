@@ -42,6 +42,7 @@ import {
   copyCat,
   pixelGuesser,
   resetPixelGuesserState,
+  zombiePixel,
   type GamePhase,
 } from './stores';
 import { recordGameResult, addGameToHistory } from './stats';
@@ -820,6 +821,98 @@ function setupEventHandlers(socket: AppSocket): void {
     setTimeout(() => {
       resetPixelGuesserState();
     }, data.duration);
+  });
+
+  // === ZombiePixel Mode Events ===
+  socket.on('zombie-game-state', (data: {
+    players: Array<{
+      id: string;
+      name: string;
+      x: number;
+      y: number;
+      isZombie: boolean;
+      isBot: boolean;
+    }>;
+    timeRemaining: number;
+    survivorCount: number;
+    zombieCount: number;
+  }) => {
+    zombiePixel.update((state) => ({
+      ...state,
+      players: data.players,
+      timeRemaining: data.timeRemaining,
+      survivorCount: data.survivorCount,
+      zombieCount: data.zombieCount,
+      isGameActive: true,
+    }));
+  });
+
+  socket.on('zombie-roles-assigned', (data: {
+    yourId: string;
+    yourRole: 'zombie' | 'survivor';
+    yourPosition: { x: number; y: number };
+    survivorCount: number;
+    zombieCount: number;
+  }) => {
+    zombiePixel.update((state) => ({
+      ...state,
+      yourId: data.yourId,
+      yourRole: data.yourRole,
+      yourPosition: data.yourPosition,
+      survivorCount: data.survivorCount,
+      zombieCount: data.zombieCount,
+    }));
+  });
+
+  socket.on('zombie-infection', (data: {
+    victimName: string;
+    zombieName: string;
+    survivorsRemaining: number;
+  }) => {
+    zombiePixel.update((state) => ({
+      ...state,
+      survivorCount: data.survivorsRemaining,
+      lastInfection: {
+        victimName: data.victimName,
+        zombieName: data.zombieName,
+      },
+    }));
+
+    // Clear infection notification after 2 seconds
+    setTimeout(() => {
+      zombiePixel.update((state) => ({
+        ...state,
+        lastInfection: null,
+      }));
+    }, 2000);
+  });
+
+  socket.on('zombie-game-end', (data: {
+    winner: { id: string; name: string; isBot: boolean } | null;
+    zombiesWin: boolean;
+    stats: {
+      totalInfections: number;
+      gameDuration: number;
+      firstInfectionTime: number | null;
+      mostInfections: { playerId: string; name: string; count: number } | null;
+      longestSurvivor: { playerId: string; name: string; survivalTime: number } | null;
+    };
+  }) => {
+    zombiePixel.update((state) => ({
+      ...state,
+      isGameActive: false,
+      winner: data.winner,
+      zombiesWin: data.zombiesWin,
+      stats: data.stats,
+    }));
+  });
+
+  socket.on('zombie-lobby-update', (data: {
+    playerCount: number;
+    readyCount: number;
+  }) => {
+    // Update lobby info if needed
+    console.log('[Socket] Zombie lobby update:', data);
   });
 }
 
