@@ -190,6 +190,21 @@ export interface Translations {
 		title: string;
 	};
 
+	// Colordle game mode
+	colordle: {
+		title: string;
+		subtitle: string;
+		guess: string;
+		delete: string;
+		youWon: string;
+		youLost: string;
+		guessedIn: string;
+		correctAnswer: string;
+		theSolution: string;
+		attempts: string;
+		playAgain: string;
+	};
+
 	// Game modes
 	gameModes: {
 		pixelBattle: string;
@@ -222,6 +237,8 @@ export interface Translations {
 		youLost: string;
 		waitingForOpponent: string;
 		referenceImage: string;
+		lookCarefully: string;
+		original: string;
 		// Rematch
 		playAgain: string;
 		rematchQuestion: string;
@@ -302,6 +319,8 @@ export interface Translations {
 		title: string;
 		playersActive: string;
 		players: string;
+		multiplayer: string;
+		solo: string;
 		classic: {
 			name: string;
 			description: string;
@@ -319,6 +338,10 @@ export interface Translations {
 			description: string;
 		};
 		copycatsolo: {
+			name: string;
+			description: string;
+		};
+		colordle: {
 			name: string;
 			description: string;
 		};

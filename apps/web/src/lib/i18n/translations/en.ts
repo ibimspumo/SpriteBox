@@ -168,6 +168,20 @@ export const en: Translations = {
 		title: 'COLOR PALETTE',
 	},
 
+	colordle: {
+		title: 'COLORDLE',
+		subtitle: 'Guess the color sequence',
+		guess: 'Guess',
+		delete: 'Delete',
+		youWon: 'You Won!',
+		youLost: 'Game Over',
+		guessedIn: 'Solved in {n} attempts',
+		correctAnswer: 'Better luck next time!',
+		theSolution: 'The Solution',
+		attempts: 'Attempts',
+		playAgain: 'Play Again',
+	},
+
 	gameModes: {
 		pixelBattle: 'Pixel Battle',
 		pixelBattleDesc: 'Draw 8×8 pixel art, vote on others, climb the Elo rankings',
@@ -198,6 +212,8 @@ export const en: Translations = {
 		youLost: 'You lost',
 		waitingForOpponent: 'Waiting for opponent...',
 		referenceImage: 'Original',
+		lookCarefully: 'Look carefully!',
+		original: 'Original',
 		// Rematch
 		playAgain: 'Play Again?',
 		rematchQuestion: 'Want to play another round?',
@@ -273,6 +289,8 @@ export const en: Translations = {
 		title: 'Choose Your Game Mode',
 		playersActive: 'active',
 		players: 'players',
+		multiplayer: 'Multiplayer',
+		solo: 'Solo',
 		classic: {
 			name: 'Classic',
 			description: '5-100 players, Elo voting, climb the rankings',
@@ -292,6 +310,10 @@ export const en: Translations = {
 		copycatsolo: {
 			name: 'CopyCat Solo',
 			description: 'Practice memory and accuracy - solo training!',
+		},
+		colordle: {
+			name: 'Colordle',
+			description: 'Wordle with colors - guess the 6-color sequence!',
 		},
 	},
 

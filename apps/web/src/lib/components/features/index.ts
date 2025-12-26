@@ -22,3 +22,6 @@ export {
   Gameplay,
   Combat,
 } from './PixelSurvivor';
+
+// Colordle mode components
+export { ColordleGame } from './Colordle';

@@ -74,8 +74,11 @@
     const rect = canvasElement?.getBoundingClientRect();
     if (!rect) return null;
 
-    const x = Math.floor((e.clientX - rect.left) / cellSize);
-    const y = Math.floor((e.clientY - rect.top) / cellSize);
+    // Use actual rendered size for accurate coordinate calculation
+    // This handles responsive sizing correctly
+    const actualCellSize = rect.width / GRID_SIZE;
+    const x = Math.floor((e.clientX - rect.left) / actualCellSize);
+    const y = Math.floor((e.clientY - rect.top) / actualCellSize);
 
     if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
       return { x, y };
@@ -185,8 +188,10 @@
 
 <style>
   .canvas {
+    /* Fixed size on desktop, scales down on narrow mobile screens */
     width: var(--size);
-    height: var(--size);
+    max-width: 100%;
+    aspect-ratio: 1;
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);

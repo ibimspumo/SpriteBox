@@ -16,7 +16,6 @@
   import '$lib/styles/tokens.css';
 
   let { children } = $props();
-  let showCopiedToast = $state(false);
   let showPixelEditor = $state(false);
   let errorToast = $state<{ message: string; code: string } | null>(null);
   let errorTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -158,33 +157,6 @@
     }
   });
 
-  async function handleShare() {
-    const shareUrl = typeof window !== 'undefined' ? window.location.origin : 'https://spritebox.io';
-    const shareData = {
-      title: 'SpriteBox',
-      text: $t.shareText,
-      url: shareUrl
-    };
-
-    // Try Web Share API first (mobile)
-    if (navigator.share && navigator.canShare?.(shareData)) {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (err) {
-        if ((err as Error).name === 'AbortError') return;
-      }
-    }
-
-    // Fallback: Copy to clipboard
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      showCopiedToast = true;
-      setTimeout(() => { showCopiedToast = false; }, 2000);
-    } catch {
-      prompt('Copy this link:', shareUrl);
-    }
-  }
 </script>
 
 <div class="app">
@@ -226,11 +198,6 @@
   <!-- Cookie/Privacy Notice -->
   <CookieNotice />
 
-  <!-- Copied Toast -->
-  {#if showCopiedToast}
-    <div class="copied-toast">{$t.common.linkCopied}</div>
-  {/if}
-
   <!-- Error Toast -->
   {#if errorToast}
     <button class="error-toast" onclick={dismissError}>
@@ -244,18 +211,6 @@
     <div class="language-toggle-container">
       <LanguageToggle />
     </div>
-  {/if}
-
-  <!-- Share Button - Only on start page (not in game) -->
-  {#if !$lobby.instanceId}
-    <button
-      class="share-fab"
-      onclick={handleShare}
-      title="Share SpriteBox"
-    >
-      <img src="/icons/link.svg" alt="Share" class="share-icon" />
-      <span class="share-text">{$t.common.share}</span>
-    </button>
   {/if}
 
   <!-- GitHub Link - Desktop Only -->
@@ -388,26 +343,6 @@
     }
   }
 
-  /* Copied Toast */
-  .copied-toast {
-    position: fixed;
-    top: var(--space-6);
-    left: 50%;
-    transform: translateX(-50%);
-    padding: var(--space-3) var(--space-5);
-    background: var(--color-success);
-    color: white;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-pixel);
-    z-index: var(--z-notification);
-    animation: toastIn 0.2s ease-out;
-  }
-
   @keyframes toastIn {
     from {
       opacity: 0;
@@ -460,48 +395,6 @@
 
   .error-toast:hover .error-dismiss {
     opacity: 1;
-  }
-
-  /* Share Button - Always visible, bottom left */
-  .share-fab {
-    display: flex;
-    position: fixed;
-    bottom: var(--space-6);
-    left: var(--space-6);
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-4);
-    background: var(--color-bg-secondary);
-    border: var(--border-width) solid var(--color-accent);
-    border-radius: var(--radius-full);
-    color: var(--color-text-secondary);
-    font-family: var(--font-family);
-    font-size: var(--font-size-sm);
-    cursor: pointer;
-    transition: var(--transition-normal);
-    z-index: var(--z-sticky);
-    box-shadow: var(--shadow-pixel-sm);
-  }
-
-  .share-fab:hover {
-    background: var(--color-accent);
-    color: var(--color-text-primary);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-pixel);
-  }
-
-  .share-icon {
-    width: 20px;
-    height: 20px;
-    filter: brightness(0) invert(0.7);
-  }
-
-  .share-fab:hover .share-icon {
-    filter: brightness(0) invert(1);
-  }
-
-  .share-text {
-    font-weight: var(--font-weight-medium);
   }
 
   /* GitHub Floating Action Button - Desktop Only */
