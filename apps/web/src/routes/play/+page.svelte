@@ -1,7 +1,6 @@
 <!-- Mode Selection Page - /play (Mobile-first redesign) -->
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
   import { dev } from '$app/environment';
   import { t } from '$lib/i18n';
   import { onlineCountByMode, availableGameModes, selectedGameMode, currentUser, type GameModeInfo } from '$lib/stores';
@@ -36,15 +35,6 @@
     visibleGameModes.filter(mode => mode.players.max === 1)
   );
 
-  let mounted = $state(false);
-
-  onMount(() => {
-    // Slight delay for entrance animation
-    requestAnimationFrame(() => {
-      mounted = true;
-    });
-  });
-
   function selectMode(modeId: string): void {
     // Check if it's a solo mode with direct route
     if (modeId === 'colordle') {
@@ -64,7 +54,7 @@
   }
 </script>
 
-<div class="mode-selection" class:mounted>
+<div class="mode-selection">
   <!-- Decorative background elements -->
   <div class="bg-decoration">
     <div class="bg-grid"></div>
@@ -102,11 +92,8 @@
         </div>
         <div class="mode-scroll-container">
           <div class="mode-grid multiplayer">
-            {#each multiplayerModes as mode, i}
-              <div
-                class="mode-card-wrapper"
-                style="--delay: {i * 0.08}s"
-              >
+            {#each multiplayerModes as mode}
+              <div class="mode-card-wrapper">
                 <ModeCard
                   {mode}
                   playerCount={$onlineCountByMode[mode.id] ?? 0}
@@ -129,11 +116,8 @@
         </div>
         <div class="mode-scroll-container">
           <div class="mode-grid solo">
-            {#each soloGameModes as mode, i}
-              <div
-                class="mode-card-wrapper"
-                style="--delay: {(multiplayerModes.length + i) * 0.08}s"
-              >
+            {#each soloGameModes as mode}
+              <div class="mode-card-wrapper">
                 <ModeCard
                   {mode}
                   playerCount={0}
@@ -219,14 +203,6 @@
     display: flex;
     justify-content: flex-start;
     padding-bottom: var(--space-4);
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .mounted .header {
-    opacity: 1;
-    transform: translateY(0);
   }
 
   .back-link {
@@ -281,14 +257,6 @@
   .title-section {
     text-align: center;
     padding: var(--space-2) 0 var(--space-4);
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
-  }
-
-  .mounted .title-section {
-    opacity: 1;
-    transform: translateY(0);
   }
 
   .title {
@@ -321,22 +289,6 @@
   .pixel-dot:nth-child(3) {
     background: var(--color-success);
     animation-delay: 0.4s;
-  }
-
-  /* Mode sections */
-  .mode-section {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s;
-  }
-
-  .mounted .mode-section {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .solo-section {
-    transition-delay: 0.3s;
   }
 
   .section-header {
@@ -386,15 +338,6 @@
     flex: 0 0 calc(100% - var(--space-8));
     max-width: 340px;
     scroll-snap-align: center;
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    transition-delay: var(--delay, 0s);
-  }
-
-  .mounted .mode-card-wrapper {
-    opacity: 1;
-    transform: translateY(0) scale(1);
   }
 
   /* Solo section specific styles */
@@ -411,14 +354,6 @@
     justify-content: center;
     padding-top: var(--space-4);
     margin-top: auto;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.4s ease 0.5s;
-  }
-
-  .mounted .footer {
-    opacity: 1;
-    transform: translateY(0);
   }
 
   /* Tablet and above */
@@ -494,19 +429,4 @@
     }
   }
 
-  /* Reduce motion */
-  @media (prefers-reduced-motion: reduce) {
-    .header,
-    .title-section,
-    .mode-section,
-    .mode-card-wrapper,
-    .footer {
-      transition: opacity 0.2s ease;
-      transform: none;
-    }
-
-    .mounted .mode-card-wrapper {
-      transform: none;
-    }
-  }
 </style>
