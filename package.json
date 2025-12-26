@@ -8,7 +8,7 @@
     "docs:dev": "pnpm --filter docs dev",
     "docs:build": "pnpm --filter docs build",
     "build": "pnpm docs:build && pnpm --filter server build && pnpm --filter web build",
-    "postbuild": "cp -r apps/web/build apps/server/dist/public",
+    "postbuild": "rm -rf apps/server/dist/public && cp -r apps/web/build apps/server/dist/public",
     "start": "pnpm --filter server start",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
