@@ -251,6 +251,10 @@ export interface Translations {
 		rematchTimeout: string;
 		wantsRematch: string;
 		declined: string;
+		// Solo continue
+		continueQuestion: string;
+		continueYes: string;
+		quitGame: string;
 	};
 
 	// PixelGuesser mode

@@ -1,7 +1,7 @@
 <!-- PixelSurvivor/Combat.svelte - Turn-based combat screen -->
 <script lang="ts">
 	import { Button, Icon, Badge } from '../../atoms';
-	import { PixelCanvas } from '../../utility';
+	import { PixelCanvas, DamageNumber } from '../../utility';
 	import { t } from '$lib/i18n';
 	import {
 		currentGameCharacter,
@@ -47,9 +47,7 @@
 	let combatState = $state<CombatState | null>(null);
 	let isRollingDice = $state(false);
 	let currentRoller = $state<'player' | 'monster' | null>(null); // Who is currently rolling
-	let showResult = $state(false);
 	let lastResult = $state<CombatActionResult | null>(null);
-	let resultMessage = $state('');
 	let combatLogEntries = $state<LogEntry[]>([]);
 
 	// Reactive translated combat log
@@ -89,6 +87,38 @@
 	let monsterHit = $state(false);
 	let playerAttacking = $state(false);
 	let monsterAttacking = $state(false);
+
+	// Floating damage numbers
+	interface DamageNumberEntry {
+		id: number;
+		value: number;
+		type: 'damage' | 'heal' | 'crit' | 'miss';
+	}
+	let playerDamageNumbers = $state<DamageNumberEntry[]>([]);
+	let monsterDamageNumbers = $state<DamageNumberEntry[]>([]);
+	let damageNumberId = 0;
+
+	function showDamageNumber(target: 'player' | 'monster', value: number, isCrit: boolean): void {
+		const entry: DamageNumberEntry = {
+			id: damageNumberId++,
+			value,
+			type: isCrit ? 'crit' : 'damage'
+		};
+
+		if (target === 'player') {
+			playerDamageNumbers = [...playerDamageNumbers, entry];
+		} else {
+			monsterDamageNumbers = [...monsterDamageNumbers, entry];
+		}
+	}
+
+	function removeDamageNumber(target: 'player' | 'monster', id: number): void {
+		if (target === 'player') {
+			playerDamageNumbers = playerDamageNumbers.filter(n => n.id !== id);
+		} else {
+			monsterDamageNumbers = monsterDamageNumbers.filter(n => n.id !== id);
+		}
+	}
 
 	// Initialize combat
 	onMount(() => {
@@ -227,15 +257,16 @@
 		);
 
 		lastResult = result;
-		showResult = true;
 
-		// Trigger attack animations
-		if (result.success) {
+		// Trigger attack animations and damage number
+		if (result.success && result.damage !== undefined) {
 			playerAttacking = true;
 			setTimeout(() => {
 				playerAttacking = false;
 				monsterHit = true;
 				playSound('attack');
+				// Show floating damage number on monster
+				showDamageNumber('monster', result.damage!, d20Roll.isNat20);
 				setTimeout(() => { monsterHit = false; }, 300);
 			}, 200);
 		}
@@ -262,25 +293,14 @@
 			}
 
 			addLogEntry(entry);
-
-			// Build result message for display (using current translation)
-			let message = $t.pixelSurvivor.combat.playerAttack
-				.replace('{damage}', result.damage.toString())
-				.replace('{roll}', d20Roll.value.toString());
-			if (entry.prefix) message = `${$t.pixelSurvivor.combat[entry.prefix]} ${message}`;
-			if (entry.suffix) message = `${message} ${$t.pixelSurvivor.combat[entry.suffix]}`;
-			resultMessage = message;
 		}
 
-		// Hide result after delay
+		// Check for victory after delay
 		setTimeout(() => {
-			showResult = false;
-
-			// Check for victory
 			if (result.targetDefeated) {
 				handleVictory();
 			}
-		}, 1500);
+		}, 1000);
 	}
 
 	// Monster attack with dice result
@@ -291,15 +311,16 @@
 		const result = combatEngine.executeMonsterTurn(d20Roll);
 
 		lastResult = result;
-		showResult = true;
 
-		// Trigger attack animations
-		if (result.success) {
+		// Trigger attack animations and damage number
+		if (result.success && result.damage !== undefined && result.d20Roll) {
 			monsterAttacking = true;
 			setTimeout(() => {
 				monsterAttacking = false;
 				playerHit = true;
 				playSound('attack');
+				// Show floating damage number on player
+				showDamageNumber('player', result.damage!, result.d20Roll!.isNat20);
 				setTimeout(() => { playerHit = false; }, 300);
 			}, 200);
 		}
@@ -324,27 +345,13 @@
 
 			addLogEntry(entry);
 
-			// Build result message for display
-			let message = $t.pixelSurvivor.combat.monsterAttack
-				.replace('{monster}', getMonsterName())
-				.replace('{damage}', result.damage.toString())
-				.replace('{roll}', result.d20Roll.value.toString());
-			if (entry.prefix) message = `${$t.pixelSurvivor.combat[entry.prefix]} ${message}`;
-			resultMessage = message;
-
 			// Check for defeat
 			if (damageResult.remainingHp <= 0) {
 				setTimeout(() => {
 					handleDefeat();
-				}, 1500);
-				return;
+				}, 1000);
 			}
 		}
-
-		// Hide result after delay
-		setTimeout(() => {
-			showResult = false;
-		}, 1500);
 	}
 
 	function handleFlee(): void {
@@ -420,6 +427,16 @@
 				{#if playerHit}
 					<div class="hit-effect"></div>
 				{/if}
+				<!-- Floating damage numbers -->
+				<div class="damage-numbers-wrapper">
+					{#each playerDamageNumbers as dmg (dmg.id)}
+						<DamageNumber
+							value={dmg.value}
+							type={dmg.type}
+							onComplete={() => removeDamageNumber('player', dmg.id)}
+						/>
+					{/each}
+				</div>
 			</div>
 			<div class="combatant-info">
 				<span class="combatant-name">{$currentGameCharacter?.name ?? 'Hero'}</span>
@@ -448,6 +465,16 @@
 				{#if monsterHit}
 					<div class="hit-effect"></div>
 				{/if}
+				<!-- Floating damage numbers -->
+				<div class="damage-numbers-wrapper">
+					{#each monsterDamageNumbers as dmg (dmg.id)}
+						<DamageNumber
+							value={dmg.value}
+							type={dmg.type}
+							onComplete={() => removeDamageNumber('monster', dmg.id)}
+						/>
+					{/each}
+				</div>
 			</div>
 			<div class="combatant-info">
 				<div class="monster-header">
@@ -461,13 +488,6 @@
 			</div>
 		</div>
 	</div>
-
-	<!-- Result Display -->
-	{#if showResult && resultMessage}
-		<div class="result-display" class:critical={lastResult?.d20Roll?.isNat20} class:failure={lastResult?.d20Roll?.isNat1}>
-			<span class="result-message">{resultMessage}</span>
-		</div>
-	{/if}
 
 	<!-- D20 Dice (always visible during combat to avoid layout shifts) -->
 	{#if !isCombatOver}
@@ -567,6 +587,17 @@
 
 	.monster-sprite {
 		transform: scaleX(-1); /* Face the player */
+	}
+
+	/* Counter-flip damage numbers container on monster so they're readable */
+	.damage-numbers-wrapper {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+
+	.monster-sprite .damage-numbers-wrapper {
+		transform: scaleX(-1);
 	}
 
 	/* Attack Animations */
@@ -699,36 +730,6 @@
 		font-weight: var(--font-weight-black);
 		color: var(--color-warning);
 		text-shadow: 2px 2px 0 var(--color-bg-primary);
-	}
-
-	/* Result Display */
-	.result-display {
-		padding: var(--space-3);
-		background: var(--color-bg-secondary);
-		border-radius: var(--radius-md);
-		text-align: center;
-		animation: result-pop 0.3s ease-out;
-	}
-
-	.result-display.critical {
-		background: var(--color-warning);
-		color: var(--color-bg-primary);
-	}
-
-	.result-display.failure {
-		background: var(--color-error);
-		color: var(--color-text-primary);
-	}
-
-	.result-message {
-		font-size: var(--font-size-md);
-		font-weight: var(--font-weight-bold);
-	}
-
-	@keyframes result-pop {
-		0% { transform: scale(0.8); opacity: 0; }
-		50% { transform: scale(1.1); }
-		100% { transform: scale(1); opacity: 1; }
 	}
 
 	/* Dice Container */

@@ -226,6 +226,10 @@ export const en: Translations = {
 		rematchTimeout: 'Time ran out.',
 		wantsRematch: 'Wants rematch',
 		declined: 'Declined',
+		// Solo continue
+		continueQuestion: 'Want to play another round?',
+		continueYes: 'Continue',
+		quitGame: 'Quit',
 	},
 
 	pixelGuesser: {

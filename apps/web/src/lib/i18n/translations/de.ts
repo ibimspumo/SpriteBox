@@ -226,6 +226,10 @@ export const de: Translations = {
 		rematchTimeout: 'Zeit abgelaufen.',
 		wantsRematch: 'Will Revanche',
 		declined: 'Abgelehnt',
+		// Solo continue
+		continueQuestion: 'Willst du eine weitere Runde spielen?',
+		continueYes: 'Weiter',
+		quitGame: 'Beenden',
 	},
 
 	pixelGuesser: {

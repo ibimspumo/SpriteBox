@@ -2,12 +2,15 @@
 <script lang="ts">
   import { PixelCanvas } from '../../utility';
   import { Timer } from '../../utility';
+  import { Button } from '../../atoms';
   import { copyCat, currentUser } from '$lib/stores';
+  import { leaveLobby } from '$lib/socketBridge';
   import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
 
   let mounted = $state(false);
   let showComparison = $state(false);
+  let hasChosen = $state(false);
 
   onMount(() => {
     requestAnimationFrame(() => {
@@ -30,6 +33,15 @@
   let isWinner = $derived(winner?.user.fullName === user?.fullName);
   let myResult = $derived(results.find(r => r.user.fullName === user?.fullName));
 
+  function handleContinue(): void {
+    hasChosen = true;
+    // Just mark as chosen - the timer will transition naturally
+  }
+
+  function handleQuit(): void {
+    hasChosen = true;
+    leaveLobby();
+  }
 </script>
 
 <div class="result-phase" class:mounted>
@@ -124,6 +136,27 @@
         </div>
       {/each}
     </div>
+
+    <!-- Solo Mode Continue/Quit Section -->
+    {#if isSoloMode}
+      <div class="solo-choice-section" class:show={showComparison}>
+        {#if hasChosen}
+          <div class="waiting-message">
+            <span>{$t.copyCat.startingNewRound}</span>
+          </div>
+        {:else}
+          <p class="choice-question">{$t.copyCat.continueQuestion}</p>
+          <div class="choice-buttons">
+            <Button variant="action" size="lg" onclick={handleContinue}>
+              {$t.copyCat.continueYes}
+            </Button>
+            <Button variant="secondary" size="lg" onclick={handleQuit}>
+              {$t.copyCat.quitGame}
+            </Button>
+          </div>
+        {/if}
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -449,6 +482,53 @@
     letter-spacing: 1px;
   }
 
+  /* ===== Solo Choice Section ===== */
+  .solo-choice-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    background: linear-gradient(145deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
+    border: 3px solid var(--color-accent);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 0 30px rgba(78, 205, 196, 0.2);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.5s ease;
+  }
+
+  .solo-choice-section.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .choice-question {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-primary);
+    text-align: center;
+    margin: 0;
+  }
+
+  .choice-buttons {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .waiting-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-md);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
   /* ===== Responsive ===== */
   @media (max-width: 480px) {
     .result-content {
@@ -473,6 +553,11 @@
     .accuracy-display {
       font-size: var(--font-size-2xl);
     }
+
+    .choice-buttons {
+      flex-direction: column;
+      width: 100%;
+    }
   }
 
   /* Reduce motion */
@@ -486,12 +571,14 @@
     .result-header,
     .timer-section,
     .reference-section,
-    .player-card {
+    .player-card,
+    .solo-choice-section {
       transition: opacity 0.2s ease;
       transform: none;
     }
 
-    .players-section.show .player-card {
+    .players-section.show .player-card,
+    .solo-choice-section.show {
       transform: none;
     }
   }

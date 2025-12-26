@@ -17,7 +17,7 @@
 		pixelScale?: number;
 	}
 
-	let { size = 200, pixelScale = 2 }: Props = $props();
+	let { size = 200, pixelScale = 1.5 }: Props = $props();
 
 	// DOM Reference
 	let container: HTMLDivElement;
@@ -55,7 +55,7 @@
 
 	// Camera position
 	const CAMERA_Z = 4;
-	const ZOOM_CAMERA_Z = 3.2; // Closer for zoom effect
+	const ZOOM_CAMERA_Z = 2.5; // Closer for zoom effect
 
 	/**
 	 * Direction the winning face should point (toward camera = +Z)
