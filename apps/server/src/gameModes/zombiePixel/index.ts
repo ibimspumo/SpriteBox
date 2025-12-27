@@ -32,6 +32,8 @@ export type {
   ZombiePixelWinner,
   ZombiePixelState,
   ZombiePixelPlayerClient,
+  ZombieItemClient,
+  ZombieEffectClient,
 } from './types.js';
 
 export { ZOMBIE_PIXEL_CONSTANTS } from './types.js';
@@ -39,6 +41,19 @@ export { ZOMBIE_PIXEL_CONSTANTS } from './types.js';
 // Re-export bot classes
 export { ZombiePixelBot } from './bot.js';
 export { ZombieBotManager } from './botManager.js';
+
+// Re-export item system
+export {
+  ItemSystemManager,
+  ITEM_DEFINITIONS,
+  type ItemDefinition,
+  type SpawnedItem,
+  type ActiveEffect,
+  type ItemVisibility,
+  type ItemEffectType,
+  type EffectDuration,
+  type ItemSystemState,
+} from './itemSystem.js';
 
 // Re-export game loop functions
 export {

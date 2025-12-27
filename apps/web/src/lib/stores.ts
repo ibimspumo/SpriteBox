@@ -388,6 +388,24 @@ export interface ZombiePixelPlayerClient {
   y: number;
   isZombie: boolean;
   isBot: boolean;
+  hasHealingItem: boolean;
+}
+
+export interface ZombieItemClient {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  icon: string;
+  color: string;
+}
+
+export interface ZombieEffectClient {
+  id: string;
+  type: string;
+  affectedId: string;
+  expiresAt: number | null;
+  remainingUses: number | null;
 }
 
 export interface ZombiePixelStats {
@@ -414,6 +432,17 @@ export interface ZombiePixelState {
     victimName: string;
     zombieName: string;
   } | null;
+  // Item system state
+  items: ZombieItemClient[];
+  effects: ZombieEffectClient[];
+  zombieSpeedBoostActive: boolean;
+  zombieSpeedBoostRemaining: number;
+  playersWithHealingTouch: string[];
+  // Healing event
+  lastHealing: {
+    healedName: string;
+    healerName: string;
+  } | null;
 }
 
 const initialZombiePixelState: ZombiePixelState = {
@@ -429,6 +458,12 @@ const initialZombiePixelState: ZombiePixelState = {
   zombiesWin: false,
   stats: null,
   lastInfection: null,
+  items: [],
+  effects: [],
+  zombieSpeedBoostActive: false,
+  zombieSpeedBoostRemaining: 0,
+  playersWithHealingTouch: [],
+  lastHealing: null,
 };
 
 export const zombiePixel = writable<ZombiePixelState>(initialZombiePixelState);

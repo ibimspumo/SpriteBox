@@ -2,9 +2,9 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { Button } from '../../atoms';
-	import { leaveLobby } from '$lib/socketBridge';
+	import { leaveLobby, returnToLobby } from '$lib/socketBridge';
 	import type { ZombiePixelStats } from '$lib/stores';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 
 	interface Props {
 		winner: { id: string; name: string; isBot: boolean } | null;
@@ -15,10 +15,29 @@
 	let { winner, zombiesWin, stats }: Props = $props();
 	let mounted = $state(false);
 
+	// Auto-redirect to /play after 15 seconds of inactivity
+	const REDIRECT_DELAY = 15000;
+	let redirectTimer: ReturnType<typeof setTimeout> | null = null;
+	let interacted = $state(false);
+
+	function resetRedirectTimer(): void {
+		if (redirectTimer) clearTimeout(redirectTimer);
+		if (!interacted) {
+			redirectTimer = setTimeout(() => {
+				returnToLobby();
+			}, REDIRECT_DELAY);
+		}
+	}
+
 	onMount(() => {
+		resetRedirectTimer();
 		requestAnimationFrame(() => {
 			mounted = true;
 		});
+	});
+
+	onDestroy(() => {
+		if (redirectTimer) clearTimeout(redirectTimer);
 	});
 
 	function formatTime(ms: number): string {
@@ -26,7 +45,15 @@
 		return `${seconds}s`;
 	}
 
-	function handleBackToLobby(): void {
+	function handlePlayAgain(): void {
+		interacted = true;
+		if (redirectTimer) clearTimeout(redirectTimer);
+		returnToLobby();
+	}
+
+	function handleBackToModes(): void {
+		interacted = true;
+		if (redirectTimer) clearTimeout(redirectTimer);
 		leaveLobby();
 	}
 </script>
@@ -43,7 +70,7 @@
 				<span class="winner-icon" aria-hidden="true">&#x1F3C6;</span>
 				<h1>{$t.zombiePixel.survivorWins.replace('{name}', winner.name)}</h1>
 				{#if winner.isBot}
-					<span class="bot-badge">Bot</span>
+					<span class="bot-badge">{$t.zombiePixel.botBadge}</span>
 				{/if}
 			{/if}
 		</div>
@@ -92,9 +119,12 @@
 			</div>
 		{/if}
 
-		<!-- Action button -->
+		<!-- Action buttons -->
 		<div class="actions">
-			<Button variant="secondary" onclick={handleBackToLobby}>
+			<Button variant="primary" onclick={handlePlayAgain}>
+				{$t.results.returnToLobby}
+			</Button>
+			<Button variant="secondary" onclick={handleBackToModes}>
 				{$t.common.backToModes}
 			</Button>
 		</div>
@@ -224,7 +254,9 @@
 
 	.actions {
 		display: flex;
-		justify-content: center;
+		flex-direction: column;
+		gap: var(--space-3);
+		align-items: center;
 	}
 
 	@keyframes iconBounce {

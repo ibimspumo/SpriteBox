@@ -413,6 +413,9 @@ export interface Translations {
 			startingSoon: string;
 			fillingWithBots: string;
 		};
+		healingActive: string;
+		healed: string;
+		botBadge: string;
 	};
 
 	// Pixel Survivor mode (simplified - character creation only)

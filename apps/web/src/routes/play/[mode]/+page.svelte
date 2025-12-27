@@ -76,7 +76,11 @@
       {:else if $game.phase === 'finale'}
         <Finale />
       {:else if $game.phase === 'results'}
-        <Results />
+        {#if $lobby.gameMode === 'zombie-pixel'}
+          <ZombiePixelGame />
+        {:else}
+          <Results />
+        {/if}
       {:else if $game.phase === 'memorize'}
         <Memorize />
       {:else if $game.phase === 'copycat-result'}

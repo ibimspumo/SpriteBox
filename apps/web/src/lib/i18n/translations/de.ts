@@ -381,6 +381,9 @@ export const de: Translations = {
 			startingSoon: 'Start in {seconds}s',
 			fillingWithBots: 'Lobby wird mit {count} Bots gefüllt',
 		},
+		healingActive: 'HEILUNG',
+		healed: '{name} geheilt!',
+		botBadge: 'Bot',
 	},
 
 	pixelSurvivor: {

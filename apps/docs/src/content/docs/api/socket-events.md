@@ -255,15 +255,19 @@ PixelGuesser is a Pictionary-style game where one player draws while others gues
 
 ### ZombiePixel Mode Events
 
-ZombiePixel is a real-time infection game on a 50x50 grid.
+ZombiePixel is a real-time infection game on a 32x32 grid with up to 100 players (bots fill empty slots).
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `zombie-game-state` | See below | Game state update (players, time, counts) |
+| `zombie-game-state` | See below | Game state update (players, time, counts, items) |
 | `zombie-roles-assigned` | See below | Initial role and position assignment |
-| `zombie-infection` | `{ victimName, zombieName, survivorsRemaining }` | Player was infected |
+| `zombie-infection` | `{ victimId, victimName, zombieId, zombieName, survivorsRemaining, timerExtendedBy }` | Player was infected (+1s timer) |
+| `zombie-healed` | `{ healedId, healedName, healerId, healerName }` | Zombie was healed back to survivor |
 | `zombie-game-end` | See below | Game ended with winner/stats |
-| `zombie-lobby-update` | `{ playerCount, readyCount }` | Lobby player count update |
+| `zombie-item-spawned` | See below | Power-up item spawned on the map |
+| `zombie-item-collected` | `{ itemId, playerId, playerName, itemType, isZombie }` | Player collected an item |
+| `zombie-effect-started` | See below | Effect started (speed boost, healing touch) |
+| `zombie-effect-ended` | `{ effectId, type, affectedId }` | Effect expired |
 
 **`zombie-game-state` payload:**
 
@@ -276,10 +280,16 @@ ZombiePixel is a real-time infection game on a 50x50 grid.
     y: number;
     isZombie: boolean;
     isBot: boolean;
+    hasHealingItem: boolean;
   }>;
   timeRemaining: number;
   survivorCount: number;
   zombieCount: number;
+  items: ZombieItemClient[];
+  effects: ZombieEffectClient[];
+  zombieSpeedBoostActive: boolean;
+  zombieSpeedBoostRemaining: number;
+  playersWithHealingTouch: string[];
 }
 ```
 
@@ -290,8 +300,37 @@ ZombiePixel is a real-time infection game on a 50x50 grid.
   yourId: string;
   yourRole: 'zombie' | 'survivor';
   yourPosition: { x: number; y: number };
-  survivorCount: number;
   zombieCount: number;
+  survivorCount: number;
+}
+```
+
+**`zombie-item-spawned` payload:**
+
+```typescript
+{
+  id: string;
+  type: string;           // 'speed-boost' | 'healing-touch'
+  x: number;
+  y: number;
+  icon: string;
+  color: string;
+  visibility: 'zombies' | 'survivors' | 'all';
+}
+```
+
+**`zombie-effect-started` payload:**
+
+```typescript
+{
+  effectId: string;
+  type: string;
+  affectedId: string;     // Player ID or 'zombies'/'survivors'
+  expiresAt: number | null;
+  remainingUses: number | null;
+  sharedEffect: boolean;
+  icon: string;
+  color: string;
 }
 ```
 
@@ -301,6 +340,7 @@ ZombiePixel is a real-time infection game on a 50x50 grid.
 {
   winner: { id: string; name: string; isBot: boolean } | null;
   zombiesWin: boolean;
+  duration: number;
   stats: {
     totalInfections: number;
     gameDuration: number;

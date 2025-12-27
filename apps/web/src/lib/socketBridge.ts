@@ -46,6 +46,7 @@ import {
   type GamePhase,
 } from './stores';
 import { recordGameResult, addGameToHistory } from './stats';
+import { playSound } from './audio';
 
 const SESSION_STORAGE_KEY = 'spritebox-session';
 const USER_STORAGE_KEY = 'spritebox-user';
@@ -824,36 +825,23 @@ function setupEventHandlers(socket: AppSocket): void {
   });
 
   // === ZombiePixel Mode Events ===
-  socket.on('zombie-game-state', (data: {
-    players: Array<{
-      id: string;
-      name: string;
-      x: number;
-      y: number;
-      isZombie: boolean;
-      isBot: boolean;
-    }>;
-    timeRemaining: number;
-    survivorCount: number;
-    zombieCount: number;
-  }) => {
+  socket.on('zombie-game-state', (data) => {
     zombiePixel.update((state) => ({
       ...state,
       players: data.players,
       timeRemaining: data.timeRemaining,
       survivorCount: data.survivorCount,
       zombieCount: data.zombieCount,
+      items: data.items,
+      effects: data.effects,
+      zombieSpeedBoostActive: data.zombieSpeedBoostActive,
+      zombieSpeedBoostRemaining: data.zombieSpeedBoostRemaining,
+      playersWithHealingTouch: data.playersWithHealingTouch,
       isGameActive: true,
     }));
   });
 
-  socket.on('zombie-roles-assigned', (data: {
-    yourId: string;
-    yourRole: 'zombie' | 'survivor';
-    yourPosition: { x: number; y: number };
-    survivorCount: number;
-    zombieCount: number;
-  }) => {
+  socket.on('zombie-roles-assigned', (data) => {
     zombiePixel.update((state) => ({
       ...state,
       yourId: data.yourId,
@@ -864,14 +852,23 @@ function setupEventHandlers(socket: AppSocket): void {
     }));
   });
 
-  socket.on('zombie-infection', (data: {
-    victimName: string;
-    zombieName: string;
-    survivorsRemaining: number;
-  }) => {
+  socket.on('zombie-infection', (data) => {
+    const currentState = get(zombiePixel);
+    const myId = currentState.yourId;
+
+    // Play sound if current player is involved (either as zombie or victim)
+    if (myId && (data.victimId === myId || data.zombieId === myId)) {
+      playSound('zombieInfected');
+    }
+
+    // Check if the current player was infected
+    const wasInfected = myId === data.victimId;
+
     zombiePixel.update((state) => ({
       ...state,
       survivorCount: data.survivorsRemaining,
+      // Update role if current player was infected
+      yourRole: wasInfected ? 'zombie' : state.yourRole,
       lastInfection: {
         victimName: data.victimName,
         zombieName: data.zombieName,
@@ -887,17 +884,33 @@ function setupEventHandlers(socket: AppSocket): void {
     }, 2000);
   });
 
-  socket.on('zombie-game-end', (data: {
-    winner: { id: string; name: string; isBot: boolean } | null;
-    zombiesWin: boolean;
-    stats: {
-      totalInfections: number;
-      gameDuration: number;
-      firstInfectionTime: number | null;
-      mostInfections: { playerId: string; name: string; count: number } | null;
-      longestSurvivor: { playerId: string; name: string; survivalTime: number } | null;
-    };
-  }) => {
+  socket.on('zombie-healed', (data) => {
+    const currentState = get(zombiePixel);
+    const myId = currentState.yourId;
+
+    // Check if the current player was healed (converted back to survivor)
+    const wasHealed = myId === data.healedId;
+
+    zombiePixel.update((state) => ({
+      ...state,
+      // Update role if current player was healed
+      yourRole: wasHealed ? 'survivor' : state.yourRole,
+      lastHealing: {
+        healedName: data.healedName,
+        healerName: data.healerName,
+      },
+    }));
+
+    // Clear healing notification after 3 seconds
+    setTimeout(() => {
+      zombiePixel.update((state) => ({
+        ...state,
+        lastHealing: null,
+      }));
+    }, 3000);
+  });
+
+  socket.on('zombie-game-end', (data) => {
     zombiePixel.update((state) => ({
       ...state,
       isGameActive: false,

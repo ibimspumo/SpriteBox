@@ -4,6 +4,7 @@ import { randomInt } from 'crypto';
 import { ZombiePixelBot } from './bot.js';
 import type { ZombiePosition, ZombiePixelPlayer } from './types.js';
 import { ZOMBIE_PIXEL_CONSTANTS } from './types.js';
+import type { ItemSystemManager } from './itemSystem.js';
 
 /**
  * Manages the bot pool for Zombie Pixel game mode.
@@ -121,14 +122,20 @@ export class ZombieBotManager {
   /**
    * Updates all bots for one game tick.
    * @param allPlayers - All players in the game (for pathfinding)
+   * @param hasSpeedBoost - Whether zombies have speed boost active
+   * @param itemManager - Item system manager for item awareness
    * @returns Map of bot ID to new position (only bots that moved)
    */
-  updateBots(allPlayers: ZombiePixelPlayer[]): Map<string, ZombiePosition> {
+  updateBots(
+    allPlayers: ZombiePixelPlayer[],
+    hasSpeedBoost: boolean = false,
+    itemManager?: ItemSystemManager
+  ): Map<string, ZombiePosition> {
     const movements = new Map<string, ZombiePosition>();
     const gridSize = ZOMBIE_PIXEL_CONSTANTS.GRID_SIZE;
 
     for (const bot of this.bots.values()) {
-      const newPos = bot.update(allPlayers, gridSize, gridSize);
+      const newPos = bot.update(allPlayers, gridSize, gridSize, hasSpeedBoost, itemManager);
       if (
         newPos &&
         (newPos.x !== bot.position.x || newPos.y !== bot.position.y)
@@ -162,6 +169,19 @@ export class ZombieBotManager {
     if (!bot || bot.isZombie) return false;
 
     bot.infect(zombieId, timestamp);
+    return true;
+  }
+
+  /**
+   * Heals a bot (turns them back into a survivor).
+   * @param botId - ID of the bot to heal
+   * @returns true if bot was healed, false if not found or not a zombie
+   */
+  healBot(botId: string): boolean {
+    const bot = this.bots.get(botId);
+    if (!bot || !bot.isZombie) return false;
+
+    bot.heal();
     return true;
   }
 

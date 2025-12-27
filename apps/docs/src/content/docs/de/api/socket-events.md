@@ -253,6 +253,104 @@ PixelGuesser ist ein Pictionary-artiges Spiel, bei dem ein Spieler zeichnet wäh
 }
 ```
 
+### ZombiePixel-Modus Events
+
+ZombiePixel ist ein Echtzeit-Infektionsspiel auf einem 32x32 Grid mit bis zu 100 Spielern (Bots füllen leere Plätze).
+
+| Event | Payload | Beschreibung |
+|-------|---------|--------------|
+| `zombie-game-state` | Siehe unten | Spielstatus-Update (Spieler, Zeit, Zähler, Items) |
+| `zombie-roles-assigned` | Siehe unten | Initiale Rollen- und Positionszuweisung |
+| `zombie-infection` | `{ victimId, victimName, zombieId, zombieName, survivorsRemaining, timerExtendedBy }` | Spieler wurde infiziert (+1s Timer) |
+| `zombie-healed` | `{ healedId, healedName, healerId, healerName }` | Zombie wurde zurück zum Überlebenden geheilt |
+| `zombie-game-end` | Siehe unten | Spiel beendet mit Gewinner/Stats |
+| `zombie-item-spawned` | Siehe unten | Power-Up-Item erschienen |
+| `zombie-item-collected` | `{ itemId, playerId, playerName, itemType, isZombie }` | Spieler hat Item gesammelt |
+| `zombie-effect-started` | Siehe unten | Effekt gestartet (Speed-Boost, Heilung) |
+| `zombie-effect-ended` | `{ effectId, type, affectedId }` | Effekt abgelaufen |
+
+**`zombie-game-state` Payload:**
+
+```typescript
+{
+  players: Array<{
+    id: string;
+    name: string;
+    x: number;
+    y: number;
+    isZombie: boolean;
+    isBot: boolean;
+    hasHealingItem: boolean;
+  }>;
+  timeRemaining: number;
+  survivorCount: number;
+  zombieCount: number;
+  items: ZombieItemClient[];
+  effects: ZombieEffectClient[];
+  zombieSpeedBoostActive: boolean;
+  zombieSpeedBoostRemaining: number;
+  playersWithHealingTouch: string[];
+}
+```
+
+**`zombie-roles-assigned` Payload:**
+
+```typescript
+{
+  yourId: string;
+  yourRole: 'zombie' | 'survivor';
+  yourPosition: { x: number; y: number };
+  zombieCount: number;
+  survivorCount: number;
+}
+```
+
+**`zombie-item-spawned` Payload:**
+
+```typescript
+{
+  id: string;
+  type: string;           // 'speed-boost' | 'healing-touch'
+  x: number;
+  y: number;
+  icon: string;
+  color: string;
+  visibility: 'zombies' | 'survivors' | 'all';
+}
+```
+
+**`zombie-effect-started` Payload:**
+
+```typescript
+{
+  effectId: string;
+  type: string;
+  affectedId: string;     // Spieler-ID oder 'zombies'/'survivors'
+  expiresAt: number | null;
+  remainingUses: number | null;
+  sharedEffect: boolean;
+  icon: string;
+  color: string;
+}
+```
+
+**`zombie-game-end` Payload:**
+
+```typescript
+{
+  winner: { id: string; name: string; isBot: boolean } | null;
+  zombiesWin: boolean;
+  duration: number;
+  stats: {
+    totalInfections: number;
+    gameDuration: number;
+    firstInfectionTime: number | null;
+    mostInfections: { playerId: string; name: string; count: number } | null;
+    longestSurvivor: { playerId: string; name: string; survivalTime: number } | null;
+  };
+}
+```
+
 ### Ergebnisse & Galerie
 
 | Event | Payload | Beschreibung |

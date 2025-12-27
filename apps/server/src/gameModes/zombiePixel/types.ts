@@ -29,6 +29,7 @@ export interface ZombiePixelPlayer {
   infectedAt?: number;       // Timestamp when infected
   infectedBy?: string;       // ID of the zombie who infected this player
   lastMoveAt: number;        // For movement cooldown
+  hasHealingItem: boolean;   // Player has collected healing item
 }
 
 /**
@@ -76,8 +77,8 @@ export interface ZombiePixelWinner {
  * Game state stored on the instance
  */
 export interface ZombiePixelState {
-  gridWidth: 50;
-  gridHeight: 50;
+  gridWidth: 32;
+  gridHeight: 32;
   players: Map<string, ZombiePixelPlayer>;
   gameStartTime: number;
   gameEndTime?: number;
@@ -88,6 +89,10 @@ export interface ZombiePixelState {
   moveCooldown: 100;
   // Game tick rate: 50ms (20 ticks per second)
   tickRate: 50;
+  // Dynamic game duration (can be extended by infections)
+  gameDurationMs: number;
+  // Timer extensions from infections
+  timerExtensionsMs: number;
 }
 
 /**
@@ -100,19 +105,52 @@ export interface ZombiePixelPlayerClient {
   y: number;
   isZombie: boolean;
   isBot: boolean;
+  hasHealingItem: boolean;
+}
+
+/**
+ * Item data sent to clients
+ */
+export interface ZombieItemClient {
+  id: string;
+  type: string;       // Item definition ID
+  x: number;
+  y: number;
+  icon: string;       // Icon name from pixelarticons
+  color: string;      // Hex color
+}
+
+/**
+ * Active effect data sent to clients
+ */
+export interface ZombieEffectClient {
+  id: string;
+  type: string;           // Effect type
+  affectedId: string;     // Player ID or 'zombies'/'survivors'
+  expiresAt: number | null;
+  remainingUses: number | null;
 }
 
 /**
  * Constants for the game
  */
 export const ZOMBIE_PIXEL_CONSTANTS = {
-  GRID_SIZE: 50,
+  GRID_SIZE: 32,
   MAX_PLAYERS: 100,
   MOVE_COOLDOWN_MS: 100,      // 10 moves per second
   TICK_RATE_MS: 50,           // 20 ticks per second
   GAME_DURATION_MS: 60_000,   // 60 seconds
   ZOMBIES_PER_PLAYERS: 10,    // 1 zombie per 10 players (up to 10 zombies with 100 players)
   MIN_ZOMBIES: 1,
-  BOT_SIGHT_RANGE: 15,        // Bots can "see" 15 tiles (for 50x50 grid)
+  BOT_SIGHT_RANGE: 10,        // Bots can "see" 10 tiles (for 32x32 grid)
   BOT_RANDOM_MOVE_CHANCE: 0.1, // 10% chance for random move
+  // Speed settings (lower = faster, represents ticks between moves)
+  ZOMBIE_BASE_SPEED: 5,       // Zombies move every 5 ticks (250ms)
+  SURVIVOR_BASE_SPEED: 7,     // Survivors move every 7 ticks (350ms)
+  ZOMBIE_BOOST_SPEED: 2,      // Zombies with boost move every 2 ticks (+3 speed = 5-3=2)
+  // Item settings
+  SPEED_BOOST_DURATION_MS: 5000, // 5 seconds
+  ITEM_SPAWN_MIN_MS: 5000,    // Min time between item spawns
+  ITEM_SPAWN_MAX_MS: 15000,   // Max time between item spawns
+  TIMER_EXTENSION_MS: 1000,   // +1 second on infection
 } as const;

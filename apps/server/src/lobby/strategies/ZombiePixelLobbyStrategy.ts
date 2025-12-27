@@ -94,20 +94,25 @@ export class ZombiePixelLobbyStrategy implements LobbyStrategy {
   }
 
   canStartManually(instance: Instance, _playerId: string): StartResult {
-    // Allow manual start for private rooms if there's at least 1 real player
+    // Allow manual start for private rooms if there are at least 10 real players
     if (instance.type === 'private') {
       const realPlayers = this.getRealPlayerCount(instance);
-      if (realPlayers >= 1) {
+      const minPlayers = this.config.players.privateMin ?? 10;
+      if (realPlayers >= minPlayers) {
         return { success: true };
       }
-      return { success: false, error: 'Need at least 1 player' };
+      return { success: false, error: `Need at least ${minPlayers} players` };
     }
 
     return { success: false, error: 'Public instances use auto-start only' };
   }
 
-  getMinPlayers(_instance: Instance): number {
-    // Minimum 1 real player (rest are bots)
+  getMinPlayers(instance: Instance): number {
+    // Private instances need 10 real players (no bots)
+    if (instance.type === 'private') {
+      return this.config.players.privateMin ?? 10;
+    }
+    // Public: Minimum 1 real player (rest are bots)
     return 1;
   }
 

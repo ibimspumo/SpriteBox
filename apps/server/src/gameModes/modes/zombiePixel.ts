@@ -5,18 +5,19 @@ import type { GameModeConfig } from '../types.js';
 /**
  * Zombie Pixel - Real-time infection game mode.
  *
- * Players move on a 50x50 grid. One or more players start as zombies (green),
+ * Players move on a 32x32 grid. One or more players start as zombies (green),
  * rest are survivors (white). Zombies infect survivors by touching them.
  * Last survivor wins.
  *
  * Key features:
- * - 100 players max (filled with bots)
+ * - Public: 100 players max (filled with bots)
+ * - Private: minimum 10 real players (no bots)
  * - 1 zombie per 10 players
  * - 60 second rounds
  * - 10 moves per second (100ms cooldown)
  * - Random spawn positions
  *
- * Player count: 2-100
+ * Player count: 2-100 (public), 10-100 (private)
  * Phases: lobby → countdown → active → results
  */
 export const zombiePixelMode: GameModeConfig = {
@@ -27,7 +28,7 @@ export const zombiePixelMode: GameModeConfig = {
   players: {
     min: 2,
     max: 100,
-    privateMin: 2,
+    privateMin: 10,
   },
 
   phases: ['lobby', 'countdown', 'active', 'results'],
@@ -54,8 +55,8 @@ export const zombiePixelMode: GameModeConfig = {
   voting: null,              // No voting in this mode
 
   canvas: {
-    width: 50,
-    height: 50,
+    width: 32,
+    height: 32,
     minPixelsSet: 0,         // Not used for this mode
     backgroundColor: '0',    // Black
   },

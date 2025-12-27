@@ -29,14 +29,53 @@
 
 		<!-- Game Grid -->
 		<div class="grid-container">
-			<ZombieGrid players={$zombiePixel.players} myId={$zombiePixel.yourId} yourRole={$zombiePixel.yourRole} />
+			<ZombieGrid
+				players={$zombiePixel.players}
+				myId={$zombiePixel.yourId}
+				yourRole={$zombiePixel.yourRole}
+				lastInfection={$zombiePixel.lastInfection}
+				items={$zombiePixel.items}
+				zombieSpeedBoostActive={$zombiePixel.zombieSpeedBoostActive}
+				zombieSpeedBoostRemaining={$zombiePixel.zombieSpeedBoostRemaining}
+				playersWithHealingTouch={$zombiePixel.playersWithHealingTouch}
+			/>
 		</div>
 
-		<!-- Infection notification -->
+		<!-- Speed Boost Indicator (for zombies) -->
+		{#if $zombiePixel.yourRole === 'zombie' && $zombiePixel.zombieSpeedBoostActive}
+			<div class="effect-indicator speed-boost" role="status">
+				<span class="effect-icon" aria-hidden="true">⚡</span>
+				<span class="effect-text">
+					{Math.ceil($zombiePixel.zombieSpeedBoostRemaining / 1000)}s
+				</span>
+			</div>
+		{/if}
+
+		<!-- Healing Item Indicator (for survivors) -->
+		{#if $zombiePixel.yourRole === 'survivor' && $zombiePixel.yourId && $zombiePixel.playersWithHealingTouch.includes($zombiePixel.yourId)}
+			<div class="effect-indicator healing" role="status">
+				<span class="effect-icon" aria-hidden="true">❤️</span>
+				<span class="effect-text">{$t.zombiePixel.healingActive}</span>
+			</div>
+		{/if}
+
+		<!-- Infection notification (subtle bottom-left toast) -->
 		{#if $zombiePixel.lastInfection}
-			<div class="infection-toast" role="alert">
-				{$zombiePixel.lastInfection.victimName}
-				{$t.zombiePixel.infected.replace('{name}', '')}
+			<div class="infection-toast" role="status" aria-live="polite">
+				<span class="infection-icon" aria-hidden="true">☠</span>
+				<span class="infection-text">
+					{$zombiePixel.lastInfection.victimName}
+				</span>
+			</div>
+		{/if}
+
+		<!-- Healing notification (green toast) -->
+		{#if $zombiePixel.lastHealing}
+			<div class="healing-toast" role="status" aria-live="polite">
+				<span class="healing-icon" aria-hidden="true">💚</span>
+				<span class="healing-text">
+					{$t.zombiePixel.healed.replace('{name}', $zombiePixel.lastHealing.healedName)}
+				</span>
 			</div>
 		{/if}
 
@@ -95,20 +134,119 @@
 
 	.infection-toast {
 		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		background: rgba(239, 68, 68, 0.95);
-		color: white;
-		padding: var(--space-3) var(--space-5);
-		border-radius: var(--radius-lg);
-		font-weight: 700;
-		font-size: var(--font-size-lg);
-		animation: pulseIn 0.5s ease-out;
+		bottom: 120px;
+		left: var(--space-4);
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		background: rgba(20, 20, 20, 0.9);
+		color: var(--color-text-secondary);
+		padding: var(--space-2) var(--space-3);
+		border-radius: var(--radius-md);
+		font-weight: 500;
+		font-size: var(--font-size-sm);
+		animation: slideInLeft 0.3s ease-out;
 		z-index: 100;
-		box-shadow: 0 0 40px rgba(239, 68, 68, 0.5);
+		border-left: 3px solid #ef4444;
+		backdrop-filter: blur(8px);
+	}
+
+	.effect-indicator {
+		position: fixed;
+		top: 80px;
+		right: var(--space-4);
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-4);
+		border-radius: var(--radius-full);
+		font-weight: 700;
+		font-size: var(--font-size-md);
+		animation: effectPulse 1s ease-in-out infinite;
+		z-index: 100;
+		backdrop-filter: blur(8px);
+	}
+
+	.effect-indicator.speed-boost {
+		background: rgba(251, 191, 36, 0.2);
+		color: #fbbf24;
+		border: 2px solid #fbbf24;
+		box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+	}
+
+	.effect-indicator.healing {
+		background: rgba(239, 68, 68, 0.2);
+		color: #ef4444;
+		border: 2px solid #ef4444;
+		box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+	}
+
+	.effect-icon {
+		font-size: var(--font-size-lg);
+	}
+
+	.effect-text {
 		text-transform: uppercase;
 		letter-spacing: 1px;
+	}
+
+	@keyframes effectPulse {
+		0%,
+		100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+		50% {
+			transform: scale(1.05);
+			opacity: 0.9;
+		}
+	}
+
+	.healing-toast {
+		position: fixed;
+		bottom: 160px;
+		left: var(--space-4);
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		background: rgba(20, 40, 20, 0.9);
+		color: #22c55e;
+		padding: var(--space-2) var(--space-3);
+		border-radius: var(--radius-md);
+		font-weight: 500;
+		font-size: var(--font-size-sm);
+		animation: slideInLeft 0.3s ease-out;
+		z-index: 100;
+		border-left: 3px solid #22c55e;
+		backdrop-filter: blur(8px);
+	}
+
+	.healing-icon {
+		font-size: var(--font-size-md);
+	}
+
+	.healing-text {
+		opacity: 0.9;
+	}
+
+	.infection-icon {
+		color: #ef4444;
+		font-size: var(--font-size-md);
+	}
+
+	.infection-text {
+		opacity: 0.9;
+	}
+
+	@keyframes slideInLeft {
+		from {
+			opacity: 0;
+			transform: translateX(-20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
 	}
 
 	.waiting {
@@ -180,21 +318,6 @@
 		animation: spin 1s linear infinite;
 	}
 
-	@keyframes pulseIn {
-		0% {
-			transform: translate(-50%, -50%) scale(1.3);
-			opacity: 0;
-		}
-		50% {
-			transform: translate(-50%, -50%) scale(1.1);
-			opacity: 1;
-		}
-		100% {
-			transform: translate(-50%, -50%) scale(1);
-			opacity: 1;
-		}
-	}
-
 	@keyframes iconBounce {
 		0%,
 		100% {
@@ -214,9 +337,13 @@
 	/* Reduce motion */
 	@media (prefers-reduced-motion: reduce) {
 		.role-icon,
-		.loading-spinner,
+		.loading-spinner {
+			animation: none;
+		}
+
 		.infection-toast {
 			animation: none;
+			opacity: 1;
 		}
 
 		.role-reveal {

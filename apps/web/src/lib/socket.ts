@@ -48,6 +48,7 @@ export interface ServerToClientEvents {
   'zombie-game-state': (data: ZombieGameStateData) => void;
   'zombie-roles-assigned': (data: ZombieRolesAssignedData) => void;
   'zombie-infection': (data: ZombieInfectionData) => void;
+  'zombie-healed': (data: ZombieHealedData) => void;
   'zombie-game-end': (data: ZombieGameEndData) => void;
   'zombie-lobby-update': (data: ZombieLobbyUpdateData) => void;
 }
@@ -138,6 +139,24 @@ export interface ZombiePixelPlayerData {
   y: number;
   isZombie: boolean;
   isBot: boolean;
+  hasHealingItem: boolean;
+}
+
+export interface ZombieItemData {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  icon: string;
+  color: string;
+}
+
+export interface ZombieEffectData {
+  id: string;
+  type: string;
+  affectedId: string;
+  expiresAt: number | null;
+  remainingUses: number | null;
 }
 
 export interface ZombieGameStateData {
@@ -145,6 +164,11 @@ export interface ZombieGameStateData {
   timeRemaining: number;
   survivorCount: number;
   zombieCount: number;
+  items: ZombieItemData[];
+  effects: ZombieEffectData[];
+  zombieSpeedBoostActive: boolean;
+  zombieSpeedBoostRemaining: number;
+  playersWithHealingTouch: string[];
 }
 
 export interface ZombieRolesAssignedData {
@@ -156,9 +180,19 @@ export interface ZombieRolesAssignedData {
 }
 
 export interface ZombieInfectionData {
+  victimId: string;
   victimName: string;
+  zombieId: string;
   zombieName: string;
   survivorsRemaining: number;
+  timerExtendedBy?: number;
+}
+
+export interface ZombieHealedData {
+  healedId: string;
+  healedName: string;
+  healerId: string;
+  healerName: string;
 }
 
 export interface ZombiePixelStatsData {

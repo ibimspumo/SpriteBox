@@ -7,6 +7,7 @@
  * - Bot AI movement
  * - Collision detection
  * - Infection processing
+ * - Item spawning and collection
  * - Game state broadcasting
  * - Win condition checking
  */
@@ -24,9 +25,12 @@ import type {
   ZombiePixelStats,
   ZombiePixelWinner,
   ZombieDirection,
+  ZombieItemClient,
+  ZombieEffectClient,
 } from './types.js';
 import { ZOMBIE_PIXEL_CONSTANTS } from './types.js';
 import { log } from '../../utils.js';
+import { ItemSystemManager, ITEM_DEFINITIONS, type SpawnedItem, type ActiveEffect, type ItemDefinition } from './itemSystem.js';
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
@@ -40,12 +44,15 @@ export function initializeZombiePixelState(
   const botManager = new ZombieBotManager();
   const realPlayers = Array.from(instance.players.values());
   const maxPlayers = ZOMBIE_PIXEL_CONSTANTS.MAX_PLAYERS;
-  const botsNeeded = maxPlayers - realPlayers.length;
+
+  // Private instances: no bots, only real players
+  // Public instances: fill with bots up to max players
+  const botsNeeded = instance.type === 'private' ? 0 : maxPlayers - realPlayers.length;
 
   // Create occupied positions from real players (they don't have positions yet)
   const occupiedPositions: ZombiePosition[] = [];
 
-  // Create bots to fill the lobby
+  // Create bots to fill the lobby (only for public instances)
   const bots = botManager.createBots(botsNeeded, occupiedPositions);
 
   // Create player entries with random positions
@@ -66,6 +73,7 @@ export function initializeZombiePixelState(
       position,
       isAlive: true,
       lastMoveAt: 0,
+      hasHealingItem: false,
     });
   }
 
@@ -77,17 +85,23 @@ export function initializeZombiePixelState(
 
   // Create state
   const state: ZombiePixelState = {
-    gridWidth: 50,
-    gridHeight: 50,
+    gridWidth: 32,
+    gridHeight: 32,
     players,
     gameStartTime: Date.now(),
     infectionLog: [],
     moveCooldown: 100,
     tickRate: 50,
+    gameDurationMs: ZOMBIE_PIXEL_CONSTANTS.GAME_DURATION_MS,
+    timerExtensionsMs: 0,
   };
 
   // Store bot manager reference (attached to state for access in game loop)
   (state as ZombiePixelState & { botManager: ZombieBotManager }).botManager = botManager;
+
+  // Initialize item system
+  const itemManager = new ItemSystemManager(ZOMBIE_PIXEL_CONSTANTS.GRID_SIZE);
+  (state as ZombiePixelState & { itemManager: ItemSystemManager }).itemManager = itemManager;
 
   instance.zombiePixel = state;
 
@@ -169,9 +183,70 @@ export function startGameLoop(instance: Instance, io: TypedServer): void {
   if (!state) return;
 
   const botManager = (state as ZombiePixelState & { botManager: ZombieBotManager }).botManager;
+  const itemManager = (state as ZombiePixelState & { itemManager: ItemSystemManager }).itemManager;
+
+  // Set up item system event handlers
+  itemManager.onSpawn((item, definition) => {
+    log('ZombiePixel', `Item spawned: ${definition.name} at (${item.position.x}, ${item.position.y})`);
+    // Broadcast item spawn to relevant players
+    io.to(instance.id).emit('zombie-item-spawned', {
+      id: item.id,
+      type: definition.id,
+      x: item.position.x,
+      y: item.position.y,
+      icon: definition.icon,
+      color: definition.color,
+      visibility: definition.visibility,
+    });
+  });
+
+  itemManager.onCollect((item, definition, player) => {
+    log('ZombiePixel', `${player.user.fullName} collected ${definition.name}`);
+
+    // Update player's healing item status
+    if (definition.effect === 'healing-touch') {
+      player.hasHealingItem = true;
+    }
+
+    io.to(instance.id).emit('zombie-item-collected', {
+      itemId: item.id,
+      playerId: player.id,
+      playerName: player.user.fullName,
+      itemType: definition.id,
+      isZombie: player.isZombie,
+    });
+  });
+
+  itemManager.onEffectStart((effect, definition) => {
+    log('ZombiePixel', `Effect started: ${definition.name} for ${effect.affectedId}`);
+    io.to(instance.id).emit('zombie-effect-started', {
+      effectId: effect.id,
+      type: definition.id,
+      affectedId: effect.affectedId,
+      expiresAt: effect.expiresAt,
+      remainingUses: effect.remainingUses,
+      sharedEffect: definition.sharedEffect,
+      icon: definition.icon,
+      color: definition.color,
+    });
+  });
+
+  itemManager.onEffectEnd((effect, definition) => {
+    log('ZombiePixel', `Effect ended: ${definition.name} for ${effect.affectedId}`);
+    io.to(instance.id).emit('zombie-effect-ended', {
+      effectId: effect.id,
+      type: definition.id,
+      affectedId: effect.affectedId,
+    });
+  });
+
+  // Update player zombie status in item manager
+  for (const player of state.players.values()) {
+    itemManager.setPlayerZombieStatus(player.id, player.isZombie);
+  }
 
   state.tickInterval = setInterval(() => {
-    gameTick(instance, io, botManager);
+    gameTick(instance, io, botManager, itemManager);
   }, state.tickRate);
 
   log('ZombiePixel', `Game loop started for instance ${instance.id}`);
@@ -193,13 +268,21 @@ export function stopGameLoop(instance: Instance): void {
 /**
  * Single game tick
  */
-function gameTick(instance: Instance, io: TypedServer, botManager: ZombieBotManager): void {
+function gameTick(
+  instance: Instance,
+  io: TypedServer,
+  botManager: ZombieBotManager,
+  itemManager: ItemSystemManager
+): void {
   const state = instance.zombiePixel;
   if (!state) return;
 
-  // 1. Update bot movements
+  const elapsed = Date.now() - state.gameStartTime;
+  const hasSpeedBoost = itemManager.hasZombieSpeedBoost();
+
+  // 1. Update bot movements (with speed boost awareness)
   const allPlayers = Array.from(state.players.values());
-  const botMovements = botManager.updateBots(allPlayers);
+  const botMovements = botManager.updateBots(allPlayers, hasSpeedBoost, itemManager);
 
   // Sync bot positions to state
   for (const [botId, newPos] of botMovements) {
@@ -210,24 +293,42 @@ function gameTick(instance: Instance, io: TypedServer, botManager: ZombieBotMana
     }
   }
 
-  // 2. Check collisions and process infections
-  processInfections(instance, io);
+  // 2. Update item system (spawning, collection, effects)
+  const occupiedPositions = new Set<string>();
+  for (const player of state.players.values()) {
+    occupiedPositions.add(`${player.position.x},${player.position.y}`);
+  }
+  itemManager.update(elapsed, state.players, occupiedPositions);
 
-  // 3. Check win condition
-  const survivors = allPlayers.filter(p => !p.isZombie);
-  if (survivors.length <= 1) {
-    endGame(instance, io, survivors[0] || null);
+  // 3. Check collisions and process infections
+  processInfections(instance, io, itemManager);
+
+  // 4. Check win conditions (re-filter after infections!)
+  const survivors = Array.from(state.players.values()).filter(p => !p.isZombie);
+
+  // All survivors infected → Zombies win immediately
+  if (survivors.length === 0) {
+    endGame(instance, io, null);
     return;
   }
 
-  // 4. Broadcast game state
-  broadcastGameState(instance, io);
+  // 5. Check timeout (with timer extensions)
+  const totalDuration = state.gameDurationMs + state.timerExtensionsMs;
+  if (elapsed >= totalDuration) {
+    // Pick a random survivor as the "winner" for display purposes
+    const winner = survivors[randomInt(0, survivors.length)];
+    endGame(instance, io, winner);
+    return;
+  }
+
+  // 6. Broadcast game state (including items and effects)
+  broadcastGameState(instance, io, itemManager);
 }
 
 /**
  * Process infections (zombie touching survivor)
  */
-function processInfections(instance: Instance, io: TypedServer): void {
+function processInfections(instance: Instance, io: TypedServer, itemManager: ItemSystemManager): void {
   const state = instance.zombiePixel;
   if (!state) return;
 
@@ -238,11 +339,50 @@ function processInfections(instance: Instance, io: TypedServer): void {
     for (const survivor of survivors) {
       // Check if on same position
       if (zombie.position.x === survivor.position.x && zombie.position.y === survivor.position.y) {
-        // Infect the survivor
+        // Check if survivor has healing touch - if so, heal the zombie instead!
+        if (survivor.hasHealingItem) {
+          // Consume the healing effect
+          itemManager.consumeEffectUse('healing-touch', survivor.id);
+          survivor.hasHealingItem = false;
+
+          // "Heal" the zombie - they become a survivor again!
+          zombie.isZombie = false;
+          zombie.isAlive = true;
+          zombie.infectedAt = undefined;
+          zombie.infectedBy = undefined;
+
+          // Update item manager zombie status
+          itemManager.setPlayerZombieStatus(zombie.id, false);
+
+          // Update bot manager if it's a bot
+          const botManager = (state as ZombiePixelState & { botManager: ZombieBotManager }).botManager;
+          if (zombie.isBot) {
+            botManager.healBot(zombie.id);
+          }
+
+          // Broadcast healing event
+          io.to(instance.id).emit('zombie-healed', {
+            healedId: zombie.id,
+            healedName: zombie.user.fullName,
+            healerId: survivor.id,
+            healerName: survivor.user.fullName,
+          });
+
+          log('ZombiePixel', `${zombie.user.fullName} was healed by ${survivor.user.fullName}!`);
+          continue;
+        }
+
+        // Normal infection
         survivor.isZombie = true;
         survivor.isAlive = false;
         survivor.infectedAt = Date.now();
         survivor.infectedBy = zombie.id;
+
+        // Update item manager zombie status
+        itemManager.setPlayerZombieStatus(survivor.id, true);
+
+        // Add +1 second to timer on infection
+        state.timerExtensionsMs += ZOMBIE_PIXEL_CONSTANTS.TIMER_EXTENSION_MS;
 
         // Log the infection
         const event: ZombieInfectionEvent = {
@@ -261,16 +401,17 @@ function processInfections(instance: Instance, io: TypedServer): void {
           botManager.infectBot(survivor.id, zombie.id, Date.now());
         }
 
-        // Broadcast infection event
+        // Broadcast infection event (including timer extension)
         io.to(instance.id).emit('zombie-infection', {
           victimId: survivor.id,
           victimName: survivor.user.fullName,
           zombieId: zombie.id,
           zombieName: zombie.user.fullName,
           survivorsRemaining: survivors.length - 1,
+          timerExtendedBy: ZOMBIE_PIXEL_CONSTANTS.TIMER_EXTENSION_MS,
         });
 
-        log('ZombiePixel', `${survivor.user.fullName} infected by ${zombie.user.fullName}`);
+        log('ZombiePixel', `${survivor.user.fullName} infected by ${zombie.user.fullName} (+1s timer)`);
       }
     }
   }
@@ -279,7 +420,7 @@ function processInfections(instance: Instance, io: TypedServer): void {
 /**
  * Broadcast current game state to all players
  */
-function broadcastGameState(instance: Instance, io: TypedServer): void {
+function broadcastGameState(instance: Instance, io: TypedServer, itemManager: ItemSystemManager): void {
   const state = instance.zombiePixel;
   if (!state) return;
 
@@ -290,20 +431,60 @@ function broadcastGameState(instance: Instance, io: TypedServer): void {
     y: p.position.y,
     isZombie: p.isZombie,
     isBot: p.isBot,
+    hasHealingItem: p.hasHealingItem,
   }));
 
   const survivorCount = players.filter(p => !p.isZombie).length;
   const zombieCount = players.filter(p => p.isZombie).length;
 
   const elapsed = Date.now() - state.gameStartTime;
-  const duration = ZOMBIE_PIXEL_CONSTANTS.GAME_DURATION_MS;
-  const timeRemaining = Math.max(0, Math.ceil((duration - elapsed) / 1000));
+  const totalDuration = state.gameDurationMs + state.timerExtensionsMs;
+  const timeRemaining = Math.max(0, Math.ceil((totalDuration - elapsed) / 1000));
+
+  // Get items and effects for broadcast
+  // We'll send all items - client will filter by visibility
+  const allItems = itemManager.getState().items;
+  const items: ZombieItemClient[] = [];
+  for (const item of allItems.values()) {
+    if (item.collected) continue;
+    const def = itemManager.getDefinition(item.definitionId);
+    if (!def) continue;
+    items.push({
+      id: item.id,
+      type: def.id,
+      x: item.position.x,
+      y: item.position.y,
+      icon: def.icon,
+      color: def.color,
+    });
+  }
+
+  // Get active effects
+  const effects: ZombieEffectClient[] = itemManager.getActiveEffects().map(e => ({
+    id: e.id,
+    type: e.type,
+    affectedId: e.affectedId,
+    expiresAt: e.expiresAt,
+    remainingUses: e.remainingUses,
+  }));
+
+  // Speed boost info for zombies
+  const zombieSpeedBoostActive = itemManager.hasZombieSpeedBoost();
+  const zombieSpeedBoostRemaining = itemManager.getZombieSpeedBoostRemaining();
+
+  // Players with healing touch (warning for zombies)
+  const playersWithHealingTouch = itemManager.getPlayersWithHealingTouch();
 
   io.to(instance.id).emit('zombie-game-state', {
     players,
     timeRemaining,
     survivorCount,
     zombieCount,
+    items,
+    effects,
+    zombieSpeedBoostActive,
+    zombieSpeedBoostRemaining,
+    playersWithHealingTouch,
   });
 }
 

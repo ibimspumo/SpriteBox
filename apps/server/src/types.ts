@@ -354,10 +354,29 @@ export interface ServerToClientEvents {
       y: number;
       isZombie: boolean;
       isBot: boolean;
+      hasHealingItem: boolean;
     }>;
     timeRemaining: number;
     survivorCount: number;
     zombieCount: number;
+    items: Array<{
+      id: string;
+      type: string;
+      x: number;
+      y: number;
+      icon: string;
+      color: string;
+    }>;
+    effects: Array<{
+      id: string;
+      type: string;
+      affectedId: string;
+      expiresAt: number | null;
+      remainingUses: number | null;
+    }>;
+    zombieSpeedBoostActive: boolean;
+    zombieSpeedBoostRemaining: number;
+    playersWithHealingTouch: string[];
   }) => void;
   'zombie-roles-assigned': (data: {
     yourId: string;
@@ -372,6 +391,44 @@ export interface ServerToClientEvents {
     zombieId: string;
     zombieName: string;
     survivorsRemaining: number;
+    timerExtendedBy?: number;
+  }) => void;
+  'zombie-healed': (data: {
+    healedId: string;
+    healedName: string;
+    healerId: string;
+    healerName: string;
+  }) => void;
+  'zombie-item-spawned': (data: {
+    id: string;
+    type: string;
+    x: number;
+    y: number;
+    icon: string;
+    color: string;
+    visibility: 'zombies' | 'survivors' | 'all';
+  }) => void;
+  'zombie-item-collected': (data: {
+    itemId: string;
+    playerId: string;
+    playerName: string;
+    itemType: string;
+    isZombie: boolean;
+  }) => void;
+  'zombie-effect-started': (data: {
+    effectId: string;
+    type: string;
+    affectedId: string;
+    expiresAt: number | null;
+    remainingUses: number | null;
+    sharedEffect: boolean;
+    icon: string;
+    color: string;
+  }) => void;
+  'zombie-effect-ended': (data: {
+    effectId: string;
+    type: string;
+    affectedId: string;
   }) => void;
   'zombie-game-end': (data: {
     winner: { id: string; name: string; isBot: boolean } | null;

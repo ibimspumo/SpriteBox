@@ -5,6 +5,7 @@ import { generateDiscriminator, createFullName, generateId } from '../../utils.j
 import type { User } from '../../types.js';
 import type { ZombiePosition, ZombiePixelPlayer } from './types.js';
 import { ZOMBIE_PIXEL_CONSTANTS } from './types.js';
+import type { ItemSystemManager } from './itemSystem.js';
 
 /**
  * Guest names for bot naming (same as real players use).
@@ -48,8 +49,11 @@ export class ZombiePixelBot {
   /** ID of the player who infected this bot */
   infectedBy?: string;
 
-  /** Number of ticks between moves (randomized per bot) */
-  private moveCooldownTicks: number;
+  /** Whether this bot has a healing item */
+  hasHealingItem: boolean;
+
+  /** Base number of ticks between moves (based on role speed) */
+  private baseMoveCooldownTicks: number;
 
   /** Current cooldown counter */
   private currentCooldown: number;
@@ -79,12 +83,25 @@ export class ZombiePixelBot {
     this.position = { ...startPosition };
     this.isAlive = true;
     this.lastMoveAt = 0;
+    this.hasHealingItem = false;
 
-    // Randomize bot speed (2-4 ticks between moves)
-    // At 20 ticks/sec (50ms tick rate), this means 100-200ms between moves
-    this.moveCooldownTicks = randomInt(2, 5);
+    // Base speed - will be adjusted based on role
+    this.baseMoveCooldownTicks = ZOMBIE_PIXEL_CONSTANTS.SURVIVOR_BASE_SPEED;
     this.currentCooldown = 0;
     this.sightRange = ZOMBIE_PIXEL_CONSTANTS.BOT_SIGHT_RANGE;
+  }
+
+  /**
+   * Gets the current movement cooldown based on role and effects.
+   */
+  private getMoveCooldownTicks(hasSpeedBoost: boolean): number {
+    if (this.isZombie) {
+      if (hasSpeedBoost) {
+        return ZOMBIE_PIXEL_CONSTANTS.ZOMBIE_BOOST_SPEED;
+      }
+      return ZOMBIE_PIXEL_CONSTANTS.ZOMBIE_BASE_SPEED;
+    }
+    return ZOMBIE_PIXEL_CONSTANTS.SURVIVOR_BASE_SPEED;
   }
 
   /**
@@ -103,6 +120,7 @@ export class ZombiePixelBot {
       lastMoveAt: this.lastMoveAt,
       infectedAt: this.infectedAt,
       infectedBy: this.infectedBy,
+      hasHealingItem: this.hasHealingItem,
     };
   }
 
@@ -111,15 +129,22 @@ export class ZombiePixelBot {
    * @param allPlayers - All players in the game (for pathfinding)
    * @param gridWidth - Width of the game grid
    * @param gridHeight - Height of the game grid
+   * @param hasSpeedBoost - Whether zombies have speed boost active
+   * @param itemManager - Item system manager for item awareness
    * @returns New position if bot moved, null otherwise
    */
   update(
     allPlayers: ZombiePixelPlayer[],
     gridWidth: number,
-    gridHeight: number
+    gridHeight: number,
+    hasSpeedBoost: boolean = false,
+    itemManager?: ItemSystemManager
   ): ZombiePosition | null {
     // Dead bots don't move (they're zombies now, handled by isZombie)
     if (!this.isAlive && !this.isZombie) return null;
+
+    // Get current movement cooldown based on role and effects
+    const moveCooldown = this.getMoveCooldownTicks(hasSpeedBoost);
 
     // Cooldown check
     if (this.currentCooldown > 0) {
@@ -127,24 +152,81 @@ export class ZombiePixelBot {
       return null;
     }
 
-    // Find target based on role
+    // Check for nearby items first (if item manager provided)
+    if (itemManager) {
+      const itemTarget = this.findItemTarget(itemManager, gridWidth, gridHeight);
+      if (itemTarget) {
+        const newPos = this.calculateNextMove(itemTarget, gridWidth, gridHeight, false);
+        this.currentCooldown = moveCooldown;
+        return newPos;
+      }
+    }
+
+    // Find target based on role (player or zombie to chase/flee)
     const target = this.findTarget(allPlayers);
 
     if (!target) {
       // No target found, random move occasionally
       if (Math.random() < 0.05) {
         const newPos = this.randomMove(gridWidth, gridHeight);
-        this.currentCooldown = this.moveCooldownTicks;
+        this.currentCooldown = moveCooldown;
         return newPos;
       }
       return null;
     }
 
-    // Calculate next move
-    const newPos = this.calculateNextMove(target, gridWidth, gridHeight);
-    this.currentCooldown = this.moveCooldownTicks;
+    // Calculate next move (zombies chase, survivors flee)
+    // But if zombie is chasing a survivor with healing item, be more cautious
+    const avoidHealers = this.isZombie && this.shouldAvoidHealers(allPlayers, target);
+    const newPos = this.calculateNextMove(target, gridWidth, gridHeight, avoidHealers);
+    this.currentCooldown = moveCooldown;
 
     return newPos;
+  }
+
+  /**
+   * Find nearby item to collect (based on visibility).
+   */
+  private findItemTarget(
+    itemManager: ItemSystemManager,
+    _gridWidth: number,
+    _gridHeight: number
+  ): ZombiePosition | null {
+    const visibleItems = itemManager.getVisibleItems(this.isZombie);
+    if (visibleItems.length === 0) return null;
+
+    // Find closest item within sight range
+    let closest: ZombiePosition | null = null;
+    let closestDist = Infinity;
+
+    for (const item of visibleItems) {
+      const dist = Math.abs(this.position.x - item.position.x) +
+                   Math.abs(this.position.y - item.position.y);
+
+      if (dist <= this.sightRange && dist < closestDist) {
+        closestDist = dist;
+        closest = item.position;
+      }
+    }
+
+    return closest;
+  }
+
+  /**
+   * Check if zombie should avoid this target (has healing item).
+   */
+  private shouldAvoidHealers(players: ZombiePixelPlayer[], target: ZombiePosition): boolean {
+    // Check if target position has a player with healing item
+    for (const player of players) {
+      if (!player.isZombie &&
+          player.hasHealingItem &&
+          player.position.x === target.x &&
+          player.position.y === target.y) {
+        // 70% chance to avoid players with healing items
+        return Math.random() < 0.7;
+      }
+    }
+    return false;
   }
 
   /**
@@ -188,12 +270,14 @@ export class ZombiePixelBot {
    * @param target - Target position to move towards/away from
    * @param gridWidth - Width of the game grid
    * @param gridHeight - Height of the game grid
+   * @param avoidTarget - If true, maximize distance instead of minimize (for avoiding healers)
    * @returns New position after move
    */
   private calculateNextMove(
     target: ZombiePosition,
     gridWidth: number,
-    gridHeight: number
+    gridHeight: number,
+    avoidTarget: boolean = false
   ): ZombiePosition {
     const moves = [
       { x: 0, y: -1 }, // Up
@@ -208,8 +292,10 @@ export class ZombiePixelBot {
     }
 
     let bestMove = this.position;
-    // Zombies minimize distance, survivors maximize distance
-    let bestScore = this.isZombie ? Infinity : -1;
+    // Determine whether to minimize or maximize distance
+    const shouldChase = this.isZombie && !avoidTarget;
+    const shouldFlee = !this.isZombie || avoidTarget;
+    let bestScore = shouldChase ? Infinity : -1;
 
     for (const move of moves) {
       const newX = this.position.x + move.x;
@@ -222,14 +308,14 @@ export class ZombiePixelBot {
 
       const dist = Math.abs(newX - target.x) + Math.abs(newY - target.y);
 
-      if (this.isZombie) {
-        // Zombie: minimize distance
+      if (shouldChase) {
+        // Chase: minimize distance
         if (dist < bestScore) {
           bestScore = dist;
           bestMove = { x: newX, y: newY };
         }
-      } else {
-        // Survivor: maximize distance
+      } else if (shouldFlee) {
+        // Flee: maximize distance
         if (dist > bestScore) {
           bestScore = dist;
           bestMove = { x: newX, y: newY };
@@ -282,5 +368,16 @@ export class ZombiePixelBot {
     this.isZombie = true;
     this.infectedAt = timestamp;
     this.infectedBy = zombieId;
+    this.hasHealingItem = false;  // Lose healing item on infection
+  }
+
+  /**
+   * Called when this bot gets healed (converted back to survivor).
+   */
+  heal(): void {
+    this.isAlive = true;
+    this.isZombie = false;
+    this.infectedAt = undefined;
+    this.infectedBy = undefined;
   }
 }
