@@ -1,52 +1,37 @@
 // apps/server/src/socket.ts
-import type { Server, Socket } from 'socket.io';
-import { timingSafeEqual, randomInt } from 'crypto';
-import type { Player, User, ServerToClientEvents, ClientToServerEvents, PhaseState } from './types.js';
-import {
-  findOrCreatePublicInstance,
-  createPrivateRoom,
-  findPrivateRoom,
-  addPlayerToInstance,
-  removePlayerFromInstance,
-  findInstance,
-  getInstancePlayers,
-  setIoInstance,
-  startGameManually,
-  handlePlayerDisconnect,
-  handlePlayerReconnect,
-  verifyRoomPassword,
-  changeRoomPassword,
-  getPlayerCountsByMode,
-  addModeViewer,
-  removeModeViewer,
-} from './instance.js';
-import {
-  isPasswordBlocked,
-  recordFailedPasswordAttempt,
-  clearPasswordAttempts,
-  getPasswordBlockRemaining,
-  validatePasswordFormat,
-} from './password.js';
-import {
-  shouldQueue,
-  addToQueue,
-  removeFromQueue,
-  isInQueue,
-  setQueueIo,
-} from './queue.js';
-import { getMemoryInfo } from './serverConfig.js';
-import { generateId, generateDiscriminator, createFullName, log } from './utils.js';
-import { MIN_PLAYERS_TO_START, CANVAS, DOS, TIMERS } from './constants.js';
-import { gameModes } from './gameModes/index.js';
-import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, CopyCatRematchVoteSchema, PixelGuesserDrawSchema, PixelGuesserGuessSchema, ZombieMoveSchema, validate, validateMinPixels } from './validation.js';
-import { getVotingState, isWithinPhaseTime, getPhaseTimings, checkAndTriggerEarlyVotingEnd, checkAndTriggerEarlyFinaleEnd, handleCopyCatSubmission, handleCopyCatRematchVote, handlePixelGuesserDrawUpdate, handlePixelGuesserGuess, handleRoyaleSubmission } from './phases.js';
-import { processVote, processFinaleVote } from './voting.js';
-import { checkRateLimit, checkConnectionRateLimit } from './rateLimit.js';
-import { checkMultiAccount, removeSocketFingerprint, isBrowserInInstance, trackBrowserInInstance, untrackBrowserFromInstance } from './fingerprint.js';
-import { handlePlayerMove } from './gameModes/zombiePixel/index.js';
+// Socket.io setup and core connection handling
+// Handler logic has been refactored into apps/server/src/handlers/
 
-type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
-type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
+import type { Server } from 'socket.io';
+import { randomInt } from 'crypto';
+import type { Player, User } from './types.js';
+import { setIoInstance, getPlayerCountsByMode, removeModeViewer } from './instance.js';
+import { setQueueIo, isInQueue, removeFromQueue } from './queue.js';
+import { generateId, generateDiscriminator, createFullName, log } from './utils.js';
+import { gameModes } from './gameModes/index.js';
+import { checkRateLimit } from './rateLimit.js';
+import { removeSocketFingerprint, untrackBrowserFromInstance } from './fingerprint.js';
+import { handlePlayerDisconnect, findInstance, removePlayerFromInstance } from './instance.js';
+import { DOS } from './constants.js';
+
+// Import refactored handlers
+import {
+  TypedServer,
+  TypedSocket,
+  storeSessionToken,
+  removeSessionToken,
+  startSessionCleanup,
+  unregisterConnection,
+  getTotalConnections,
+  setupConnectionMiddleware,
+  registerLobbyHandlers,
+  registerHostHandlers,
+  registerGameHandlers,
+  registerCopyCatHandlers,
+  registerPixelGuesserHandlers,
+  registerZombiePixelHandlers,
+  registerCopyCatRoyaleHandlers,
+} from './handlers/index.js';
 
 // Guest names for random naming
 const GUEST_NAMES = [
@@ -54,252 +39,9 @@ const GUEST_NAMES = [
   'Creator', 'Designer', 'Drawer', 'Crafter', 'Maker',
 ];
 
-// === DoS Protection: Connection Tracking ===
-const connectionsPerIP = new Map<string, Set<string>>();
-let totalConnections = 0;
-
-// === Session Token Storage (for secure validation) ===
-interface SessionEntry {
-  tokenBuffer: Buffer;
-  createdAt: number;
-  playerId: string;
-}
-const sessionTokens = new Map<string, SessionEntry>();
-
 /**
- * Stores a session token securely
+ * Initialize a new player on connection
  */
-function storeSessionToken(sessionId: string, playerId: string): void {
-  sessionTokens.set(sessionId, {
-    tokenBuffer: Buffer.from(sessionId, 'utf8'),
-    createdAt: Date.now(),
-    playerId,
-  });
-}
-
-/**
- * Validates a session token using timing-safe comparison
- */
-function validateSessionToken(providedSessionId: string): { valid: boolean; playerId?: string; expired?: boolean } {
-  const entry = sessionTokens.get(providedSessionId);
-  if (!entry) {
-    return { valid: false };
-  }
-
-  // Check 24h expiry
-  if (Date.now() - entry.createdAt > TIMERS.SESSION_MAX_AGE) {
-    sessionTokens.delete(providedSessionId);
-    return { valid: false, expired: true };
-  }
-
-  // Timing-safe comparison
-  const providedBuffer = Buffer.from(providedSessionId, 'utf8');
-  if (providedBuffer.length !== entry.tokenBuffer.length) {
-    return { valid: false };
-  }
-
-  if (!timingSafeEqual(providedBuffer, entry.tokenBuffer)) {
-    return { valid: false };
-  }
-
-  return { valid: true, playerId: entry.playerId };
-}
-
-/**
- * Removes a session token
- */
-function removeSessionToken(sessionId: string): void {
-  sessionTokens.delete(sessionId);
-}
-
-/**
- * Cleanup expired session tokens (run periodically)
- */
-function cleanupExpiredSessions(): void {
-  const now = Date.now();
-  let cleaned = 0;
-
-  for (const [sessionId, entry] of sessionTokens) {
-    if (now - entry.createdAt > TIMERS.SESSION_MAX_AGE) {
-      sessionTokens.delete(sessionId);
-      cleaned++;
-    }
-  }
-
-  if (cleaned > 0) {
-    log('Session', `Cleaned up ${cleaned} expired sessions`);
-  }
-}
-
-/**
- * Extracts client IP from socket (supports proxies)
- */
-function getClientIP(socket: TypedSocket): string {
-  const forwarded = socket.handshake.headers['x-forwarded-for'];
-  if (forwarded) {
-    const ips = Array.isArray(forwarded) ? forwarded[0] : forwarded;
-    return ips.split(',')[0].trim();
-  }
-  return socket.handshake.address;
-}
-
-export function setupSocketHandlers(io: TypedServer): void {
-  // Make IO instance available for instance manager
-  setIoInstance(io);
-  setQueueIo(io);
-
-  // Start periodic session cleanup (every 5 minutes)
-  setInterval(cleanupExpiredSessions, 5 * 60 * 1000);
-
-  // Broadcast online count every 5 seconds (total + per game mode)
-  setInterval(() => {
-    io.emit('online-count', {
-      count: totalConnections,
-      total: totalConnections,
-      byMode: getPlayerCountsByMode(),
-    });
-  }, 5000);
-
-  // === Middleware: Check connection limits ===
-  io.use((socket, next) => {
-    const ip = getClientIP(socket as TypedSocket);
-
-    // IP rate limit (connection attempts)
-    if (!checkConnectionRateLimit(ip)) {
-      return next(new Error('TOO_MANY_CONNECTIONS'));
-    }
-
-    // Global limit
-    if (totalConnections >= DOS.MAX_TOTAL_CONNECTIONS) {
-      return next(new Error('SERVER_FULL'));
-    }
-
-    // Per-IP limit
-    const ipConns = connectionsPerIP.get(ip) || new Set();
-    if (ipConns.size >= DOS.MAX_CONNECTIONS_PER_IP) {
-      return next(new Error('TOO_MANY_CONNECTIONS'));
-    }
-
-    // Multi-account check
-    socket.data.ip = ip;
-    const multiCheck = checkMultiAccount(socket as TypedSocket);
-    if (!multiCheck.allowed) {
-      return next(new Error('TOO_MANY_SESSIONS'));
-    }
-
-    if (multiCheck.warning) {
-      socket.data.multiAccountWarning = true;
-    }
-
-    // Extract browser fingerprint from auth
-    const browserId = socket.handshake.auth?.browserId as string | undefined;
-    socket.data.browserId = browserId || `fallback-${ip}-${socket.id}`;
-
-    // Track
-    ipConns.add(socket.id);
-    connectionsPerIP.set(ip, ipConns);
-    totalConnections++;
-
-    next();
-  });
-
-  io.on('connection', (socket: TypedSocket) => {
-    log('Socket', `Connected: ${socket.id} from ${socket.data.ip}`);
-
-    // Initialize player
-    const player = initializePlayer(socket);
-
-    // Send available game modes to client
-    socket.emit('game-modes', {
-      available: gameModes.getAllInfo(),
-      default: gameModes.getDefaultId(),
-    });
-
-    // === Middleware for all events: Rate limiting ===
-    socket.use((packet, next) => {
-      const [event] = packet;
-
-      // Global event rate limit
-      if (!checkRateLimit(socket, 'global')) {
-        return next(new Error('RATE_LIMITED'));
-      }
-
-      // Event-specific rate limit
-      if (!checkRateLimit(socket, event)) {
-        return next(new Error('RATE_LIMITED'));
-      }
-
-      next();
-    });
-
-    // === Idle-Timeout with Warning ===
-    let lastActivity = Date.now();
-    let warningSent = false;
-
-    socket.onAny(() => {
-      lastActivity = Date.now();
-      warningSent = false; // Reset warning on any activity
-    });
-
-    const idleCheck = setInterval(() => {
-      const idleTime = Date.now() - lastActivity;
-
-      // Disconnect after full timeout
-      if (idleTime > DOS.IDLE_TIMEOUT) {
-        socket.emit('idle-disconnect', { reason: 'Inactivity' });
-        socket.disconnect(true);
-        return;
-      }
-
-      // Warning before disconnect (1 minute left)
-      if (idleTime > DOS.IDLE_WARNING && !warningSent) {
-        const timeLeft = Math.ceil((DOS.IDLE_TIMEOUT - idleTime) / 1000);
-        socket.emit('idle-warning', { timeLeft });
-        warningSent = true;
-      }
-    }, 30_000); // Check every 30 seconds for more responsive warnings
-
-    // Willkommens-Event
-    socket.emit('connected', {
-      socketId: socket.id,
-      serverTime: Date.now(),
-      user: player.user,
-      sessionId: player.sessionId,
-    });
-
-    // Register event handlers
-    registerLobbyHandlers(socket, io, player);
-    registerHostHandlers(socket, io, player);
-    registerGameHandlers(socket, io, player);
-
-    // Disconnect
-    socket.on('disconnect', (reason) => {
-      clearInterval(idleCheck);
-
-      // Connection Tracking cleanup
-      const ip = socket.data.ip;
-      if (ip) {
-        const ipConns = connectionsPerIP.get(ip);
-        if (ipConns) {
-          ipConns.delete(socket.id);
-          if (ipConns.size === 0) {
-            connectionsPerIP.delete(ip);
-          }
-        }
-      }
-      totalConnections--;
-
-      // Mode viewer cleanup
-      removeModeViewer(socket.id);
-
-      // Fingerprint cleanup
-      removeSocketFingerprint(socket);
-
-      handleDisconnect(socket, player, reason);
-    });
-  });
-}
-
 function initializePlayer(socket: TypedSocket): Player {
   const displayName = GUEST_NAMES[randomInt(0, GUEST_NAMES.length)];
   const discriminator = generateDiscriminator();
@@ -309,9 +51,6 @@ function initializePlayer(socket: TypedSocket): Player {
     discriminator,
     fullName: createFullName(displayName, discriminator),
   };
-
-  // Note: User data is persisted client-side in localStorage
-  // Server just accepts client data on restore-user event
 
   const player: Player = {
     id: generateId(),
@@ -332,1090 +71,9 @@ function initializePlayer(socket: TypedSocket): Player {
   return player;
 }
 
-function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Player): void {
-  // Track mode page viewing (for online count before joining lobby)
-  socket.on('view-mode', (data) => {
-    if (!data?.gameMode || typeof data.gameMode !== 'string') {
-      return;
-    }
-    // Only track if not already in a game
-    if (!socket.data.instanceId) {
-      addModeViewer(socket.id, data.gameMode);
-    }
-  });
-
-  socket.on('leave-mode', () => {
-    removeModeViewer(socket.id);
-  });
-
-  // Join public game
-  socket.on('join-public', (data) => {
-    if (socket.data.instanceId) {
-      // Check if we can auto-leave (in results phase)
-      const currentInstance = findInstance(socket.data.instanceId);
-      if (currentInstance && currentInstance.phase === 'results') {
-        // Auto-leave from results phase
-        removePlayerFromInstance(currentInstance, player.id);
-        untrackBrowserFromInstance(socket.data.browserId, currentInstance.id);
-        socket.leave(currentInstance.id);
-        socket.data.instanceId = null;
-        log('Socket', `${player.user.fullName} auto-left from results phase to rejoin`);
-      } else {
-        socket.emit('error', { code: 'ALREADY_IN_GAME', message: 'Already in a game' });
-        return;
-      }
-    }
-
-    // Check if player is already in queue
-    if (isInQueue(socket.id)) {
-      socket.emit('error', { code: 'ALREADY_QUEUED', message: 'Already in queue' });
-      return;
-    }
-
-    // Check if server should queue new players
-    if (shouldQueue()) {
-      const { position, estimatedWait } = addToQueue(socket.id);
-      socket.emit('queued', { position, estimatedWait });
-
-      // Send server status
-      const memInfo = getMemoryInfo();
-      socket.emit('server-status', {
-        status: memInfo.status,
-        currentPlayers: memInfo.heapUsedMB,
-        maxPlayers: memInfo.maxMB,
-      });
-
-      log('Queue', `${player.user.fullName} queued at position ${position}`);
-      return;
-    }
-
-    // Prevent race condition by setting pending state immediately
-    socket.data.instanceId = 'pending';
-
-    // Get game mode from request (default to pixel-battle)
-    const gameMode = data?.gameMode ?? gameModes.getDefaultId();
-    const instance = findOrCreatePublicInstance(gameMode);
-
-    // Check if this browser is already in this instance (prevent duplicate tabs)
-    if (isBrowserInInstance(socket.data.browserId, instance.id)) {
-      socket.data.instanceId = null;
-      socket.emit('error', { code: 'DUPLICATE_SESSION', message: 'You are already in this game in another tab' });
-      return;
-    }
-
-    const result = addPlayerToInstance(instance, player);
-
-    if (!result.success) {
-      socket.data.instanceId = null; // Reset on failure
-      socket.emit('error', { code: 'JOIN_FAILED', message: result.error });
-      return;
-    }
-
-    // Remove from mode viewers (now in lobby, counted separately)
-    removeModeViewer(socket.id);
-
-    // Track browser in this instance
-    trackBrowserInInstance(socket.data.browserId, instance.id, socket.id);
-
-    // Add socket to room
-    socket.join(instance.id);
-    socket.data.instanceId = instance.id;
-
-    // Send confirmation
-    socket.emit('lobby-joined', {
-      instanceId: instance.id,
-      type: 'public',
-      hasPassword: false,
-      players: getInstancePlayers(instance).map(p => p.user),
-      spectator: result.spectator,
-      gameMode: instance.gameMode,
-      // Include lobby timer if active
-      ...(instance.phase === 'lobby' && instance.lobbyTimerEndsAt && {
-        timerEndsAt: instance.lobbyTimerEndsAt,
-      }),
-      // Include game state if joining mid-game
-      ...(instance.phase !== 'lobby' && {
-        phase: instance.phase,
-        prompt: instance.prompt,
-        promptIndices: instance.promptIndices,
-        timerEndsAt: getPhaseTimings(instance.id)?.phaseEndsAt,
-      }),
-      ...(instance.phase === 'voting' && {
-        votingRound: getVotingState(instance.id)?.currentRound,
-        votingTotalRounds: getVotingState(instance.id)?.totalRounds,
-      }),
-    });
-
-    // Inform other players
-    socket.to(instance.id).emit('player-joined', { user: player.user });
-
-    log('Lobby', `${player.user.fullName} joined public instance ${instance.id}`);
-  });
-
-  // Leave queue manually
-  socket.on('leave-queue', () => {
-    if (isInQueue(socket.id)) {
-      removeFromQueue(socket.id, 'manual');
-      log('Queue', `${player.user.fullName} left queue manually`);
-    }
-  });
-
-  // Create private room (with optional password)
-  socket.on('create-room', async (data) => {
-    if (socket.data.instanceId) {
-      socket.emit('error', { code: 'ALREADY_IN_GAME', message: 'Already in a game' });
-      return;
-    }
-
-    // Validate password if provided
-    if (data?.password) {
-      const pwValidation = validatePasswordFormat(data.password);
-      if (!pwValidation.valid) {
-        socket.emit('error', { code: 'INVALID_PASSWORD', message: pwValidation.error });
-        return;
-      }
-    }
-
-    // Prevent race condition
-    socket.data.instanceId = 'pending';
-
-    try {
-      const { code, instance, hasPassword } = await createPrivateRoom(player, {
-        password: data?.password,
-        gameMode: data?.gameMode,
-      });
-      addPlayerToInstance(instance, player);
-
-      // Track browser in this instance
-      trackBrowserInInstance(socket.data.browserId, instance.id, socket.id);
-
-      socket.join(instance.id);
-      socket.data.instanceId = instance.id;
-
-      socket.emit('room-created', {
-        code,
-        instanceId: instance.id,
-      });
-
-      socket.emit('lobby-joined', {
-        instanceId: instance.id,
-        type: 'private',
-        code,
-        isHost: true,
-        hasPassword,
-        players: [player.user],
-        spectator: false,
-        gameMode: instance.gameMode,
-      });
-
-      log('Lobby', `${player.user.fullName} created private room ${code}${hasPassword ? ' (password protected)' : ''}`);
-    } catch (error) {
-      socket.data.instanceId = null;
-      socket.emit('error', { code: 'CREATE_FAILED', message: 'Failed to create room' });
-      log('Error', `Failed to create room: ${error}`);
-    }
-  });
-
-  // Join private room (with optional password)
-  socket.on('join-room', async (data) => {
-    if (socket.data.instanceId) {
-      // Check if we can auto-leave (in results phase)
-      const currentInstance = findInstance(socket.data.instanceId);
-      if (currentInstance && currentInstance.phase === 'results') {
-        // Auto-leave from results phase
-        removePlayerFromInstance(currentInstance, player.id);
-        untrackBrowserFromInstance(socket.data.browserId, currentInstance.id);
-        socket.leave(currentInstance.id);
-        socket.data.instanceId = null;
-        log('Socket', `${player.user.fullName} auto-left from results phase to join room`);
-      } else {
-        socket.emit('error', { code: 'ALREADY_IN_GAME', message: 'Already in a game' });
-        return;
-      }
-    }
-
-    if (!data?.code || typeof data.code !== 'string') {
-      socket.emit('error', { code: 'INVALID_CODE', message: 'Invalid room code' });
-      return;
-    }
-
-    const roomCode = data.code.toUpperCase();
-    const ip = socket.data.ip || 'unknown';
-
-    // Brute-Force Protection: Check if blocked
-    if (isPasswordBlocked(ip, roomCode)) {
-      const remaining = getPasswordBlockRemaining(ip, roomCode);
-      socket.emit('error', {
-        code: 'PASSWORD_BLOCKED',
-        message: `Too many failed attempts. Try again in ${Math.ceil(remaining / 60000)} minutes.`,
-        retryAfter: remaining,
-      });
-      return;
-    }
-
-    const instance = findPrivateRoom(roomCode);
-
-    if (!instance) {
-      socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
-      return;
-    }
-
-    // Check password protection
-    if (instance.passwordHash) {
-      if (!data.password) {
-        // Client must send password
-        socket.emit('password-required', { code: roomCode });
-        return;
-      }
-
-      // Verify password
-      try {
-        const isValid = await verifyRoomPassword(roomCode, data.password);
-        if (!isValid) {
-          recordFailedPasswordAttempt(ip, roomCode);
-          socket.emit('error', { code: 'WRONG_PASSWORD', message: 'Incorrect password' });
-          return;
-        }
-
-        // Successful login - reset attempts
-        clearPasswordAttempts(ip, roomCode);
-      } catch (error) {
-        log('Error', `Password verification failed for room ${roomCode}: ${error}`);
-        socket.emit('error', { code: 'PASSWORD_VERIFICATION_FAILED', message: 'Password verification failed' });
-        return;
-      }
-    }
-
-    // Check if this browser is already in this instance (prevent duplicate tabs)
-    if (isBrowserInInstance(socket.data.browserId, instance.id)) {
-      socket.emit('error', { code: 'DUPLICATE_SESSION', message: 'You are already in this game in another tab' });
-      return;
-    }
-
-    // Prevent race condition
-    socket.data.instanceId = 'pending';
-
-    const result = addPlayerToInstance(instance, player);
-
-    if (!result.success) {
-      socket.data.instanceId = null; // Reset on failure
-      socket.emit('error', { code: 'JOIN_FAILED', message: result.error });
-      return;
-    }
-
-    // Remove from mode viewers (now in lobby, counted separately)
-    removeModeViewer(socket.id);
-
-    // Track browser in this instance
-    trackBrowserInInstance(socket.data.browserId, instance.id, socket.id);
-
-    socket.join(instance.id);
-    socket.data.instanceId = instance.id;
-
-    socket.emit('lobby-joined', {
-      instanceId: instance.id,
-      type: 'private',
-      code: instance.code,
-      isHost: instance.hostId === player.id,
-      hasPassword: !!instance.passwordHash,
-      players: getInstancePlayers(instance).map(p => p.user),
-      spectator: result.spectator,
-      gameMode: instance.gameMode,
-      // Include lobby timer if active
-      ...(instance.phase === 'lobby' && instance.lobbyTimerEndsAt && {
-        timerEndsAt: instance.lobbyTimerEndsAt,
-      }),
-      // Include game state if joining mid-game
-      ...(instance.phase !== 'lobby' && {
-        phase: instance.phase,
-        prompt: instance.prompt,
-        promptIndices: instance.promptIndices,
-        timerEndsAt: getPhaseTimings(instance.id)?.phaseEndsAt,
-      }),
-      ...(instance.phase === 'voting' && {
-        votingRound: getVotingState(instance.id)?.currentRound,
-        votingTotalRounds: getVotingState(instance.id)?.totalRounds,
-      }),
-    });
-
-    socket.to(instance.id).emit('player-joined', { user: player.user });
-
-    log('Lobby', `${player.user.fullName} joined private room ${roomCode}`);
-  });
-
-  // Change name (with strict validation)
-  socket.on('change-name', (data) => {
-    // Validate with Zod schema (incl. XSS prevention)
-    const validation = validate(UsernameSchema, data);
-    if (!validation.success) {
-      socket.emit('error', { code: 'INVALID_NAME', message: validation.error });
-      return;
-    }
-
-    player.user.displayName = validation.data.name;
-    player.user.fullName = createFullName(validation.data.name, player.user.discriminator);
-
-    socket.emit('name-changed', { user: player.user });
-
-    // Inform others in the instance
-    if (socket.data.instanceId && socket.data.instanceId !== 'pending') {
-      socket.to(socket.data.instanceId).emit('player-updated', {
-        playerId: player.id,
-        user: player.user,
-      });
-    }
-
-    log('User', `${player.id} changed name to ${player.user.fullName}`);
-  });
-
-  // Restore user from localStorage (persisted username across page reloads)
-  // Only displayName is stored client-side - discriminator is always random per session
-  socket.on('restore-user', (data) => {
-    if (!data?.displayName || typeof data.displayName !== 'string') {
-      return; // Silently ignore invalid data
-    }
-
-    // Validate display name
-    const validation = validate(UsernameSchema, { name: data.displayName });
-    if (!validation.success) {
-      return; // Silently ignore invalid names
-    }
-
-    // Only restore displayName - discriminator stays random (generated at connect)
-    // This prevents name+discriminator collisions when users reconnect
-    player.user.displayName = validation.data.name;
-    player.user.fullName = createFullName(validation.data.name, player.user.discriminator);
-
-    // Send updated user back to client (with server-generated discriminator)
-    socket.emit('connected', {
-      socketId: socket.id,
-      serverTime: Date.now(),
-      user: player.user,
-      sessionId: player.sessionId,
-    });
-
-    log('User', `${player.id} restored displayName from client: ${player.user.fullName}`);
-  });
-
-  // Lobby verlassen
-  socket.on('leave-lobby', () => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId || instanceId === 'pending') return;
-
-    const instance = findInstance(instanceId);
-    if (instance) {
-      removePlayerFromInstance(instance, player.id);
-      socket.to(instance.id).emit('player-left', { playerId: player.id, user: player.user });
-    }
-
-    // Untrack browser from instance
-    untrackBrowserFromInstance(socket.data.browserId, instanceId);
-
-    socket.leave(instanceId);
-    socket.data.instanceId = null;
-
-    socket.emit('left-lobby');
-    log('Lobby', `${player.user.fullName} left lobby`);
-  });
-}
-
-function registerHostHandlers(socket: TypedSocket, io: TypedServer, player: Player): void {
-  // Host starts game manually (private rooms only)
-  socket.on('host-start-game', () => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId) {
-      socket.emit('error', { code: 'NOT_IN_GAME' });
-      return;
-    }
-
-    const instance = findInstance(instanceId);
-    if (!instance) {
-      socket.emit('error', { code: 'INSTANCE_NOT_FOUND' });
-      return;
-    }
-
-    // Only host can start (and must still be in game)
-    if (instance.hostId !== player.id || !instance.players.has(player.id)) {
-      socket.emit('error', { code: 'NOT_HOST', message: 'Only the host can start the game' });
-      return;
-    }
-
-    // Check minimum players
-    if (instance.players.size < MIN_PLAYERS_TO_START) {
-      socket.emit('error', {
-        code: 'NOT_ENOUGH_PLAYERS',
-        message: `Need at least ${MIN_PLAYERS_TO_START} players`,
-      });
-      return;
-    }
-
-    // Start game
-    const result = startGameManually(instance);
-    if (!result.success) {
-      socket.emit('error', { code: 'START_FAILED', message: result.error });
-      return;
-    }
-
-    log('Host', `${player.user.fullName} started game in room ${instance.code}`);
-  });
-
-  // Host kicks player (private rooms only, only in lobby)
-  socket.on('host-kick-player', (data) => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId) {
-      socket.emit('error', { code: 'NOT_IN_GAME' });
-      return;
-    }
-
-    const instance = findInstance(instanceId);
-    if (!instance || instance.hostId !== player.id) {
-      socket.emit('error', { code: 'NOT_HOST' });
-      return;
-    }
-
-    if (instance.phase !== 'lobby') {
-      socket.emit('error', { code: 'GAME_IN_PROGRESS', message: 'Cannot kick during game' });
-      return;
-    }
-
-    if (!data?.playerId || typeof data.playerId !== 'string') {
-      socket.emit('error', { code: 'INVALID_PLAYER_ID' });
-      return;
-    }
-
-    const targetPlayer = instance.players.get(data.playerId);
-    if (!targetPlayer) {
-      socket.emit('error', { code: 'PLAYER_NOT_FOUND' });
-      return;
-    }
-
-    // Cannot kick self
-    if (data.playerId === player.id) {
-      socket.emit('error', { code: 'CANNOT_KICK_SELF' });
-      return;
-    }
-
-    removePlayerFromInstance(instance, data.playerId);
-
-    // Inform kicked player
-    io.to(targetPlayer.socketId).emit('kicked', { reason: 'Host kicked you' });
-    io.sockets.sockets.get(targetPlayer.socketId)?.leave(instance.id);
-
-    // Reset socket.data for kicked player and untrack browser
-    const kickedSocket = io.sockets.sockets.get(targetPlayer.socketId);
-    if (kickedSocket) {
-      untrackBrowserFromInstance(kickedSocket.data.browserId, instance.id);
-      kickedSocket.data.instanceId = null;
-    }
-
-    // Inform everyone
-    io.to(instance.id).emit('player-left', { playerId: data.playerId, user: targetPlayer.user, kicked: true });
-
-    log('Host', `${player.user.fullName} kicked ${targetPlayer.user.fullName}`);
-  });
-
-  // Host changes password (private rooms only)
-  socket.on('host-change-password', async (data) => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId || instanceId === 'pending') {
-      socket.emit('error', { code: 'NOT_IN_GAME' });
-      return;
-    }
-
-    const instance = findInstance(instanceId);
-    if (!instance || instance.hostId !== player.id) {
-      socket.emit('error', { code: 'NOT_HOST' });
-      return;
-    }
-
-    if (instance.type !== 'private') {
-      socket.emit('error', { code: 'NOT_PRIVATE_ROOM', message: 'Only private rooms can have passwords' });
-      return;
-    }
-
-    // Validate new password if provided
-    if (data?.password !== null && data?.password !== undefined) {
-      const pwValidation = validatePasswordFormat(data.password);
-      if (!pwValidation.valid) {
-        socket.emit('error', { code: 'INVALID_PASSWORD', message: pwValidation.error });
-        return;
-      }
-    }
-
-    try {
-      const result = await changeRoomPassword(instance, data?.password ?? null);
-      if (!result.success) {
-        socket.emit('error', { code: 'PASSWORD_CHANGE_FAILED', message: result.error });
-        return;
-      }
-
-      // Notify all players in the room
-      io.to(instance.id).emit('password-changed', { hasPassword: !!data?.password });
-
-      log('Host', `${player.user.fullName} ${data?.password ? 'set' : 'removed'} password for room ${instance.code}`);
-    } catch (error) {
-      log('Error', `Password change failed for room ${instance.code}: ${error}`);
-      socket.emit('error', { code: 'PASSWORD_CHANGE_FAILED', message: 'Password change failed' });
-      return;
-    }
-  });
-}
-
-function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Player): void {
-  // Submit drawing handler (with anti-cheat)
-  socket.on('submit-drawing', (data: unknown) => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId || instanceId === 'pending') {
-      socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
-      return;
-    }
-
-    const instance = findInstance(instanceId);
-    if (!instance) {
-      socket.emit('error', { code: 'INSTANCE_NOT_FOUND', message: 'Instance not found' });
-      return;
-    }
-
-    // Check phase
-    if (instance.phase !== 'drawing') {
-      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in drawing phase' });
-      return;
-    }
-
-    // Check timing (incl. grace period)
-    if (!isWithinPhaseTime(instanceId)) {
-      socket.emit('error', { code: 'TIME_EXPIRED', message: 'Submission time expired' });
-      return;
-    }
-
-    // Anti-bot: Minimum draw time (at least 3 seconds)
-    const MIN_DRAW_TIME = 3000;
-    const timings = getPhaseTimings(instanceId);
-    if (timings && Date.now() - timings.phaseStartedAt < MIN_DRAW_TIME) {
-      socket.emit('error', { code: 'TOO_FAST', message: 'Submitted too quickly' });
-      return;
-    }
-
-    // Only active players can submit
-    if (!instance.players.has(player.id)) {
-      socket.emit('error', { code: 'NOT_ACTIVE_PLAYER', message: 'Only active players can submit' });
-      return;
-    }
-
-    // Validate pixels
-    const validation = validate(PixelSchema, data);
-    if (!validation.success) {
-      socket.emit('error', { code: 'INVALID_PIXELS', message: validation.error });
-      return;
-    }
-
-    // Check minimum pixels
-    const minCheck = validateMinPixels(validation.data.pixels);
-    if (!minCheck.valid) {
-      socket.emit('error', {
-        code: 'TOO_FEW_PIXELS',
-        message: `Need at least ${CANVAS.MIN_PIXELS_SET} non-background pixels (you have ${minCheck.setPixels})`,
-      });
-      return;
-    }
-
-    // Already submitted? (Anti-double-submit)
-    const alreadySubmitted = instance.submissions.some((s) => s.playerId === player.id);
-    if (alreadySubmitted) {
-      socket.emit('error', { code: 'ALREADY_SUBMITTED', message: 'You already submitted' });
-      return;
-    }
-
-    // CopyCat mode (including solo) has special submission handling
-    if (instance.gameMode === 'copy-cat' || instance.gameMode === 'copy-cat-solo') {
-      const copyCatResult = handleCopyCatSubmission(instance, player.id, validation.data.pixels);
-      if (!copyCatResult.success) {
-        socket.emit('error', { code: 'SUBMIT_FAILED', message: copyCatResult.error });
-        return;
-      }
-
-      socket.emit('submission-received', {
-        success: true,
-        submissionCount: instance.submissions.length,
-      });
-
-      log('CopyCat', `${player.user.fullName} submitted drawing`);
-
-      // Inform everyone how many submitted
-      io.to(instance.id).emit('submission-count', {
-        count: instance.submissions.length,
-        total: instance.players.size,
-      });
-      return;
-    }
-
-    // Standard mode: Save submission
-    instance.submissions.push({
-      playerId: player.id,
-      pixels: validation.data.pixels,
-      timestamp: Date.now(),
-    });
-
-    socket.emit('submission-received', {
-      success: true,
-      submissionCount: instance.submissions.length,
-    });
-
-    log('Drawing', `${player.user.fullName} submitted drawing`);
-
-    // Inform everyone how many submitted
-    io.to(instance.id).emit('submission-count', {
-      count: instance.submissions.length,
-      total: instance.players.size,
-    });
-  });
-
-  // Vote handler (with anti-cheat)
-  socket.on('vote', (data: unknown) => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId || instanceId === 'pending') {
-      socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
-      return;
-    }
-
-    const instance = findInstance(instanceId);
-    if (!instance) {
-      socket.emit('error', { code: 'INSTANCE_NOT_FOUND', message: 'Instance not found' });
-      return;
-    }
-
-    // Check phase
-    if (instance.phase !== 'voting') {
-      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in voting phase' });
-      return;
-    }
-
-    // Check timing (incl. grace period)
-    if (!isWithinPhaseTime(instanceId)) {
-      socket.emit('error', { code: 'TIME_EXPIRED', message: 'Vote time expired' });
-      return;
-    }
-
-    // Validation
-    const validation = validate(VoteSchema, data);
-    if (!validation.success) {
-      socket.emit('error', { code: 'INVALID_VOTE', message: validation.error });
-      return;
-    }
-
-    // Anti-cheat: Cannot vote for self
-    if (validation.data.chosenId === player.id) {
-      socket.emit('error', { code: 'CANNOT_VOTE_SELF', message: 'Cannot vote for yourself' });
-      return;
-    }
-
-    // Get voting state
-    const state = getVotingState(instanceId);
-    if (!state) {
-      socket.emit('error', { code: 'VOTING_NOT_ACTIVE', message: 'Voting not active' });
-      return;
-    }
-
-    // Anti-cheat: Target must be in assignment
-    const assignment = state.assignments.find((a) => a.voterId === player.id);
-    if (!assignment) {
-      socket.emit('error', { code: 'NO_ASSIGNMENT', message: 'No voting assignment found' });
-      return;
-    }
-
-    if (validation.data.chosenId !== assignment.imageA && validation.data.chosenId !== assignment.imageB) {
-      socket.emit('error', { code: 'INVALID_TARGET', message: 'Invalid vote target' });
-      return;
-    }
-
-    // Process vote
-    const result = processVote(instance, state, player.id, validation.data.chosenId);
-
-    if (!result.success) {
-      socket.emit('error', { code: 'VOTE_FAILED', message: result.error });
-      return;
-    }
-
-    socket.emit('vote-received', {
-      success: true,
-      eloChange: result.eloChange,
-    });
-
-    log('Vote', `${player.user.fullName} voted for ${validation.data.chosenId}`);
-
-    // Check if all votes are in and end round early
-    checkAndTriggerEarlyVotingEnd(instanceId, instance);
-  });
-
-  // Finale vote handler (with anti-cheat)
-  socket.on('finale-vote', (data: unknown) => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId || instanceId === 'pending') {
-      socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
-      return;
-    }
-
-    const instance = findInstance(instanceId);
-    if (!instance || instance.phase !== 'finale') {
-      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in finale phase' });
-      return;
-    }
-
-    // Check timing (incl. grace period)
-    if (!isWithinPhaseTime(instanceId)) {
-      socket.emit('error', { code: 'TIME_EXPIRED', message: 'Finale vote time expired' });
-      return;
-    }
-
-    // Validation
-    const validation = validate(FinaleVoteSchema, data);
-    if (!validation.success) {
-      socket.emit('error', { code: 'INVALID_VOTE', message: validation.error });
-      return;
-    }
-
-    // Anti-cheat: Cannot vote for self
-    if (validation.data.playerId === player.id) {
-      socket.emit('error', { code: 'CANNOT_VOTE_SELF', message: 'Cannot vote for yourself' });
-      return;
-    }
-
-    const state = getVotingState(instanceId);
-    if (!state) {
-      socket.emit('error', { code: 'VOTING_NOT_ACTIVE', message: 'Finale not active' });
-      return;
-    }
-
-    // Anti-cheat: Target must be a finalist
-    if (!state.finalists.some((f) => f.playerId === validation.data.playerId)) {
-      socket.emit('error', { code: 'INVALID_TARGET', message: 'Invalid finalist' });
-      return;
-    }
-
-    // Process finale vote
-    const result = processFinaleVote(state, player.id, validation.data.playerId);
-
-    if (!result.success) {
-      socket.emit('error', { code: 'VOTE_FAILED', message: result.error });
-      return;
-    }
-
-    socket.emit('finale-vote-received', { success: true });
-    log('Finale', `${player.user.fullName} voted for ${validation.data.playerId}`);
-
-    // Check if all finale votes are in and end early
-    const totalVoters = instance.players.size + instance.spectators.size;
-    checkAndTriggerEarlyFinaleEnd(instanceId, instance, totalVoters);
-  });
-
-  // CopyCat Rematch Vote
-  socket.on('copycat-rematch-vote', (data: unknown) => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId || instanceId === 'pending') {
-      socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
-      return;
-    }
-
-    const instance = findInstance(instanceId);
-    if (!instance || instance.phase !== 'copycat-rematch') {
-      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in rematch phase' });
-      return;
-    }
-
-    // Rate limit check
-    if (!checkRateLimit(socket, 'copycat-rematch-vote')) {
-      socket.emit('error', { code: 'RATE_LIMITED', message: 'Too many requests' });
-      return;
-    }
-
-    // Check timing
-    if (!isWithinPhaseTime(instanceId)) {
-      socket.emit('error', { code: 'TIME_EXPIRED', message: 'Rematch vote time expired' });
-      return;
-    }
-
-    // Validate with Zod schema
-    const validation = validate(CopyCatRematchVoteSchema, data);
-    if (!validation.success) {
-      socket.emit('error', { code: 'INVALID_VOTE', message: validation.error });
-      return;
-    }
-
-    const wantsRematch = validation.data.wantsRematch;
-
-    // Only active players can vote
-    if (!instance.players.has(player.id)) {
-      socket.emit('error', { code: 'NOT_ACTIVE_PLAYER', message: 'Only active players can vote' });
-      return;
-    }
-
-    handleCopyCatRematchVote(instance, player.id, wantsRematch);
-    log('CopyCat', `${player.user.fullName} voted for rematch: ${wantsRematch}`);
-  });
-
-  // PixelGuesser: Artist draws (live updates)
-  socket.on('pixelguesser-draw', (data: unknown) => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId || instanceId === 'pending') {
-      return; // Silently ignore - high frequency event
-    }
-
-    const instance = findInstance(instanceId);
-    if (!instance || instance.gameMode !== 'pixel-guesser' || instance.phase !== 'guessing') {
-      return; // Silently ignore
-    }
-
-    // Rate limit (higher limit for drawing updates)
-    if (!checkRateLimit(socket, 'pixelguesser-draw')) {
-      return; // Silently ignore rate limit
-    }
-
-    // Validate
-    const validation = validate(PixelGuesserDrawSchema, data);
-    if (!validation.success) {
-      return; // Silently ignore invalid data
-    }
-
-    // Process drawing update
-    handlePixelGuesserDrawUpdate(instance, player.id, validation.data.pixels);
-  });
-
-  // PixelGuesser: Player guesses
-  socket.on('pixelguesser-guess', (data: unknown) => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId || instanceId === 'pending') {
-      socket.emit('error', { code: 'NOT_IN_GAME', message: 'Not in a game' });
-      return;
-    }
-
-    const instance = findInstance(instanceId);
-    if (!instance || instance.gameMode !== 'pixel-guesser') {
-      socket.emit('error', { code: 'WRONG_MODE', message: 'Not in PixelGuesser mode' });
-      return;
-    }
-
-    if (instance.phase !== 'guessing') {
-      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in guessing phase' });
-      return;
-    }
-
-    // Rate limit check
-    if (!checkRateLimit(socket, 'pixelguesser-guess')) {
-      socket.emit('error', { code: 'RATE_LIMITED', message: 'Too many guesses' });
-      return;
-    }
-
-    // Check timing
-    if (!isWithinPhaseTime(instanceId)) {
-      socket.emit('error', { code: 'TIME_EXPIRED', message: 'Guessing time expired' });
-      return;
-    }
-
-    // Validate
-    const validation = validate(PixelGuesserGuessSchema, data);
-    if (!validation.success) {
-      socket.emit('error', { code: 'INVALID_GUESS', message: validation.error });
-      return;
-    }
-
-    // Only active players can guess
-    if (!instance.players.has(player.id)) {
-      socket.emit('error', { code: 'NOT_ACTIVE_PLAYER', message: 'Only active players can guess' });
-      return;
-    }
-
-    const result = handlePixelGuesserGuess(instance, player.id, validation.data.guess);
-    if (!result.success && result.error) {
-      socket.emit('error', { code: 'GUESS_FAILED', message: result.error });
-    }
-  });
-
-  // ZombiePixel: Player movement
-  socket.on('zombie-move', (data) => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId || instanceId === 'pending') {
-      return; // Silently ignore - high frequency event
-    }
-
-    const instance = findInstance(instanceId);
-    if (!instance || instance.gameMode !== 'zombie-pixel' || instance.phase !== 'active') {
-      return; // Silently ignore
-    }
-
-    // Rate limit (higher limit for movement updates)
-    if (!checkRateLimit(socket, 'zombie-move')) {
-      return; // Silently ignore rate limit
-    }
-
-    // Validate
-    const validation = validate(ZombieMoveSchema, data);
-    if (!validation.success) {
-      return; // Silently ignore invalid data
-    }
-
-    // Process movement
-    handlePlayerMove(instance, player.id, validation.data.direction);
-  });
-
-  // CopyCat Royale: Submit drawing
-  socket.on('royale-submit', (data) => {
-    const instanceId = socket.data.instanceId;
-    if (!instanceId || instanceId === 'pending') {
-      socket.emit('error', { code: 'NOT_IN_GAME', message: 'You are not in a game' });
-      return;
-    }
-
-    const instance = findInstance(instanceId);
-    if (!instance || instance.gameMode !== 'copycat-royale') {
-      socket.emit('error', { code: 'INVALID_GAME_MODE', message: 'Not a CopyCat Royale game' });
-      return;
-    }
-
-    // Check phase
-    if (instance.phase !== 'royale-initial-drawing' && instance.phase !== 'royale-drawing') {
-      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in drawing phase' });
-      return;
-    }
-
-    // Rate limit
-    if (!checkRateLimit(socket, 'submit-drawing')) {
-      socket.emit('error', { code: 'RATE_LIMITED', message: 'Too many submissions' });
-      return;
-    }
-
-    // Validate pixels
-    const validation = validate(PixelSchema, data);
-    if (!validation.success) {
-      socket.emit('error', { code: 'INVALID_PIXELS', message: validation.error });
-      return;
-    }
-
-    // Handle submission
-    const result = handleRoyaleSubmission(instance, player.id, validation.data.pixels);
-    if (!result.success) {
-      socket.emit('error', { code: 'SUBMISSION_FAILED', message: result.error });
-      return;
-    }
-
-    socket.emit('submission-received', {
-      success: true,
-      submissionCount: instance.submissions.length,
-    });
-  });
-
-  // Session restoration (for reconnects)
-  socket.on('restore-session', (data) => {
-    if (!data?.sessionId || typeof data.sessionId !== 'string') {
-      socket.emit('session-restore-failed', { reason: 'Invalid session ID' });
-      return;
-    }
-
-    // Validate session token with timing-safe comparison
-    const tokenValidation = validateSessionToken(data.sessionId);
-    if (!tokenValidation.valid) {
-      socket.emit('session-restore-failed', {
-        reason: tokenValidation.expired ? 'Session expired (24h limit)' : 'Invalid session'
-      });
-      return;
-    }
-
-    const result = handlePlayerReconnect(data.sessionId, socket.id);
-
-    if (!result.success || !result.player || !result.instanceId) {
-      socket.emit('session-restore-failed', { reason: 'Session not found or expired' });
-      return;
-    }
-
-    // Extract for TypeScript narrowing
-    const player = result.player;
-
-    // Update socket data
-    socket.data.player = player;
-    socket.data.instanceId = result.instanceId;
-
-    // Rejoin room
-    socket.join(result.instanceId);
-
-    const instance = findInstance(result.instanceId);
-    if (!instance) {
-      socket.emit('session-restore-failed', { reason: 'Instance no longer exists' });
-      return;
-    }
-
-    // Build phase-specific state
-    let phaseState: PhaseState | undefined = undefined;
-
-    const timings = getPhaseTimings(instance.id);
-    const timer = timings && timings.phaseEndsAt > Date.now()
-      ? { duration: timings.phaseEndsAt - timings.phaseStartedAt, endsAt: timings.phaseEndsAt }
-      : undefined;
-
-    if (instance.phase === 'lobby') {
-      phaseState = { phase: 'lobby' };
-    } else if (instance.phase === 'countdown') {
-      phaseState = { phase: 'countdown' };
-    } else if (instance.phase === 'results') {
-      phaseState = { phase: 'results' };
-    } else if (instance.phase === 'drawing') {
-      phaseState = {
-        phase: 'drawing',
-        timer,
-        hasSubmitted: instance.submissions.some(s => s.playerId === player.id),
-        submissionCount: instance.submissions.length,
-      };
-    } else if (instance.phase === 'voting') {
-      const votingState = getVotingState(instance.id);
-      if (votingState) {
-        const assignment = votingState.assignments.find(a => a.voterId === player.id);
-        let votingAssignment;
-        if (assignment) {
-          const imageA = instance.submissions.find(s => s.playerId === assignment.imageA);
-          const imageB = instance.submissions.find(s => s.playerId === assignment.imageB);
-          if (imageA && imageB) {
-            votingAssignment = {
-              imageA: { playerId: imageA.playerId, pixels: imageA.pixels },
-              imageB: { playerId: imageB.playerId, pixels: imageB.pixels },
-            };
-          }
-        }
-        phaseState = {
-          phase: 'voting',
-          timer,
-          currentRound: votingState.currentRound,
-          totalRounds: votingState.totalRounds,
-          hasVoted: votingState.votersVoted.has(player.id),
-          votingAssignment,
-        };
-      }
-    } else if (instance.phase === 'finale') {
-      const votingState = getVotingState(instance.id);
-      if (votingState) {
-        phaseState = {
-          phase: 'finale',
-          timer,
-          finalists: votingState.finalists,
-          finaleVoted: votingState.votersVoted.has(player.id),
-        };
-      }
-    }
-
-    // Send session restored event with full game state
-    socket.emit('session-restored', {
-      instanceId: result.instanceId,
-      user: player.user,
-      phase: instance.phase,
-      prompt: instance.prompt,
-      promptIndices: instance.promptIndices,
-      players: getInstancePlayers(instance).map(p => p.user),
-      isSpectator: instance.spectators.has(player.id),
-      phaseState,
-      gameMode: instance.gameMode,
-    });
-
-    log('Reconnect', `Session restored for ${player.user.fullName}`);
-  });
-}
-
+/**
+ * Handle player disconnect with cleanup
+ */
 function handleDisconnect(socket: TypedSocket, player: Player, reason: string): void {
   log('Socket', `Disconnected: ${socket.id} (${reason})`);
 
@@ -1445,4 +103,124 @@ function handleDisconnect(socket: TypedSocket, player: Player, reason: string): 
     // Not in a game, clean up session token
     removeSessionToken(player.sessionId);
   }
+}
+
+/**
+ * Main socket handler setup
+ */
+export function setupSocketHandlers(io: TypedServer): void {
+  // Make IO instance available for instance manager
+  setIoInstance(io as unknown as Server);
+  setQueueIo(io as unknown as Server);
+
+  // Start periodic session cleanup
+  startSessionCleanup();
+
+  // Broadcast online count every 5 seconds (total + per game mode)
+  setInterval(() => {
+    io.emit('online-count', {
+      count: getTotalConnections(),
+      total: getTotalConnections(),
+      byMode: getPlayerCountsByMode(),
+    });
+  }, 5000);
+
+  // Setup connection middleware (DoS protection, IP tracking)
+  setupConnectionMiddleware(io);
+
+  // Handle new connections
+  io.on('connection', (socket: TypedSocket) => {
+    log('Socket', `Connected: ${socket.id} from ${socket.data.ip}`);
+
+    // Initialize player
+    const player = initializePlayer(socket);
+
+    // Send available game modes to client
+    socket.emit('game-modes', {
+      available: gameModes.getAllInfo(),
+      default: gameModes.getDefaultId(),
+    });
+
+    // Rate limiting middleware for all events
+    socket.use((packet, next) => {
+      const [event] = packet;
+
+      // Global event rate limit
+      if (!checkRateLimit(socket, 'global')) {
+        return next(new Error('RATE_LIMITED'));
+      }
+
+      // Event-specific rate limit
+      if (!checkRateLimit(socket, event)) {
+        return next(new Error('RATE_LIMITED'));
+      }
+
+      next();
+    });
+
+    // Idle timeout with warning
+    let lastActivity = Date.now();
+    let warningSent = false;
+
+    socket.onAny(() => {
+      lastActivity = Date.now();
+      warningSent = false; // Reset warning on any activity
+    });
+
+    const idleCheck = setInterval(() => {
+      const idleTime = Date.now() - lastActivity;
+
+      // Disconnect after full timeout
+      if (idleTime > DOS.IDLE_TIMEOUT) {
+        socket.emit('idle-disconnect', { reason: 'Inactivity' });
+        socket.disconnect(true);
+        return;
+      }
+
+      // Warning before disconnect (1 minute left)
+      if (idleTime > DOS.IDLE_WARNING && !warningSent) {
+        const timeLeft = Math.ceil((DOS.IDLE_TIMEOUT - idleTime) / 1000);
+        socket.emit('idle-warning', { timeLeft });
+        warningSent = true;
+      }
+    }, 30_000); // Check every 30 seconds
+
+    // Send welcome event
+    socket.emit('connected', {
+      socketId: socket.id,
+      serverTime: Date.now(),
+      user: player.user,
+      sessionId: player.sessionId,
+    });
+
+    // Register all event handlers
+    registerLobbyHandlers(socket, io, player);
+    registerHostHandlers(socket, io, player);
+    registerGameHandlers(socket, io, player);
+
+    // Register mode-specific handlers
+    registerCopyCatHandlers(socket, io, player);
+    registerPixelGuesserHandlers(socket, io, player);
+    registerZombiePixelHandlers(socket, io, player);
+    registerCopyCatRoyaleHandlers(socket, io, player);
+
+    // Handle disconnect
+    socket.on('disconnect', (reason) => {
+      clearInterval(idleCheck);
+
+      // Connection tracking cleanup
+      const ip = socket.data.ip;
+      if (ip) {
+        unregisterConnection(socket, ip);
+      }
+
+      // Mode viewer cleanup
+      removeModeViewer(socket.id);
+
+      // Fingerprint cleanup
+      removeSocketFingerprint(socket);
+
+      handleDisconnect(socket, player, reason);
+    });
+  });
 }

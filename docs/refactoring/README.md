@@ -7,8 +7,8 @@ Dieses Verzeichnis enthält die Dokumentation für alle geplanten Refactoring-Ma
 | # | Bereich | Status | Priorität |
 |---|---------|--------|-----------|
 | 1 | [Phase-Management](./01-phases.md) | In Arbeit | KRITISCH |
-| 2 | [Socket-Handler](./02-socket-handlers.md) | Offen | KRITISCH |
-| 3 | [Server: Weitere](./03-server-weitere.md) | Offen | MITTEL |
+| 2 | [Socket-Handler](./02-socket-handlers.md) | ✅ Abgeschlossen | KRITISCH |
+| 3 | [Server: Weitere](./03-server-weitere.md) | ✅ Abgeschlossen | MITTEL |
 | 4 | [Frontend: Komponenten](./04-frontend-komponenten.md) | Offen | HOCH |
 | 5 | [Frontend: Mode-Metadaten](./05-mode-metadaten.md) | Offen | HOCH |
 | 6 | [Frontend: Phasen-Routing](./06-phasen-routing.md) | Offen | MITTEL |
@@ -24,8 +24,8 @@ Dieses Verzeichnis enthält die Dokumentation für alle geplanten Refactoring-Ma
 ### Server-Refactoring
 
 3. **[Phase-Management](./01-phases.md)** — In Arbeit
-4. **[Socket-Handler](./02-socket-handlers.md)** — God-Object auflösen
-5. **[Server: Weitere](./03-server-weitere.md)** — debug.ts, ZombiePixel-Subsysteme
+4. **[Socket-Handler](./02-socket-handlers.md)** — ✅ Abgeschlossen (1.454 → 230 Zeilen)
+5. **[Server: Weitere](./03-server-weitere.md)** — ✅ debug.ts (973→31), itemSystem (689→176), gameLoop (666→441)
 
 ### Frontend-Komponenten
 

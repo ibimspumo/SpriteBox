@@ -8,7 +8,17 @@ description: Node.js server internals and data management
 ```
 apps/server/src/
 ├── index.ts         # Entry point, Express setup
-├── socket.ts        # WebSocket event handlers
+├── socket.ts        # WebSocket setup & connection handling
+├── handlers/        # Socket event handlers (refactored)
+│   ├── index.ts         # Barrel exports
+│   ├── types.ts         # Handler types
+│   ├── session.ts       # Session management
+│   ├── connection.ts    # DoS protection
+│   ├── common.ts        # Shared utilities
+│   ├── lobby.ts         # Join/leave handlers
+│   ├── host.ts          # Host controls
+│   ├── game.ts          # Core game handlers
+│   └── modes/           # Mode-specific handlers
 ├── instance.ts      # Game instance management
 ├── phases.ts        # Phase state machine
 ├── gameModes/       # Game mode system
@@ -16,18 +26,22 @@ apps/server/src/
 │   ├── registry.ts      # Mode registration
 │   ├── types.ts         # Mode interfaces
 │   ├── helpers.ts       # Shared utilities
-│   └── modes/
-│       ├── pixelBattle.ts   # Classic (5-100 players)
-│       ├── copyCat.ts       # 1v1 memory duel
-│       ├── pixelGuesser.ts  # Pictionary-style
-│       └── pixelSurvivor.ts # Solo roguelike
+│   └── zombiePixel/     # ZombiePixel mode
+│       ├── index.ts
+│       ├── gameLoop.ts
+│       └── systems/     # Game subsystems
+├── bots/            # Bot/debug system
+│   ├── index.ts         # Barrel exports
+│   ├── BotController.ts # Bot orchestration
+│   ├── handlers/        # Phase handlers
+│   └── drawing/         # Pattern generators
 ├── voting/          # Voting strategies
 │   ├── index.ts         # Strategy factory
 │   └── strategies/
 │       ├── EloVotingStrategy.ts
 │       └── NoVotingStrategy.ts
 ├── validation.ts    # Zod schemas
-├── rateLimit.ts     # DoS protection
+├── rateLimit.ts     # Rate limiting
 └── types.ts         # TypeScript definitions
 ```
 

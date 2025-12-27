@@ -15,7 +15,17 @@ description: Node.js Server-Implementierung
 ```
 apps/server/src/
 ├── index.ts          # Einstiegspunkt, Express-Setup
-├── socket.ts         # Socket.io Event-Handler
+├── socket.ts         # WebSocket-Setup & Verbindungshandling
+├── handlers/         # Socket Event-Handler (refaktoriert)
+│   ├── index.ts          # Barrel-Exports
+│   ├── types.ts          # Handler-Typen
+│   ├── session.ts        # Session-Verwaltung
+│   ├── connection.ts     # DoS-Schutz
+│   ├── common.ts         # Gemeinsame Hilfsfunktionen
+│   ├── lobby.ts          # Join/Leave-Handler
+│   ├── host.ts           # Host-Steuerung
+│   ├── game.ts           # Kern-Spiel-Handler
+│   └── modes/            # Modus-spezifische Handler
 ├── instance.ts       # Spielinstanz-Verwaltung
 ├── phases.ts         # Phasen-State-Machine
 ├── gameModes/        # Spielmodus-System
@@ -23,18 +33,22 @@ apps/server/src/
 │   ├── registry.ts       # Modus-Registrierung
 │   ├── types.ts          # Modus-Interfaces
 │   ├── helpers.ts        # Hilfsfunktionen
-│   └── modes/
-│       ├── pixelBattle.ts    # Klassisch (5-100 Spieler)
-│       ├── copyCat.ts        # 1v1 Gedächtnisduell
-│       ├── pixelGuesser.ts   # Pictionary-Stil
-│       └── pixelSurvivor.ts  # Solo-Roguelike
+│   └── zombiePixel/      # ZombiePixel-Modus
+│       ├── index.ts
+│       ├── gameLoop.ts
+│       └── systems/      # Spiel-Subsysteme
+├── bots/             # Bot/Debug-System
+│   ├── index.ts          # Barrel-Exports
+│   ├── BotController.ts  # Bot-Orchestrierung
+│   ├── handlers/         # Phasen-Handler
+│   └── drawing/          # Muster-Generatoren
 ├── voting/           # Abstimmungssystem
 │   ├── index.ts          # Strategie-Factory
 │   └── strategies/
 │       ├── EloVotingStrategy.ts
 │       └── NoVotingStrategy.ts
 ├── validation.ts     # Zod-Schemas
-├── rateLimit.ts      # DoS-Schutz
+├── rateLimit.ts      # Rate-Limiting
 └── types.ts          # TypeScript-Typdefinitionen
 ```
 
