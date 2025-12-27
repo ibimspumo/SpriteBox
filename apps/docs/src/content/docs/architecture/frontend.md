@@ -37,29 +37,51 @@ components/
 │   │   ├── LobbyMenu.svelte  # Public/Private selection
 │   │   └── LobbyRoom.svelte  # Room view with players
 │   ├── Drawing.svelte        # Drawing phase
-│   ├── Voting.svelte         # Voting rounds
+│   ├── Voting.svelte         # Voting phase (uses Voting/)
+│   ├── Voting/               # Voting sub-components
+│   │   ├── VotingContenderCard.svelte  # Contender display
+│   │   └── VSBadge.svelte              # VS indicator
 │   ├── Finale.svelte         # Top 10% finale
-│   ├── Results.svelte        # Results with podium
+│   ├── Results.svelte        # Results (uses Results/)
+│   ├── Results/              # Results sub-components
+│   │   ├── ResultsPodium.svelte    # Top 3 podium
+│   │   ├── PodiumSlot.svelte       # Individual podium slot
+│   │   ├── ResultsGallery.svelte   # Full gallery view
+│   │   └── GalleryItemCard.svelte  # Gallery item
+│   ├── Countdown.svelte      # Pre-game countdown
 │   ├── CopyCat/              # 1v1 Memory Mode
 │   │   ├── Memorize.svelte       # Reference image display
 │   │   ├── CopyCatResult.svelte  # Accuracy comparison
 │   │   └── CopyCatRematch.svelte # Rematch voting
+│   ├── CopyCatRoyale/        # Battle Royale Mode (NEW)
+│   │   ├── index.svelte              # Container (routes phases)
+│   │   ├── RoyaleInitialDrawing.svelte  # Create original art
+│   │   ├── RoyaleShowReference.svelte   # Memorize phase
+│   │   ├── RoyaleDrawing.svelte         # Recreate from memory
+│   │   ├── RoyaleResults.svelte         # Round results
+│   │   └── RoyaleWinner.svelte          # Winner announcement
 │   ├── PixelGuesser/         # Pictionary Mode
 │   │   ├── Guessing.svelte       # Live drawing + guessing
 │   │   ├── Reveal.svelte         # Answer reveal
 │   │   └── FinalResults.svelte   # Game rankings
-│   └── PixelSurvivor/        # Roguelike Mode (11 components)
-│       ├── Menu.svelte           # New run/continue/stats
-│       ├── CharacterCreation.svelte # Draw character
-│       ├── DayStart.svelte       # Daily intro
-│       ├── Event.svelte          # Challenge description
-│       ├── Result.svelte         # Event outcome
-│       ├── LevelUp.svelte        # Stat upgrades
-│       ├── BossBattle.svelte     # Day 30 boss
-│       ├── GameOver.svelte       # Defeat screen
-│       ├── Victory.svelte        # Win screen
-│       ├── Statistics.svelte     # Run history
-│       └── HowToPlay.svelte      # Tutorial
+│   ├── PixelSurvivor/        # Roguelike Mode
+│   │   ├── Menu.svelte           # New run/continue/stats
+│   │   ├── Gameplay.svelte       # Main gameplay loop
+│   │   ├── Combat/               # Combat sub-system
+│   │   │   ├── index.svelte          # Combat container
+│   │   │   ├── CombatArena.svelte    # Battle view
+│   │   │   ├── CombatActions.svelte  # Action buttons
+│   │   │   └── CombatResult.svelte   # Battle outcome
+│   │   └── ... (10+ components)
+│   └── ZombiePixel/          # Real-time Infection Mode (NEW)
+│       ├── index.svelte          # Game container
+│       ├── ZombieGrid.svelte     # Canvas-based 32x32 grid
+│       ├── ZombieGridLegend.svelte   # Legend display
+│       ├── ZombieControls.svelte     # Touch/keyboard controls
+│       ├── ZombieHUD.svelte          # Status display
+│       ├── ZombieResults.svelte      # End-game results
+│       ├── zombieGridConstants.ts    # Rendering config
+│       └── zombieGridRenderers.ts    # Canvas helpers
 │
 ├── utility/         # Functional components
 │   ├── PixelCanvas.svelte    # 8x8 drawing canvas
@@ -127,7 +149,18 @@ interface LobbyState {
 
 ### Game State
 ```typescript
-type GamePhase = 'idle' | 'lobby' | 'countdown' | 'drawing' | 'voting' | 'finale' | 'results';
+type GamePhase =
+  // Standard phases
+  | 'idle' | 'lobby' | 'countdown' | 'drawing' | 'voting' | 'finale' | 'results'
+  // CopyCat phases
+  | 'memorize' | 'copycat-result' | 'copycat-rematch'
+  // PixelGuesser phases
+  | 'guessing' | 'reveal' | 'pixelguesser-results'
+  // ZombiePixel phases
+  | 'active'
+  // CopyCatRoyale phases
+  | 'royale-initial-drawing' | 'royale-show-reference'
+  | 'royale-drawing' | 'royale-results' | 'royale-winner';
 
 interface GameState {
   phase: GamePhase;

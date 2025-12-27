@@ -2,14 +2,16 @@
 <script lang="ts">
   import { availableGameModes, selectedGameMode, type GameModeInfo } from '$lib/stores';
   import { t } from '$lib/i18n';
+  import { getModeMetadata } from '$lib/modeMetadata';
 
   function getDisplayName(mode: GameModeInfo): string {
-    // Use explicit mapping instead of fragile string manipulation
-    const modeNames: Record<string, string> = {
-      'pixel-battle': $t.modeSelection.classic.name,
-      'copy-cat': $t.modeSelection.copycat.name,
-    };
-    return modeNames[mode.id] || mode.displayName;
+    // Use central metadata system for mode names
+    const metadata = getModeMetadata(mode.id);
+    if (metadata) {
+      const key = metadata.selectionKey;
+      return $t.modeSelection[key]?.name ?? mode.displayName;
+    }
+    return mode.displayName;
   }
 
   function selectMode(modeId: string): void {

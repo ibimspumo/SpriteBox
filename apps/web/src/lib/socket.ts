@@ -2,480 +2,62 @@
 import { io, type Socket } from 'socket.io-client';
 import { browser } from '$app/environment';
 
-// Types for events (should match server)
-export interface ServerToClientEvents {
-  connected: (data: { socketId: string; serverTime: number; user: User; sessionId: string }) => void;
-  error: (data: { code: string; message?: string; retryAfter?: number }) => void;
-  'lobby-joined': (data: LobbyJoinedData) => void;
-  'player-joined': (data: { user: User }) => void;
-  'player-left': (data: { playerId: string; kicked?: boolean }) => void;
-  'player-updated': (data: { playerId: string; user: User }) => void;
-  'player-disconnected': (data: { playerId: string; user: User; timestamp: number }) => void;
-  'player-reconnected': (data: { playerId: string; user: User; timestamp: number }) => void;
-  'lobby-timer-started': (data: { duration: number; startsAt: number }) => void;
-  'lobby-timer-cancelled': () => void;
-  'phase-changed': (data: PhaseChangedData) => void;
-  'submission-received': (data: { success: boolean; submissionCount: number }) => void;
-  'voting-round': (data: VotingRoundData) => void;
-  'vote-received': (data: { success: boolean; eloChange?: { winner: number; loser: number } }) => void;
-  'finale-start': (data: FinaleData) => void;
-  'game-results': (data: GameResultsData) => void;
-  'name-changed': (data: { user: User }) => void;
-  'kicked': (data: { reason: string }) => void;
-  'idle-warning': (data: { timeLeft: number }) => void;
-  'idle-disconnect': (data: { reason: string }) => void;
-  'session-restored': (data: SessionRestoredData) => void;
-  'session-restore-failed': (data: { reason: string }) => void;
-  'instance-closing': (data: { reason: string }) => void;
-  'password-required': (data: { code: string }) => void;
-  'password-changed': (data: { hasPassword: boolean }) => void;
-  'room-created': (data: { code: string; instanceId: string }) => void;
-  'online-count': (data: { count: number }) => void;
-  'game-modes': (data: GameModesData) => void;
-  'copycat-reference': (data: { referenceImage: string; duration: number; endsAt: number }) => void;
-  'copycat-results': (data: CopyCatResultsData) => void;
-  'copycat-rematch-prompt': (data: { duration: number; endsAt: number }) => void;
-  'copycat-rematch-vote': (data: { playerId: string; wantsRematch: boolean }) => void;
-  'copycat-rematch-result': (data: { rematch: boolean; reason: 'both-yes' | 'declined' | 'timeout' }) => void;
-  // PixelGuesser mode events
-  'pixelguesser-round-start': (data: PixelGuesserRoundStartData) => void;
-  'pixelguesser-drawing-update': (data: { pixels: string }) => void;
-  'pixelguesser-guess-result': (data: { correct: boolean; guess: string; message?: string }) => void;
-  'pixelguesser-correct-guess': (data: PixelGuesserCorrectGuessData) => void;
-  'pixelguesser-reveal': (data: PixelGuesserRevealData) => void;
-  'pixelguesser-final-results': (data: PixelGuesserFinalResultsData) => void;
-  // ZombiePixel mode events
-  'zombie-game-state': (data: ZombieGameStateData) => void;
-  'zombie-roles-assigned': (data: ZombieRolesAssignedData) => void;
-  'zombie-infection': (data: ZombieInfectionData) => void;
-  'zombie-healed': (data: ZombieHealedData) => void;
-  'zombie-item-spawned': (data: ZombieItemSpawnedData) => void;
-  'zombie-game-end': (data: ZombieGameEndData) => void;
-  'zombie-lobby-update': (data: ZombieLobbyUpdateData) => void;
-  // CopyCat Royale mode events
-  'royale-initial-drawing': (data: RoyaleInitialDrawingData) => void;
-  'royale-show-reference': (data: RoyaleShowReferenceData) => void;
-  'royale-drawing': (data: RoyaleDrawingData) => void;
-  'royale-round-results': (data: RoyaleRoundResultsData) => void;
-  'royale-player-eliminated': (data: RoyalePlayerEliminatedData) => void;
-  'royale-finale': (data: RoyaleFinaleData) => void;
-  'royale-winner': (data: RoyaleWinnerData) => void;
-  'royale-you-eliminated': (data: RoyaleYouEliminatedData) => void;
-}
+// Re-export types from @spritebox/types for backwards compatibility
+export type {
+  // Core types
+  User,
+  Prompt,
+  PromptIndices,
+  GameModeStats,
+  // Socket event types
+  ServerToClientEvents,
+  ClientToServerEvents,
+  LobbyJoinedData,
+  PhaseChangedData,
+  VotingRoundData,
+  FinaleStartData,
+  FinaleStartData as FinaleData,  // Alias for backwards compatibility
+  GameResultsData,
+  SessionRestoredData,
+  GameModeInfoData,
+  GameModesData,
+  // CopyCat types
+  CopyCatPlayerResult,
+  CopyCatResultEntry,
+  CopyCatResultsData as CopyCatResultsData,
+  // PixelGuesser types
+  PixelGuesserScoreEntry,
+  PixelGuesserRoundStartData,
+  PixelGuesserCorrectGuessData,
+  PixelGuesserRevealData,
+  PixelGuesserFinalResultsData,
+  // ZombiePixel types
+  ZombiePixelPlayerData,
+  ZombieItemData,
+  ZombieEffectData,
+  ZombieGameStateData,
+  ZombieRolesAssignedData,
+  ZombieInfectionData,
+  ZombieHealedData,
+  ZombieItemSpawnedData,
+  ZombiePixelStatsData,
+  ZombieGameEndData,
+  ZombieLobbyUpdateData,
+  // CopyCat Royale types
+  RoyalePlayerRoundResult,
+  RoyaleFinalRanking,
+  RoyaleInitialDrawingData,
+  RoyaleShowReferenceData,
+  RoyaleDrawingData,
+  RoyaleRoundResultsData,
+  RoyalePlayerEliminatedData,
+  RoyaleFinaleData,
+  RoyaleWinnerData,
+  RoyaleYouEliminatedData,
+} from '@spritebox/types';
 
-// Persistent stats per game mode
-export interface GameModeStats {
-  gamesPlayed: number;
-  wins: number;
-  top3: number;
-  currentWinStreak: number;
-  bestWinStreak: number;
-  bestAccuracy?: number;  // CopyCat specific
-}
-
-export interface CopyCatPlayerResult {
-  playerId: string;
-  user: User;
-  pixels: string;
-  accuracy: number;
-  matchingPixels: number;
-  submitTime: number;
-}
-
-export interface CopyCatResultsData {
-  referenceImage: string | null;
-  results: CopyCatPlayerResult[];
-  winner: CopyCatPlayerResult | null;
-  isDraw: boolean;
-  duration: number;
-  endsAt: number;
-}
-
-// PixelGuesser mode types
-export interface PixelGuesserScoreEntry {
-  playerId: string;
-  user: User;
-  score: number;
-  roundScore: number;
-  wasArtist: boolean;
-  guessedCorrectly: boolean;
-  guessTime?: number;
-}
-
-export interface PixelGuesserRoundStartData {
-  round: number;
-  totalRounds: number;
-  artistId: string;
-  artistUser: User;
-  isYouArtist: boolean;
-  secretPrompt?: string;
-  secretPromptIndices?: PromptIndices;
-  duration: number;
-  endsAt: number;
-}
-
-export interface PixelGuesserCorrectGuessData {
-  playerId: string;
-  user: User;
-  points: number;
-  timeMs: number;
-  position: number;
-  remainingGuessers: number;
-}
-
-export interface PixelGuesserRevealData {
-  secretPrompt: string;
-  secretPromptIndices?: PromptIndices;
-  artistId: string;
-  artistUser: User;
-  artistPixels: string;
-  scores: PixelGuesserScoreEntry[];
-  duration: number;
-  endsAt: number;
-}
-
-export interface PixelGuesserFinalResultsData {
-  rankings: PixelGuesserScoreEntry[];
-  totalRounds: number;
-  duration: number;
-  endsAt: number;
-}
-
-// ZombiePixel mode types
-export interface ZombiePixelPlayerData {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  isZombie: boolean;
-  isBot: boolean;
-  hasHealingItem: boolean;
-}
-
-export interface ZombieItemData {
-  id: string;
-  type: string;
-  x: number;
-  y: number;
-  icon: string;
-  color: string;
-}
-
-export interface ZombieEffectData {
-  id: string;
-  type: string;
-  affectedId: string;
-  expiresAt: number | null;
-  remainingUses: number | null;
-}
-
-export interface ZombieGameStateData {
-  players: ZombiePixelPlayerData[];
-  timeRemaining: number;
-  survivorCount: number;
-  zombieCount: number;
-  items: ZombieItemData[];
-  effects: ZombieEffectData[];
-  zombieSpeedBoostActive: boolean;
-  zombieSpeedBoostRemaining: number;
-  playersWithHealingTouch: string[];
-}
-
-export interface ZombieRolesAssignedData {
-  yourId: string;
-  yourRole: 'zombie' | 'survivor';
-  yourPosition: { x: number; y: number };
-  survivorCount: number;
-  zombieCount: number;
-}
-
-export interface ZombieInfectionData {
-  victimId: string;
-  victimName: string;
-  zombieId: string;
-  zombieName: string;
-  survivorsRemaining: number;
-  timerExtendedBy?: number;
-}
-
-export interface ZombieHealedData {
-  healedId: string;
-  healedName: string;
-  healerId: string;
-  healerName: string;
-}
-
-export interface ZombieItemSpawnedData {
-  id: string;
-  type: string;
-  x: number;
-  y: number;
-  icon: string;
-  color: string;
-  visibility: 'zombies' | 'survivors' | 'all';
-}
-
-export interface ZombiePixelStatsData {
-  totalInfections: number;
-  gameDuration: number;
-  firstInfectionTime: number | null;
-  mostInfections: { playerId: string; name: string; count: number } | null;
-  longestSurvivor: { playerId: string; name: string; survivalTime: number } | null;
-}
-
-export interface ZombieGameEndData {
-  winner: { id: string; name: string; isBot: boolean } | null;
-  zombiesWin: boolean;
-  stats: ZombiePixelStatsData;
-}
-
-export interface ZombieLobbyUpdateData {
-  playerCount: number;
-  readyCount: number;
-}
-
-// CopyCat Royale mode data types
-export interface RoyaleInitialDrawingData {
-  duration: number;
-  endsAt: number;
-}
-
-export interface RoyaleShowReferenceData {
-  referenceImage: string;
-  imageCreator: string;
-  round: number;
-  totalRounds: number;
-  remainingPlayers: number;
-  duration: number;
-  endsAt: number;
-}
-
-export interface RoyaleDrawingData {
-  round: number;
-  duration: number;
-  endsAt: number;
-}
-
-export interface RoyalePlayerRoundResult {
-  playerId: string;
-  user: User;
-  pixels: string;
-  accuracy: number;
-  matchingPixels: number;
-  submitTime: number;
-  wasEliminated: boolean;
-  finalRank?: number;
-}
-
-export interface RoyaleRoundResultsData {
-  round: number;
-  referenceImage: string;
-  results: RoyalePlayerRoundResult[];
-  eliminated: string[];
-  surviving: string[];
-  eliminationThreshold: number;
-  duration: number;
-  endsAt: number;
-}
-
-export interface RoyalePlayerEliminatedData {
-  playerId: string;
-  user: User;
-  round: number;
-  accuracy: number;
-  finalRank: number;
-}
-
-export interface RoyaleFinaleData {
-  finalists: User[];
-  round: number;
-}
-
-export interface RoyaleFinalRanking {
-  playerId: string;
-  user: User;
-  finalRank: number;
-  eliminatedInRound: number | null;
-  averageAccuracy: number;
-  totalRoundsPlayed: number;
-}
-
-export interface RoyaleWinnerData {
-  winner: User;
-  winnerId: string;
-  winnerPixels: string;
-  winningAccuracy: number;
-  totalRounds: number;
-  allResults: RoyaleFinalRanking[];
-  duration: number;
-  endsAt: number;
-}
-
-export interface RoyaleYouEliminatedData {
-  round: number;
-  accuracy: number;
-  finalRank: number;
-  totalPlayers: number;
-}
-
-export interface ClientToServerEvents {
-  ping: (callback: (time: number) => void) => void;
-  'activity-ping': () => void;  // Lightweight ping to prevent idle timeout
-  'join-public': (data?: { gameMode?: string }) => void;
-  'create-room': (data?: { password?: string; gameMode?: string }) => void;
-  'join-room': (data: { code: string; password?: string }) => void;
-  'leave-lobby': () => void;
-  'change-name': (data: { name: string }) => void;
-  'host-start-game': () => void;
-  'host-kick-player': (data: { playerId: string }) => void;
-  'host-change-password': (data: { password: string | null }) => void;
-  'submit-drawing': (data: { pixels: string }) => void;
-  'vote': (data: { chosenId: string }) => void;
-  'finale-vote': (data: { playerId: string }) => void;
-  'restore-session': (data: { sessionId: string }) => void;
-  'restore-user': (data: { displayName: string }) => void;
-  'copycat-rematch-vote': (data: { wantsRematch: boolean }) => void;
-  'view-mode': (data: { gameMode: string }) => void;
-  'leave-mode': () => void;
-  // PixelGuesser mode events
-  'pixelguesser-draw': (data: { pixels: string }) => void;
-  'pixelguesser-guess': (data: { guess: string }) => void;
-  // ZombiePixel mode events
-  'zombie-move': (data: { direction: 'up' | 'down' | 'left' | 'right' | 'up-left' | 'up-right' | 'down-left' | 'down-right' }) => void;
-  // CopyCat Royale mode events
-  'royale-submit': (data: { pixels: string }) => void;
-}
-
-export interface SessionRestoredData {
-  instanceId: string;
-  user: User;
-  phase: string;
-  prompt?: Prompt;
-  promptIndices?: PromptIndices;
-  players: User[];
-  isSpectator: boolean;
-  phaseState?: {
-    timer?: {
-      duration: number;
-      endsAt: number;
-    };
-    hasSubmitted?: boolean;
-    currentRound?: number;
-    totalRounds?: number;
-    votingAssignment?: {
-      imageA: { playerId: string; pixels: string };
-      imageB: { playerId: string; pixels: string };
-    };
-    hasVoted?: boolean;
-    finalists?: Array<{
-      playerId: string;
-      pixels: string;
-      user?: User;
-      elo: number;
-    }>;
-    finaleVoted?: boolean;
-  };
-  gameMode: string;
-}
-
-// Interfaces
-export interface Prompt {
-  prefix: string;
-  subject: string;
-  suffix: string;
-}
-
-export interface PromptIndices {
-  prefixIdx: number | null;
-  subjectIdx: number;
-  suffixIdx: number | null;
-}
-
-export interface User {
-  displayName: string;
-  discriminator: string;
-  fullName: string;
-}
-
-export interface LobbyJoinedData {
-  instanceId: string;
-  type: 'public' | 'private';
-  code?: string;
-  isHost?: boolean;
-  hasPassword?: boolean;
-  players: User[];
-  spectator: boolean;
-  gameMode: string;
-  phase?: string;
-  prompt?: Prompt;
-  promptIndices?: PromptIndices;
-  timerEndsAt?: number;
-  votingRound?: number;
-  votingTotalRounds?: number;
-}
-
-export interface GameModeInfoData {
-  id: string;
-  displayName: string;
-  i18nKey: string;
-  players: {
-    min: number;
-    max: number;
-    privateMin?: number;
-  };
-  allowPrivate: boolean;
-}
-
-export interface GameModesData {
-  available: GameModeInfoData[];
-  default: string;
-}
-
-export interface PhaseChangedData {
-  phase: string;
-  prompt?: Prompt;
-  promptIndices?: PromptIndices;
-  duration?: number;
-  startsAt?: number;
-  endsAt?: number;
-  round?: number;
-  totalRounds?: number;
-}
-
-export interface VotingRoundData {
-  round: number;
-  totalRounds: number;
-  imageA: { playerId: string; pixels: string };
-  imageB: { playerId: string; pixels: string };
-  timeLimit: number;
-  endsAt: number;
-}
-
-export interface FinaleData {
-  finalists: Array<{
-    playerId: string;
-    pixels: string;
-    user?: User;
-    elo: number;
-  }>;
-  timeLimit: number;
-  endsAt: number;
-}
-
-export interface GameResultsData {
-  prompt?: Prompt;
-  promptIndices?: PromptIndices;
-  rankings: Array<{
-    place: number;
-    playerId: string;
-    user: User;
-    pixels: string;
-    finalVotes: number;
-    elo: number;
-  }>;
-  compressedRankings?: string;
-  totalParticipants: number;
-}
+// Import types for internal use
+import type { ServerToClientEvents, ClientToServerEvents } from '@spritebox/types';
 
 // Socket type export
 export type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;

@@ -3,8 +3,9 @@
   import { voting } from '$lib/stores';
   import { vote } from '$lib/socketBridge';
   import { t } from '$lib/i18n';
-  import { PixelCanvas, Timer } from '../utility';
+  import { Timer } from '../utility';
   import { onMount } from 'svelte';
+  import { VotingContenderCard, VSBadge } from './Voting';
 
   let mounted = $state(false);
   let showCards = $state(false);
@@ -77,59 +78,27 @@
       </div>
 
       <!-- Duel Arena -->
-      <div class="duel-arena" class:show={showCards}>
+      <div class="duel-arena">
         <!-- Left Contender -->
-        <button
-          class="contender left"
-          onclick={() => handleVote($voting.imageA!.playerId)}
-          aria-label={$t.voting.voteForImageA}
-        >
-          <div class="contender-glow"></div>
-          <div class="canvas-frame">
-            <div class="frame-accent top"></div>
-            <div class="frame-accent bottom"></div>
-            <PixelCanvas
-              pixelData={$voting.imageA.pixels}
-              size={140}
-              readonly
-            />
-          </div>
-          <div class="vote-prompt">
-            <span class="tap-icon">👆</span>
-            <span class="tap-text">{$t.voting.clickToVote}</span>
-          </div>
-        </button>
+        <VotingContenderCard
+          position="left"
+          pixelData={$voting.imageA.pixels}
+          ariaLabel={$t.voting.voteForImageA}
+          show={showCards}
+          onVote={() => handleVote($voting.imageA!.playerId)}
+        />
 
         <!-- VS Badge -->
-        <div class="vs-container">
-          <div class="vs-badge">
-            <span class="vs-text">{$t.voting.vs}</span>
-          </div>
-          <div class="vs-lightning left">⚡</div>
-          <div class="vs-lightning right">⚡</div>
-        </div>
+        <VSBadge show={showCards} />
 
         <!-- Right Contender -->
-        <button
-          class="contender right"
-          onclick={() => handleVote($voting.imageB!.playerId)}
-          aria-label={$t.voting.voteForImageB}
-        >
-          <div class="contender-glow"></div>
-          <div class="canvas-frame">
-            <div class="frame-accent top"></div>
-            <div class="frame-accent bottom"></div>
-            <PixelCanvas
-              pixelData={$voting.imageB.pixels}
-              size={140}
-              readonly
-            />
-          </div>
-          <div class="vote-prompt">
-            <span class="tap-icon">👆</span>
-            <span class="tap-text">{$t.voting.clickToVote}</span>
-          </div>
-        </button>
+        <VotingContenderCard
+          position="right"
+          pixelData={$voting.imageB.pixels}
+          ariaLabel={$t.voting.voteForImageB}
+          show={showCards}
+          onVote={() => handleVote($voting.imageB!.playerId)}
+        />
       </div>
     {:else}
       <!-- Loading State -->
@@ -281,211 +250,6 @@
     max-width: 400px;
   }
 
-  .duel-arena.show .contender {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  .duel-arena.show .vs-container {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  /* ===== Contender Cards ===== */
-  .contender {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-4);
-    background: linear-gradient(145deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
-    border: 3px solid var(--color-border-strong);
-    border-radius: var(--radius-lg);
-    cursor: pointer;
-    font-family: var(--font-family);
-    opacity: 0;
-    transform: translateY(30px) scale(0.9);
-    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: var(--shadow-pixel-lg);
-    width: 100%;
-    max-width: 200px;
-  }
-
-  .contender.left {
-    transition-delay: 0.1s;
-  }
-
-  .contender.right {
-    transition-delay: 0.2s;
-  }
-
-  .contender:hover,
-  .contender:focus-visible {
-    transform: translateY(-4px) scale(1.02);
-    border-color: var(--color-accent);
-    box-shadow:
-      var(--shadow-pixel-lg),
-      0 0 40px rgba(78, 205, 196, 0.3);
-  }
-
-  .contender:active {
-    transform: translateY(-2px) scale(1);
-  }
-
-  .contender:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 4px;
-  }
-
-  .contender.left:hover .contender-glow,
-  .contender.left:focus-visible .contender-glow {
-    opacity: 1;
-    background: radial-gradient(circle at center, rgba(78, 205, 196, 0.2) 0%, transparent 70%);
-  }
-
-  .contender.right:hover .contender-glow,
-  .contender.right:focus-visible .contender-glow {
-    opacity: 1;
-    background: radial-gradient(circle at center, rgba(245, 166, 35, 0.2) 0%, transparent 70%);
-  }
-
-  .contender-glow {
-    position: absolute;
-    inset: -20px;
-    border-radius: var(--radius-xl);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-  }
-
-  .canvas-frame {
-    position: relative;
-    padding: var(--space-3);
-    max-width: 100%;
-    box-sizing: border-box;
-    background: var(--color-bg-primary);
-    border-radius: var(--radius-md);
-    border: 2px solid var(--color-bg-elevated);
-  }
-
-  .frame-accent {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40%;
-    height: 3px;
-    border-radius: var(--radius-full);
-    opacity: 0.5;
-    transition: all 0.3s ease;
-  }
-
-  .frame-accent.top {
-    top: -2px;
-    background: var(--color-accent);
-  }
-
-  .frame-accent.bottom {
-    bottom: -2px;
-    background: var(--color-brand);
-  }
-
-  .contender:hover .frame-accent {
-    width: 60%;
-    opacity: 1;
-  }
-
-  .vote-prompt {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    opacity: 0.6;
-    transition: all 0.3s ease;
-  }
-
-  .contender:hover .vote-prompt,
-  .contender:focus-visible .vote-prompt {
-    opacity: 1;
-  }
-
-  .tap-icon {
-    font-size: 1.2rem;
-    animation: bounce 1s ease-in-out infinite;
-  }
-
-  .tap-text {
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-bold);
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  .contender:hover .tap-text {
-    color: var(--color-accent);
-  }
-
-  /* ===== VS Badge ===== */
-  .vs-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-2) 0;
-    opacity: 0;
-    transform: scale(0.5);
-    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s;
-  }
-
-  .vs-badge {
-    padding: var(--space-3) var(--space-5);
-    background: linear-gradient(145deg, var(--color-bg-tertiary) 0%, var(--color-bg-elevated) 100%);
-    border: 3px solid var(--color-brand);
-    border-radius: var(--radius-lg);
-    box-shadow:
-      var(--shadow-pixel),
-      0 0 30px rgba(245, 166, 35, 0.3);
-  }
-
-  .vs-text {
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-bold);
-    color: var(--color-brand);
-    text-transform: uppercase;
-    letter-spacing: 4px;
-    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
-    animation: vsPulse 2s ease-in-out infinite;
-  }
-
-  @keyframes vsPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-  }
-
-  .vs-lightning {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 1.5rem;
-    opacity: 0.7;
-    animation: flash 1s ease-in-out infinite;
-  }
-
-  .vs-lightning.left {
-    left: -30px;
-    animation-delay: 0s;
-  }
-
-  .vs-lightning.right {
-    right: -30px;
-    animation-delay: 0.5s;
-  }
-
-  @keyframes flash {
-    0%, 100% { opacity: 0.3; transform: translateY(-50%) scale(0.9); }
-    50% { opacity: 1; transform: translateY(-50%) scale(1.1); }
-  }
-
   /* ===== Voted State ===== */
   .voted-container {
     flex: 1;
@@ -596,28 +360,10 @@
       flex-direction: row;
       max-width: 700px;
     }
-
-    .contender {
-      max-width: none;
-      flex: 1;
-    }
-
-    .vs-container {
-      flex: 0 0 auto;
-    }
-  }
-
-  @media (max-width: 380px) {
-    .contender {
-      padding: var(--space-3);
-    }
   }
 
   /* Reduce motion */
   @media (prefers-reduced-motion: reduce) {
-    .vs-text,
-    .vs-lightning,
-    .tap-icon,
     .voted-shimmer,
     .loading-spinner {
       animation: none;
@@ -625,16 +371,9 @@
 
     .voting-header,
     .instruction,
-    .contender,
-    .vs-container,
     .voted-card,
     .timer-section {
       transition: opacity 0.2s ease;
-      transform: none;
-    }
-
-    .duel-arena.show .contender,
-    .duel-arena.show .vs-container {
       transform: none;
     }
   }

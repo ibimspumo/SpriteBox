@@ -3,23 +3,11 @@ import { getLanguage } from '$lib/i18n';
 import promptsEn from '../../../server/data/prompts.json';
 import promptsDe from '../../../server/data/prompts_de.json';
 
-interface PromptData {
-  prefixes: string[];
-  subjects: string[];
-  suffixes: string[];
-}
+// Re-export types from @spritebox/types
+export type { Prompt, PromptIndices, PromptData } from '@spritebox/types';
 
-export interface PromptIndices {
-  prefixIdx: number | null;
-  subjectIdx: number;
-  suffixIdx: number | null;
-}
-
-export interface Prompt {
-  prefix: string;
-  subject: string;
-  suffix: string;
-}
+// Import types for internal use
+import type { Prompt, PromptIndices, PromptData } from '@spritebox/types';
 
 /**
  * Gets the appropriate prompt data based on current language

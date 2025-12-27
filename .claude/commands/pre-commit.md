@@ -45,7 +45,6 @@ Analysiere die aktuellen Git-Änderungen, Prüfe den Code und aktualisiere bei B
 
 ## Wichtig
 
-- Dokumentiere nur signifikante Änderungen (keine Typo-Fixes, kleine Refactors)
 - Halte den gleichen Stil wie existierende Docs
 - Deutsche Docs verwenden informelles "du" (nicht "Sie")
 - Erstelle KEINE neuen Docs-Seiten ohne guten Grund

@@ -1,6 +1,6 @@
 # 04: Frontend - Große Komponenten
 
-**Status:** Offen
+**Status:** ✅ Abgeschlossen
 **Priorität:** HOCH
 **Aufwand:** Mittel (3-4 Tage gesamt)
 
@@ -37,12 +37,13 @@ features/PixelSurvivor/Combat/
 
 ### Checkliste
 
-- [ ] Combat-Verzeichnis erstellen
-- [ ] CombatDiceRoll extrahieren
-- [ ] CombatActions extrahieren
-- [ ] CombatAnimationSequence extrahieren
-- [ ] CombatResult extrahieren
-- [ ] index.svelte als Orchestrator
+- [x] Combat-Verzeichnis erstellen
+- [x] CombatDiceRoll extrahieren (34 Zeilen)
+- [x] CombatActions extrahieren (78 Zeilen)
+- [x] CombatArena extrahieren (327 Zeilen)
+- [x] CombatResult extrahieren (69 Zeilen)
+- [x] CombatLog extrahieren (41 Zeilen)
+- [x] index.svelte als Orchestrator (460 Zeilen)
 
 ---
 
@@ -66,13 +67,13 @@ features/CopyCatRoyale/
 
 ### Checkliste
 
-- [ ] Phasen-Komponenten erstellen
-- [ ] RoyaleInitialDrawing extrahieren
-- [ ] RoyaleShowReference extrahieren
-- [ ] RoyaleDrawing extrahieren
-- [ ] RoyaleResults extrahieren
-- [ ] RoyaleWinner extrahieren
-- [ ] index.svelte als Phasen-Router
+- [x] Phasen-Komponenten erstellen
+- [x] RoyaleInitialDrawing extrahieren (108 Zeilen)
+- [x] RoyaleShowReference extrahieren (172 Zeilen)
+- [x] RoyaleDrawing extrahieren (158 Zeilen)
+- [x] RoyaleResults extrahieren (209 Zeilen)
+- [x] RoyaleWinner extrahieren (218 Zeilen)
+- [x] index.svelte als Phasen-Router (96 Zeilen)
 
 ---
 
@@ -95,11 +96,11 @@ features/ZombiePixel/
 
 ### Checkliste
 
-- [ ] ZombiePlayerToken extrahieren
-- [ ] ZombieItemToken extrahieren
-- [ ] ZombieEffectIndicator extrahieren
-- [ ] ZombieGridCell extrahieren (optional)
-- [ ] ZombieGrid.svelte reduzieren
+- [x] ZombieHUD extrahieren (217 Zeilen)
+- [x] ZombieControls extrahieren (436 Zeilen)
+- [x] ZombieGridLegend extrahieren (77 Zeilen)
+- [x] ZombieResults extrahieren (298 Zeilen)
+- [x] ZombieGrid.svelte reduzieren (322 Zeilen, von 677)
 
 ---
 
@@ -122,11 +123,11 @@ features/
 
 ### Checkliste
 
-- [ ] ResultsPodium extrahieren
-- [ ] PodiumSlot extrahieren
-- [ ] ResultsGallery extrahieren
-- [ ] GalleryItemCard extrahieren
-- [ ] Results.svelte reduzieren
+- [x] ResultsPodium extrahieren (52 Zeilen)
+- [x] PodiumSlot extrahieren (301 Zeilen)
+- [x] ResultsGallery extrahieren (103 Zeilen)
+- [x] GalleryItemCard extrahieren (121 Zeilen)
+- [x] Results.svelte reduzieren (264 Zeilen, von 675)
 
 ---
 
@@ -147,9 +148,9 @@ features/
 
 ### Checkliste
 
-- [ ] VotingContenderCard extrahieren
-- [ ] VSBadge extrahieren (optional)
-- [ ] Voting.svelte reduzieren
+- [x] VotingContenderCard extrahieren (207 Zeilen)
+- [x] VSBadge extrahieren (109 Zeilen)
+- [x] Voting.svelte reduzieren (380 Zeilen, von 641)
 
 ---
 

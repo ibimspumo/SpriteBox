@@ -15,7 +15,7 @@
 		maxHp,
 		playerLevel
 	} from '$lib/survivor';
-	import Combat from './Combat.svelte';
+	import Combat from './Combat/index.svelte';
 
 	// Get current gameplay state
 	const gameplayState = $derived($survivorRun?.gameplay);

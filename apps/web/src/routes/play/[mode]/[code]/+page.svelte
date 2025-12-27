@@ -15,9 +15,8 @@
   } from '$lib/stores';
   import { joinPrivateRoom } from '$lib/socketBridge';
   import { emitViewMode, emitLeaveMode } from '$lib/socket';
-  import { Lobby, Drawing, Voting, Finale, Results, Memorize, CopyCatResult, CopyCatRematch, Guessing, Reveal, FinalResults } from '$lib/components/features';
-  import { Timer } from '$lib/components/utility';
-  import { PromptDisplay, PasswordInput } from '$lib/components/molecules';
+  import { getPhaseComponent } from '$lib/phaseRouter';
+  import { PasswordInput } from '$lib/components/molecules';
   import { Button } from '$lib/components/atoms';
   import { Modal } from '$lib/components/organisms';
 
@@ -25,6 +24,9 @@
   const modeSlug = $derived($page.params.mode ?? '');
   const roomCode = $derived($page.params.code?.toUpperCase() ?? '');
   const gameModeId = $derived(modeSlug ? getModeFromSlug(modeSlug) : null);
+
+  // Get the component for current phase (with game mode for special cases)
+  const PhaseComponent = $derived(getPhaseComponent($game.phase, $lobby.gameMode));
 
   let hasAttemptedJoin = $state(false);
   let joinError = $state<string | null>(null);
@@ -81,10 +83,6 @@
   function handlePasswordCancel() {
     passwordPrompt.set({ show: false, roomCode: null, error: null });
     goto(`/play/${modeSlug}`);
-  }
-
-  function goToModeSelection() {
-    goto('/play');
   }
 
   function goToModePage() {
@@ -147,34 +145,10 @@
     {:else}
       <!-- Game View -->
       <div class="game-container">
-        {#if $game.phase === 'idle' || $game.phase === 'lobby'}
-          <Lobby />
-        {:else if $game.phase === 'countdown'}
-          <div class="countdown">
-            <h2>{$t.countdown.getReady}</h2>
-            <PromptDisplay prompt={$game.prompt} label={$t.drawing.draw} size="lg" centered />
-            <Timer />
-          </div>
-        {:else if $game.phase === 'drawing'}
-          <Drawing />
-        {:else if $game.phase === 'voting'}
-          <Voting />
-        {:else if $game.phase === 'finale'}
-          <Finale />
-        {:else if $game.phase === 'results'}
-          <Results />
-        {:else if $game.phase === 'memorize'}
-          <Memorize />
-        {:else if $game.phase === 'copycat-result'}
-          <CopyCatResult />
-        {:else if $game.phase === 'copycat-rematch'}
-          <CopyCatRematch />
-        {:else if $game.phase === 'guessing'}
-          <Guessing />
-        {:else if $game.phase === 'reveal'}
-          <Reveal />
-        {:else if $game.phase === 'pixelguesser-results'}
-          <FinalResults />
+        {#if PhaseComponent}
+          <PhaseComponent />
+        {:else}
+          <div class="unknown-phase">Unknown phase: {$game.phase}</div>
         {/if}
       </div>
     {/if}
@@ -275,24 +249,12 @@
     padding: var(--space-6);
   }
 
-  .countdown {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-6);
-    text-align: center;
-    padding: var(--space-8);
+  .unknown-phase {
+    padding: var(--space-4);
     background: var(--color-bg-secondary);
-    border: 3px solid var(--color-bg-tertiary);
+    border: 2px solid var(--color-warning);
     border-radius: var(--radius-md);
-  }
-
-  .countdown h2 {
-    margin: 0;
-    font-size: var(--font-size-2xl);
     color: var(--color-warning);
-    animation: pulse 1s ease-in-out infinite;
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    font-family: monospace;
   }
 </style>

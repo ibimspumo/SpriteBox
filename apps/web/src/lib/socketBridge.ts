@@ -954,10 +954,7 @@ function setupEventHandlers(socket: AppSocket): void {
     }));
   });
 
-  socket.on('zombie-lobby-update', (data: {
-    playerCount: number;
-    readyCount: number;
-  }) => {
+  socket.on('zombie-lobby-update', (data) => {
     // Update lobby info if needed
     console.log('[Socket] Zombie lobby update:', data);
   });

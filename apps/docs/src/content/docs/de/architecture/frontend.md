@@ -33,30 +33,51 @@ components/
 │   │   ├── index.svelte
 │   │   ├── LobbyMenu.svelte
 │   │   └── LobbyRoom.svelte
-│   ├── Drawing.svelte
-│   ├── Voting.svelte
-│   ├── Finale.svelte
-│   ├── Results.svelte
+│   ├── Drawing.svelte        # Zeichenphase
+│   ├── Voting.svelte         # Abstimmung (nutzt Voting/)
+│   ├── Voting/               # Abstimmungs-Subkomponenten
+│   │   ├── VotingContenderCard.svelte
+│   │   └── VSBadge.svelte
+│   ├── Finale.svelte         # Top 10% Finale
+│   ├── Results.svelte        # Ergebnisse (nutzt Results/)
+│   ├── Results/              # Ergebnis-Subkomponenten
+│   │   ├── ResultsPodium.svelte
+│   │   ├── PodiumSlot.svelte
+│   │   ├── ResultsGallery.svelte
+│   │   └── GalleryItemCard.svelte
+│   ├── Countdown.svelte      # Countdown vor Spielstart
 │   ├── CopyCat/              # 1v1 Gedächtnis-Modus
 │   │   ├── Memorize.svelte       # Referenzbild anzeigen
 │   │   ├── CopyCatResult.svelte  # Genauigkeitsvergleich
 │   │   └── CopyCatRematch.svelte # Rematch-Abstimmung
+│   ├── CopyCatRoyale/        # Battle Royale Modus (NEU)
+│   │   ├── index.svelte              # Container
+│   │   ├── RoyaleInitialDrawing.svelte  # Kunst erstellen
+│   │   ├── RoyaleShowReference.svelte   # Einprägen
+│   │   ├── RoyaleDrawing.svelte         # Nachzeichnen
+│   │   ├── RoyaleResults.svelte         # Rundenergebnis
+│   │   └── RoyaleWinner.svelte          # Siegerehrung
 │   ├── PixelGuesser/         # Pictionary-Modus
 │   │   ├── Guessing.svelte       # Live-Zeichnen + Raten
 │   │   ├── Reveal.svelte         # Antwort enthüllen
 │   │   └── FinalResults.svelte   # Spielrangliste
-│   └── PixelSurvivor/        # Roguelike-Modus (11 Komponenten)
-│       ├── Menu.svelte           # Neues Spiel/Fortsetzen
-│       ├── CharacterCreation.svelte # Charakter zeichnen
-│       ├── DayStart.svelte       # Tagesanfang
-│       ├── Event.svelte          # Herausforderung
-│       ├── Result.svelte         # Ereignis-Ergebnis
-│       ├── LevelUp.svelte        # Stat-Upgrades
-│       ├── BossBattle.svelte     # Tag 30 Boss
-│       ├── GameOver.svelte       # Niederlage
-│       ├── Victory.svelte        # Sieg
-│       ├── Statistics.svelte     # Spielstatistiken
-│       └── HowToPlay.svelte      # Tutorial
+│   ├── PixelSurvivor/        # Roguelike-Modus
+│   │   ├── Menu.svelte           # Neues Spiel/Fortsetzen
+│   │   ├── Gameplay.svelte       # Haupt-Gameplay
+│   │   ├── Combat/               # Kampf-Subsystem
+│   │   │   ├── index.svelte
+│   │   │   ├── CombatArena.svelte
+│   │   │   └── CombatActions.svelte
+│   │   └── ... (10+ Komponenten)
+│   └── ZombiePixel/          # Echtzeit-Infektionsspiel (NEU)
+│       ├── index.svelte          # Spiel-Container
+│       ├── ZombieGrid.svelte     # Canvas-basiertes Raster
+│       ├── ZombieGridLegend.svelte
+│       ├── ZombieControls.svelte # Touch/Tastatur-Steuerung
+│       ├── ZombieHUD.svelte      # Status-Anzeige
+│       ├── ZombieResults.svelte  # Endergebnis
+│       ├── zombieGridConstants.ts
+│       └── zombieGridRenderers.ts
 ├── utility/         # Funktionale Komponenten
 │   ├── PixelCanvas.svelte
 │   ├── ColorPalette.svelte

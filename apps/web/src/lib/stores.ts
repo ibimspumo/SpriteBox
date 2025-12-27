@@ -22,7 +22,7 @@ export interface GameModeInfo {
     max: number;
     privateMin?: number;
   };
-  allowPrivate: boolean;
+  allowPrivate?: boolean;  // Optional to match server type
 }
 
 export const availableGameModes = writable<GameModeInfo[]>([]);

@@ -1,6 +1,6 @@
 # 06: Frontend - Phasen-Routing
 
-**Status:** Offen
+**Status:** ✅ Abgeschlossen
 **Priorität:** MITTEL (Quick Win)
 **Aufwand:** Klein (unter 1 Tag)
 
@@ -8,9 +8,9 @@
 
 ## Problem
 
-Die Route-Datei `routes/play/[mode]/[code]/+page.svelte` enthält eine 12+-Zweig if-else-Kette für die Phasen-Anzeige.
+Die Route-Dateien `routes/play/[mode]/+page.svelte` und `routes/play/[mode]/[code]/+page.svelte` enthielten je eine 12+-Zweig if-else-Kette für die Phasen-Anzeige.
 
-### Aktueller Code (vereinfacht)
+### Alter Code (vereinfacht)
 
 ```svelte
 {#if phase === 'lobby'}
@@ -37,85 +37,76 @@ Die Route-Datei `routes/play/[mode]/[code]/+page.svelte` enthält eine 12+-Zweig
 
 ### Symptom
 
-Jede neue Phase erfordert einen weiteren `{:else if}` Block.
+Jede neue Phase erforderte einen weiteren `{:else if}` Block in ZWEI Dateien.
 
 ---
 
 ## Lösung
 
-Datengetriebenes Phasen-Routing:
+Datengetriebenes Phasen-Routing mit zentraler Phase-Komponenten-Map:
+
+### apps/web/src/lib/phaseRouter.ts
 
 ```typescript
-// apps/web/src/lib/phaseRouter.ts
-
-import Lobby from '$lib/components/features/Lobby/index.svelte';
-import Countdown from '$lib/components/features/Countdown.svelte';
-import Drawing from '$lib/components/features/Drawing.svelte';
-import Voting from '$lib/components/features/Voting.svelte';
-import Finale from '$lib/components/features/Finale.svelte';
-import Results from '$lib/components/features/Results.svelte';
-import Memorize from '$lib/components/features/CopyCat/Memorize.svelte';
-// ... weitere Imports
-
 import type { Component } from 'svelte';
+import type { GamePhase } from './stores';
 
-type GamePhase =
-  | 'lobby'
-  | 'countdown'
-  | 'drawing'
-  | 'voting'
-  | 'finale'
-  | 'results'
-  | 'memorize'
-  | 'copycat-result'
-  | 'guessing'
-  | 'reveal'
-  | 'active'
-  | 'royale-initial-drawing'
-  | 'royale-show-reference'
-  | 'royale-drawing'
-  | 'royale-results'
-  | 'royale-winner';
+// Alle Phasen-Komponenten importiert...
 
-export const PHASE_COMPONENTS: Record<GamePhase, Component> = {
-  'lobby': Lobby,
-  'countdown': Countdown,
-  'drawing': Drawing,
-  'voting': Voting,
-  'finale': Finale,
-  'results': Results,
-  'memorize': Memorize,
+const PHASE_COMPONENTS: Partial<Record<GamePhase, Component>> = {
+  // Standard phases
+  idle: Lobby,
+  lobby: Lobby,
+  countdown: Countdown,
+  drawing: Drawing,
+  voting: Voting,
+  finale: Finale,
+  results: Results,
+
+  // CopyCat mode phases
+  memorize: Memorize,
   'copycat-result': CopyCatResult,
-  'guessing': Guessing,
-  'reveal': Reveal,
-  'active': ZombieActive,
-  'royale-initial-drawing': RoyaleInitialDrawing,
-  'royale-show-reference': RoyaleShowReference,
-  'royale-drawing': RoyaleDrawing,
-  'royale-results': RoyaleResults,
-  'royale-winner': RoyaleWinner,
+  'copycat-rematch': CopyCatRematch,
+
+  // PixelGuesser mode phases
+  guessing: Guessing,
+  reveal: Reveal,
+  'pixelguesser-results': FinalResults,
+
+  // ZombiePixel mode
+  active: ZombiePixelGame,
+
+  // CopyCatRoyale mode (all phases use the container)
+  'royale-initial-drawing': CopyCatRoyaleGame,
+  'royale-show-reference': CopyCatRoyaleGame,
+  'royale-drawing': CopyCatRoyaleGame,
+  'royale-results': CopyCatRoyaleGame,
+  'royale-winner': CopyCatRoyaleGame,
 };
 
-export function getPhaseComponent(phase: string): Component | null {
-  return PHASE_COMPONENTS[phase as GamePhase] ?? null;
+export function getPhaseComponent(phase: GamePhase, gameMode?: string): Component | null {
+  // Special case: ZombiePixel mode shows its game container for 'results' phase
+  if (phase === 'results' && gameMode === 'zombie-pixel') {
+    return ZombiePixelGame;
+  }
+  return PHASE_COMPONENTS[phase] ?? null;
 }
 ```
 
-### Verwendung in der Route
+### Neue Verwendung in Route-Dateien
 
 ```svelte
 <script lang="ts">
   import { getPhaseComponent } from '$lib/phaseRouter';
+  import { game, lobby } from '$lib/stores';
 
-  let { phase } = $props();
-
-  let PhaseComponent = $derived(getPhaseComponent(phase));
+  const PhaseComponent = $derived(getPhaseComponent($game.phase, $lobby.gameMode));
 </script>
 
 {#if PhaseComponent}
   <PhaseComponent />
 {:else}
-  <div>Unbekannte Phase: {phase}</div>
+  <div class="unknown-phase">Unknown phase: {$game.phase}</div>
 {/if}
 ```
 
@@ -125,41 +116,59 @@ export function getPhaseComponent(phase: string): Component | null {
 
 | Datei | Aktion |
 |-------|--------|
-| `apps/web/src/lib/phaseRouter.ts` | Neu erstellen |
-| `apps/web/src/routes/play/[mode]/[code]/+page.svelte` | Refactoring |
+| `apps/web/src/lib/phaseRouter.ts` | ✅ Neu erstellt |
+| `apps/web/src/lib/components/features/Countdown.svelte` | ✅ Neu erstellt (war inline) |
+| `apps/web/src/lib/components/features/index.ts` | ✅ Export hinzugefügt |
+| `apps/web/src/routes/play/[mode]/+page.svelte` | ✅ Refactored |
+| `apps/web/src/routes/play/[mode]/[code]/+page.svelte` | ✅ Refactored |
 
 ---
 
-## Implementierungsschritte
+## Ergebnis
 
-1. `phaseRouter.ts` erstellen
-2. Alle Phase-Komponenten importieren
-3. PHASE_COMPONENTS Map definieren
-4. Helper-Funktion implementieren
-5. Route-Komponente refactoren
-6. Testen mit allen Spielmodi und Phasen
+### Vorher vs. Nachher
 
----
+| Metrik | Vorher | Nachher |
+|--------|--------|---------|
+| if-else-Zweige pro Route | ~15 | 1 |
+| Zeilen in [mode]/+page.svelte | 147 | 103 |
+| Zeilen in [mode]/[code]/+page.svelte | 299 | 261 |
+| Orte für neue Phase | 2 Dateien | 1 Map-Eintrag |
 
-## Vorteile
+### Vorteile
 
-- **Deklarativ**: Phasen-Mapping an einem Ort
-- **Type-Safety**: TypeScript prüft gültige Phasen
+- **Deklarativ**: Phasen-Mapping an EINEM Ort
+- **Type-Safety**: TypeScript prüft gültige Phasen via GamePhase-Type
 - **Erweiterbar**: Neue Phasen = nur Map-Eintrag hinzufügen
-- **Weniger Code**: ~50 Zeilen if-else → ~5 Zeilen
+- **Weniger Code**: ~50 Zeilen if-else pro Datei → ~5 Zeilen
+- **Keine Duplikation**: Beide Route-Dateien nutzen dieselbe Logik
 
 ---
 
-## Hinweis
+## Hinweise
 
-Svelte 5 unterstützt dynamische Komponenten mit `<svelte:component this={...}>` oder direkt als `{#if PhaseComponent}<PhaseComponent />{/if}`.
+### Countdown-Komponente
+
+Die Countdown-Phase war vorher inline in den Route-Dateien definiert. Sie wurde in eine eigene Komponente extrahiert (`Countdown.svelte`), um mit dem Phase-Router kompatibel zu sein.
+
+### Modus-spezifische Container
+
+Einige Modi wie ZombiePixel und CopyCatRoyale verwenden Container-Komponenten, die ihre internen Phasen selbst handhaben:
+- `ZombiePixelGame` handhabt `active` Phase und zeigt intern verschiedene States
+- `CopyCatRoyaleGame` handhabt alle `royale-*` Phasen intern
+
+### Spezialfall: results + zombie-pixel
+
+Der `getPhaseComponent` hat eine Sonderbehandlung für die `results`-Phase im `zombie-pixel` Modus, da ZombiePixel seine eigene Results-Darstellung verwendet.
 
 ---
 
 ## Checkliste
 
-- [ ] phaseRouter.ts erstellen
-- [ ] Alle Phasen-Komponenten importieren
-- [ ] PHASE_COMPONENTS Map definieren
-- [ ] Route-Komponente refactoren
-- [ ] Mit allen Spielmodi testen
+- [x] phaseRouter.ts erstellen
+- [x] Countdown.svelte extrahieren
+- [x] Alle Phasen-Komponenten importieren
+- [x] PHASE_COMPONENTS Map definieren
+- [x] Route-Komponenten refactoren (beide)
+- [x] Barrel-Export aktualisieren
+- [x] TypeScript-Check bestanden

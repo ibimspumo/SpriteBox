@@ -1,7 +1,5 @@
-<!-- PixelSurvivor/Combat.svelte - Turn-based combat screen -->
+<!-- PixelSurvivor/Combat/index.svelte - Turn-based combat screen orchestrator -->
 <script lang="ts">
-	import { Button, Icon, Badge } from '../../atoms';
-	import { PixelCanvas, DamageNumber } from '../../utility';
 	import { t } from '$lib/i18n';
 	import {
 		currentGameCharacter,
@@ -23,9 +21,16 @@
 		type CombatD20Roll,
 		type MonsterInstance
 	} from '$lib/survivor/engine';
-	import { D20Dice, rollD20, resetD20, d20RollState } from '$lib/survivor/engine';
+	import { rollD20, resetD20, d20RollState } from '$lib/survivor/engine';
 	import { playSound } from '$lib/audio';
 	import { onMount, onDestroy } from 'svelte';
+
+	// Sub-components
+	import CombatArena from './CombatArena.svelte';
+	import CombatDiceRoll from './CombatDiceRoll.svelte';
+	import CombatLog from './CombatLog.svelte';
+	import CombatActions from './CombatActions.svelte';
+	import CombatResult from './CombatResult.svelte';
 
 	interface Props {
 		onCombatEnd?: (result: 'victory' | 'defeat' | 'fled', xpGained: number) => void;
@@ -391,15 +396,6 @@
 		}, 2000);
 	}
 
-	// Calculate HP percentages
-	const playerHpPercent = $derived(
-		combatState ? Math.floor((combatState.player.currentHp / combatState.player.maxHp) * 100) : 100
-	);
-
-	const monsterHpPercent = $derived(
-		monster ? Math.floor((monster.currentHp / monster.maxHp) * 100) : 100
-	);
-
 	// Is player's turn?
 	const isPlayerTurn = $derived(combatState?.phase === 'player_turn');
 
@@ -413,138 +409,41 @@
 
 <div class="combat-screen">
 	<!-- Combat Arena -->
-	<div class="combat-arena">
-		<!-- Player Side -->
-		<div class="combatant player-side">
-			<div class="combatant-sprite" class:attacking={playerAttacking} class:hit={playerHit}>
-				{#if $currentGameCharacter}
-					<PixelCanvas
-						pixelData={$currentGameCharacter.pixels}
-						size={80}
-						editable={false}
-					/>
-				{/if}
-				{#if playerHit}
-					<div class="hit-effect"></div>
-				{/if}
-				<!-- Floating damage numbers -->
-				<div class="damage-numbers-wrapper">
-					{#each playerDamageNumbers as dmg (dmg.id)}
-						<DamageNumber
-							value={dmg.value}
-							type={dmg.type}
-							onComplete={() => removeDamageNumber('player', dmg.id)}
-						/>
-					{/each}
-				</div>
-			</div>
-			<div class="combatant-info">
-				<span class="combatant-name">{$currentGameCharacter?.name ?? 'Hero'}</span>
-				<div class="hp-bar-container">
-					<div class="hp-bar" style:width="{playerHpPercent}%" class:low={playerHpPercent < 25}></div>
-				</div>
-				<span class="hp-text">{combatState?.player.currentHp ?? $currentHp} / {combatState?.player.maxHp ?? $maxHp}</span>
-			</div>
-		</div>
+	<CombatArena
+		character={$currentGameCharacter}
+		{monster}
+		{combatState}
+		currentHp={$currentHp}
+		maxHp={$maxHp}
+		{playerHit}
+		{monsterHit}
+		{playerAttacking}
+		{monsterAttacking}
+		{playerDamageNumbers}
+		{monsterDamageNumbers}
+		onRemoveDamageNumber={removeDamageNumber}
+		{getMonsterName}
+	/>
 
-		<!-- VS Indicator -->
-		<div class="vs-indicator">
-			<span class="vs-text">VS</span>
-		</div>
-
-		<!-- Monster Side -->
-		<div class="combatant monster-side">
-			<div class="combatant-sprite monster-sprite" class:attacking={monsterAttacking} class:hit={monsterHit}>
-				{#if monster}
-					<PixelCanvas
-						pixelData={monster.pixels}
-						size={80}
-						editable={false}
-					/>
-				{/if}
-				{#if monsterHit}
-					<div class="hit-effect"></div>
-				{/if}
-				<!-- Floating damage numbers -->
-				<div class="damage-numbers-wrapper">
-					{#each monsterDamageNumbers as dmg (dmg.id)}
-						<DamageNumber
-							value={dmg.value}
-							type={dmg.type}
-							onComplete={() => removeDamageNumber('monster', dmg.id)}
-						/>
-					{/each}
-				</div>
-			</div>
-			<div class="combatant-info">
-				<div class="monster-header">
-					<span class="combatant-name">{getMonsterName()}</span>
-					<Badge variant="warning" text={$t.pixelSurvivor.levelFormat.replace('{level}', String(monster?.level ?? 1))} />
-				</div>
-				<div class="hp-bar-container">
-					<div class="hp-bar monster-hp" style:width="{monsterHpPercent}%" class:low={monsterHpPercent < 25}></div>
-				</div>
-				<span class="hp-text">{monster?.currentHp ?? 0} / {monster?.maxHp ?? 0}</span>
-			</div>
-		</div>
-	</div>
-
-	<!-- D20 Dice (always visible during combat to avoid layout shifts) -->
-	{#if !isCombatOver}
-		<div class="dice-container" class:rolling={isRollingDice}>
-			<D20Dice size={150} />
-		</div>
-	{/if}
+	<!-- D20 Dice -->
+	<CombatDiceRoll isRolling={isRollingDice} {isCombatOver} />
 
 	<!-- Combat Log -->
-	<div class="combat-log">
-		{#each combatLog as message}
-			<p class="log-entry">{message}</p>
-		{/each}
-	</div>
+	<CombatLog messages={combatLog} />
 
-	<!-- Action Buttons -->
+	<!-- Action Buttons or Combat Result -->
 	{#if !isCombatOver}
-		<div class="combat-actions">
-			<Button
-				variant="danger"
-				size="lg"
-				onclick={handleAttack}
-				disabled={!isPlayerTurn || isRollingDice}
-			>
-				<Icon name="zap" size="sm" />
-				{$t.pixelSurvivor.combat.attack}
-			</Button>
-			<Button
-				variant="secondary"
-				size="md"
-				onclick={handleFlee}
-				disabled={!isPlayerTurn || isRollingDice}
-			>
-				{$t.pixelSurvivor.combat.flee}
-			</Button>
-		</div>
-
-		<!-- Turn Indicator -->
-		<div class="turn-indicator">
-			{#if isPlayerTurn}
-				<span class="your-turn">{$t.pixelSurvivor.combat.yourTurn}</span>
-			{:else}
-				<span class="enemy-turn">{$t.pixelSurvivor.combat.enemyTurn}</span>
-			{/if}
-		</div>
+		<CombatActions
+			{isPlayerTurn}
+			{isRollingDice}
+			onAttack={handleAttack}
+			onFlee={handleFlee}
+		/>
 	{:else}
-		<!-- Combat Over Message -->
-		<div class="combat-over">
-			{#if combatState?.phase === 'victory'}
-				<span class="victory-text">{$t.pixelSurvivor.combat.victoryTitle}</span>
-				<span class="xp-gained">{$t.pixelSurvivor.xpGained.replace('{xp}', String(combatState.xpReward))}</span>
-			{:else if combatState?.phase === 'defeat'}
-				<span class="defeat-text">{$t.pixelSurvivor.combat.defeatTitle}</span>
-			{:else}
-				<span class="fled-text">{$t.pixelSurvivor.combat.fledTitle}</span>
-			{/if}
-		</div>
+		<CombatResult
+			phase={combatState?.phase ?? 'victory'}
+			xpReward={combatState?.xpReward ?? 0}
+		/>
 	{/if}
 </div>
 
@@ -557,316 +456,5 @@
 		width: 100%;
 		max-width: 500px;
 		margin: 0 auto;
-	}
-
-	/* Combat Arena */
-	.combat-arena {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: var(--space-4);
-		padding: var(--space-4);
-		background: var(--color-bg-tertiary);
-		border-radius: var(--radius-lg);
-	}
-
-	.combatant {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: var(--space-2);
-		flex: 1;
-	}
-
-	.combatant-sprite {
-		padding: var(--space-2);
-		background: var(--color-bg-secondary);
-		border-radius: var(--radius-md);
-		border: 2px solid var(--color-bg-elevated);
-	}
-
-	.monster-sprite {
-		transform: scaleX(-1); /* Face the player */
-	}
-
-	/* Counter-flip damage numbers container on monster so they're readable */
-	.damage-numbers-wrapper {
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-	}
-
-	.monster-sprite .damage-numbers-wrapper {
-		transform: scaleX(-1);
-	}
-
-	/* Attack Animations */
-	.combatant-sprite {
-		position: relative;
-		transition: transform 0.1s ease-out;
-	}
-
-	.combatant-sprite.attacking {
-		animation: attack-lunge 0.2s ease-out;
-	}
-
-	.player-side .combatant-sprite.attacking {
-		animation: attack-lunge-right 0.2s ease-out;
-	}
-
-	.monster-side .combatant-sprite.attacking {
-		animation: attack-lunge-left 0.2s ease-out;
-	}
-
-	.combatant-sprite.hit {
-		animation: hit-shake 0.3s ease-out;
-	}
-
-	.hit-effect {
-		position: absolute;
-		inset: 0;
-		background: radial-gradient(circle, rgba(255, 100, 100, 0.8) 0%, transparent 70%);
-		border-radius: var(--radius-md);
-		animation: hit-flash 0.3s ease-out forwards;
-		pointer-events: none;
-	}
-
-	@keyframes attack-lunge-right {
-		0% { transform: translateX(0); }
-		50% { transform: translateX(20px) scale(1.1); }
-		100% { transform: translateX(0); }
-	}
-
-	@keyframes attack-lunge-left {
-		0% { transform: scaleX(-1) translateX(0); }
-		50% { transform: scaleX(-1) translateX(20px) scale(1.1); }
-		100% { transform: scaleX(-1) translateX(0); }
-	}
-
-	@keyframes hit-shake {
-		0%, 100% { transform: translateX(0); }
-		20% { transform: translateX(-8px); }
-		40% { transform: translateX(8px); }
-		60% { transform: translateX(-6px); }
-		80% { transform: translateX(4px); }
-	}
-
-	.monster-side .combatant-sprite.hit {
-		animation: hit-shake-monster 0.3s ease-out;
-	}
-
-	@keyframes hit-shake-monster {
-		0%, 100% { transform: scaleX(-1) translateX(0); }
-		20% { transform: scaleX(-1) translateX(-8px); }
-		40% { transform: scaleX(-1) translateX(8px); }
-		60% { transform: scaleX(-1) translateX(-6px); }
-		80% { transform: scaleX(-1) translateX(4px); }
-	}
-
-	@keyframes hit-flash {
-		0% { opacity: 1; }
-		100% { opacity: 0; }
-	}
-
-	.combatant-info {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: var(--space-1);
-		width: 100%;
-	}
-
-	.monster-header {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-	}
-
-	.combatant-name {
-		font-size: var(--font-size-sm);
-		font-weight: var(--font-weight-bold);
-		color: var(--color-text-primary);
-		text-transform: uppercase;
-	}
-
-	.hp-bar-container {
-		width: 100%;
-		height: 8px;
-		background: var(--color-bg-primary);
-		border-radius: var(--radius-sm);
-		overflow: hidden;
-	}
-
-	.hp-bar {
-		height: 100%;
-		background: var(--color-success);
-		transition: width 0.3s ease-out;
-	}
-
-	.hp-bar.low {
-		background: var(--color-error);
-	}
-
-	.hp-bar.monster-hp {
-		background: var(--color-danger);
-	}
-
-	.hp-text {
-		font-size: var(--font-size-xs);
-		color: var(--color-text-muted);
-		font-variant-numeric: tabular-nums;
-	}
-
-	/* VS Indicator */
-	.vs-indicator {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: var(--space-2);
-	}
-
-	.vs-text {
-		font-size: var(--font-size-xl);
-		font-weight: var(--font-weight-black);
-		color: var(--color-warning);
-		text-shadow: 2px 2px 0 var(--color-bg-primary);
-	}
-
-	/* Dice Container */
-	.dice-container {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		padding: var(--space-4);
-		min-height: 180px;
-		opacity: 0.3;
-		transition: opacity 0.3s ease;
-	}
-
-	.dice-container.rolling {
-		opacity: 1;
-	}
-
-	/* Combat Log */
-	.combat-log {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
-		padding: var(--space-3);
-		background: var(--color-bg-secondary);
-		border-radius: var(--radius-md);
-		min-height: 80px;
-		max-height: 120px;
-		overflow-y: auto;
-	}
-
-	.log-entry {
-		margin: 0;
-		font-size: var(--font-size-sm);
-		color: var(--color-text-secondary);
-		line-height: 1.4;
-	}
-
-	.log-entry:last-child {
-		color: var(--color-text-primary);
-		font-weight: var(--font-weight-medium);
-	}
-
-	/* Combat Actions */
-	.combat-actions {
-		display: flex;
-		justify-content: center;
-		gap: var(--space-3);
-	}
-
-	/* Turn Indicator */
-	.turn-indicator {
-		text-align: center;
-		padding: var(--space-2);
-	}
-
-	.your-turn {
-		font-size: var(--font-size-md);
-		font-weight: var(--font-weight-bold);
-		color: var(--color-success);
-		text-transform: uppercase;
-		animation: pulse 1s ease-in-out infinite;
-	}
-
-	.enemy-turn {
-		font-size: var(--font-size-md);
-		font-weight: var(--font-weight-bold);
-		color: var(--color-error);
-		text-transform: uppercase;
-	}
-
-	@keyframes pulse {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.6; }
-	}
-
-	/* Combat Over */
-	.combat-over {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: var(--space-2);
-		padding: var(--space-6);
-		text-align: center;
-	}
-
-	.victory-text {
-		font-size: var(--font-size-2xl);
-		font-weight: var(--font-weight-black);
-		color: var(--color-warning);
-		text-transform: uppercase;
-		animation: victory-bounce 0.5s ease-out;
-	}
-
-	.xp-gained {
-		font-size: var(--font-size-lg);
-		font-weight: var(--font-weight-bold);
-		color: var(--color-success);
-	}
-
-	.defeat-text {
-		font-size: var(--font-size-2xl);
-		font-weight: var(--font-weight-black);
-		color: var(--color-error);
-		text-transform: uppercase;
-	}
-
-	.fled-text {
-		font-size: var(--font-size-xl);
-		font-weight: var(--font-weight-bold);
-		color: var(--color-text-secondary);
-		text-transform: uppercase;
-	}
-
-	@keyframes victory-bounce {
-		0% { transform: scale(0.5); opacity: 0; }
-		60% { transform: scale(1.2); }
-		100% { transform: scale(1); opacity: 1; }
-	}
-
-	/* Mobile */
-	@media (max-width: 400px) {
-		.combat-arena {
-			flex-direction: column;
-			gap: var(--space-2);
-		}
-
-		.vs-indicator {
-			transform: rotate(90deg);
-		}
-
-		.combatant {
-			flex-direction: row;
-			width: 100%;
-		}
-
-		.combatant-info {
-			align-items: flex-start;
-		}
 	}
 </style>

@@ -3,6 +3,7 @@
   import { Badge } from '$lib/components/atoms';
   import { t } from '$lib/i18n';
   import type { GameModeInfo } from '$lib/stores';
+  import { getModeIcon, getModeAccentColor, getModeMetadataByLegacyKey, type ModeSelectionKey } from '$lib/modeMetadata';
 
   interface Props {
     mode: GameModeInfo;
@@ -18,6 +19,9 @@
     onclick
   }: Props = $props();
 
+  // Get metadata from central registry (using legacy i18n key for compatibility)
+  const modeMetadata = $derived(getModeMetadataByLegacyKey(mode.i18nKey));
+
   // Get player range display
   const playerRange = $derived(() => {
     const { min, max } = mode.players;
@@ -27,56 +31,31 @@
     return `${min}-${max}`;
   });
 
-  // Get mode-specific pixel art icon (8-bit style emoji alternatives)
-  const modePixelIcon = $derived(() => {
-    switch (mode.id) {
-      case 'pixel-battle':
-        return '⚔️';
-      case 'copy-cat':
-        return '🎭';
-      case 'pixel-guesser':
-        return '🔮';
-      case 'pixel-survivor':
-        return '💀';
-      case 'copycat-solo':
-        return '🎯';
-      case 'colordle':
-        return '🎨';
-      case 'zombie-pixel':
-        return '🧟';
-      case 'copycat-royale':
-        return '👑';
-      default:
-        return '🎮';
-    }
-  });
+  // Get mode-specific pixel art icon from metadata
+  const modePixelIcon = $derived(() => getModeIcon(mode.id));
 
-  // Get mode accent color
-  const modeAccentColor = $derived(() => {
-    switch (mode.id) {
-      case 'pixel-battle':
-        return 'var(--color-success)';
-      case 'copy-cat':
-        return 'var(--color-brand)';
-      case 'pixel-guesser':
-        return 'var(--color-info)';
-      case 'pixel-survivor':
-        return 'var(--color-danger)';
-      case 'copycat-solo':
-        return 'var(--color-stat-mana)';
-      case 'colordle':
-        return 'var(--color-accent)';
-      case 'zombie-pixel':
-        return '#22c55e';  // Zombie green
-      case 'copycat-royale':
-        return '#f59e0b';  // Gold/amber for royale
-      default:
-        return 'var(--color-accent)';
-    }
-  });
+  // Get mode accent color from metadata
+  const modeAccentColor = $derived(() => getModeAccentColor(mode.id));
+
+  // Check if mode is in alpha state
+  const isAlphaMode = $derived(modeMetadata?.isAlpha ?? false);
 
   // Check if mode is solo
   const isSoloMode = $derived(mode.players.max === 1);
+
+  // Get translated mode name (type-safe lookup via selectionKey)
+  const modeName = $derived(() => {
+    if (!modeMetadata) return mode.displayName;
+    const key = modeMetadata.selectionKey;
+    return $t.modeSelection[key]?.name ?? mode.displayName;
+  });
+
+  // Get translated mode description
+  const modeDescription = $derived(() => {
+    if (!modeMetadata) return mode.displayName;
+    const key = modeMetadata.selectionKey;
+    return $t.modeSelection[key]?.description ?? mode.displayName;
+  });
 </script>
 
 <button
@@ -100,52 +79,12 @@
   <div class="card-content">
     <div class="content-top">
       <div class="title-row">
-        <h3 class="mode-name">
-          {#if mode.i18nKey === 'gameModes.pixelBattle'}
-            {$t.modeSelection.classic.name}
-          {:else if mode.i18nKey === 'gameModes.copyCat'}
-            {$t.modeSelection.copycat.name}
-          {:else if mode.i18nKey === 'gameModes.pixelGuesser'}
-            {$t.modeSelection.pixelguesser.name}
-          {:else if mode.i18nKey === 'gameModes.pixelSurvivor'}
-            {$t.modeSelection.survivor.name}
-          {:else if mode.i18nKey === 'gameModes.copyCatSolo'}
-            {$t.modeSelection.copycatsolo.name}
-          {:else if mode.i18nKey === 'gameModes.colordle'}
-            {$t.modeSelection.colordle.name}
-          {:else if mode.i18nKey === 'gameModes.zombiePixel'}
-            {$t.modeSelection.zombiepixel.name}
-          {:else if mode.i18nKey === 'gameModes.copyCatRoyale'}
-            {$t.modeSelection.copycatroyale.name}
-          {:else}
-            {mode.displayName}
-          {/if}
-        </h3>
-        {#if mode.i18nKey === 'gameModes.pixelSurvivor' || mode.i18nKey === 'gameModes.zombiePixel' || mode.i18nKey === 'gameModes.copyCatRoyale'}
+        <h3 class="mode-name">{modeName()}</h3>
+        {#if isAlphaMode}
           <Badge variant="warning" size="sm" text={$t.common.alpha} />
         {/if}
       </div>
-      <p class="mode-description">
-        {#if mode.i18nKey === 'gameModes.pixelBattle'}
-          {$t.modeSelection.classic.description}
-        {:else if mode.i18nKey === 'gameModes.copyCat'}
-          {$t.modeSelection.copycat.description}
-        {:else if mode.i18nKey === 'gameModes.pixelGuesser'}
-          {$t.modeSelection.pixelguesser.description}
-        {:else if mode.i18nKey === 'gameModes.pixelSurvivor'}
-          {$t.modeSelection.survivor.description}
-        {:else if mode.i18nKey === 'gameModes.copyCatSolo'}
-          {$t.modeSelection.copycatsolo.description}
-        {:else if mode.i18nKey === 'gameModes.colordle'}
-          {$t.modeSelection.colordle.description}
-        {:else if mode.i18nKey === 'gameModes.zombiePixel'}
-          {$t.modeSelection.zombiepixel.description}
-        {:else if mode.i18nKey === 'gameModes.copyCatRoyale'}
-          {$t.modeSelection.copycatroyale.description}
-        {:else}
-          {mode.displayName}
-        {/if}
-      </p>
+      <p class="mode-description">{modeDescription()}</p>
     </div>
 
     <!-- Meta info -->

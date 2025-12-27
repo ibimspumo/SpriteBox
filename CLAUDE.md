@@ -29,14 +29,21 @@ apps/
 │       ├── instance.ts   # Game instance logic
 │       ├── voting.ts     # Elo algorithm
 │       └── phases.ts     # Game phase management
-└── web/             # Svelte frontend
+├── web/             # Svelte frontend
+│   └── src/
+│       ├── lib/
+│       │   ├── components/   # Atomic Design structure (see below)
+│       │   ├── stores.ts     # Svelte stores
+│       │   ├── socket.ts     # Socket client
+│       │   └── styles/       # Design tokens
+│       └── routes/           # SvelteKit routes
+└── docs/            # Starlight documentation
+packages/
+└── types/           # @spritebox/types - Shared TypeScript types & Zod schemas
     └── src/
-        ├── lib/
-        │   ├── components/   # Atomic Design structure (see below)
-        │   ├── stores.ts     # Svelte stores
-        │   ├── socket.ts     # Socket client
-        │   └── styles/       # Design tokens
-        └── routes/           # SvelteKit routes
+        ├── index.ts      # Main barrel export
+        ├── validation.ts # Shared Zod schemas
+        └── modes/        # Game mode-specific types
 ```
 
 ## Frontend Component Architecture (Atomic Design)
@@ -66,6 +73,13 @@ components/
 │   │   ├── index.svelte
 │   │   ├── LobbyMenu.svelte
 │   │   └── LobbyRoom.svelte
+│   ├── CopyCat/           # CopyCat mode components
+│   ├── CopyCatRoyale/     # Battle Royale elimination mode
+│   ├── PixelGuesser/      # Guessing game mode
+│   ├── PixelSurvivor/     # Roguelike combat mode
+│   ├── ZombiePixel/       # Real-time infection mode
+│   ├── Voting/            # Voting sub-components
+│   ├── Results/           # Results sub-components
 │   ├── Drawing.svelte
 │   ├── Voting.svelte
 │   ├── Finale.svelte
