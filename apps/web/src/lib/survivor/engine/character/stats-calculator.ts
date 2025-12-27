@@ -205,7 +205,7 @@ function distributeBudget(
 	const scale = budget / currentTotal;
 
 	// Step 3: Apply scale and round, respecting constraints
-	let values = rawValues.map((v, i) => {
+	const values = rawValues.map((v, i) => {
 		const { min, max } = constraints[i];
 		return clamp(Math.round(v * scale), min, max);
 	});

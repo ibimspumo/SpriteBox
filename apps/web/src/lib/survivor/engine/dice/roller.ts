@@ -333,7 +333,7 @@ export class DiceRoller {
 		const bonusDamage = damageConfig.bonusDamage;
 
 		// Calculate subtotal
-		let subtotal = baseDamage + scalingDamage + bonusDamage;
+		const subtotal = baseDamage + scalingDamage + bonusDamage;
 
 		// Apply crit multiplier to non-dice damage if crit
 		// (Dice are already doubled)

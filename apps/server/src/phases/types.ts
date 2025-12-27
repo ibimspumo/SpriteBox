@@ -5,16 +5,51 @@
  *
  * Defines the contract for managing game phases in different game modes.
  * Each game mode can have its own PhaseManager implementation that determines
- * which phases are available, their order, and timing.
+ * which phases are available, their order, timing, AND the actual handler logic.
+ *
+ * This interface combines configuration (getPhases, getTimerDuration) with
+ * runtime logic (handlePhase, initializeGame) to keep all mode-specific
+ * behavior in one place.
  */
 
+import type { Server } from 'socket.io';
 import type { Instance, GamePhase } from '../types.js';
 import type { GameModeConfig } from '../gameModes/types.js';
+
+/**
+ * Context passed to phase handlers with all dependencies they need
+ */
+export interface PhaseContext {
+  /** Socket.io server instance for emitting events */
+  io: Server;
+  /** Emit event to all players in the instance */
+  emitToInstance: (instance: Instance, event: string, data: unknown) => void;
+  /** Set phase timing for anti-cheat validation */
+  setPhaseTimings: (instanceId: string, duration: number) => void;
+  /** Transition to a new phase */
+  transitionTo: (instance: Instance, phase: GamePhase) => void;
+  /** Reset instance for next round */
+  resetForNextRound: (instance: Instance) => void;
+}
+
+/**
+ * Result of handling a phase
+ */
+export interface PhaseHandleResult {
+  /** Whether the phase was handled successfully */
+  handled: boolean;
+  /** Error message if handling failed */
+  error?: string;
+}
 
 /**
  * PhaseManager interface for handling game phase logic
  */
 export interface PhaseManager {
+  // ============================================
+  // CONFIGURATION METHODS (existing)
+  // ============================================
+
   /**
    * Get the game mode config this manager uses
    */
@@ -78,4 +113,43 @@ export interface PhaseManager {
    * Calculate the number of finalists for a given submission count
    */
   calculateFinalistCount(submissionCount: number): number;
+
+  // ============================================
+  // HANDLER METHODS (new)
+  // ============================================
+
+  /**
+   * Initialize the game state for this mode
+   * Called when the game starts (before countdown)
+   * @returns true if the mode handles its own initialization
+   */
+  initializeGame?(instance: Instance, ctx: PhaseContext): boolean;
+
+  /**
+   * Get the first phase after countdown for this mode
+   * Returns null to use default behavior
+   */
+  getPhaseAfterCountdown?(instance: Instance): GamePhase | null;
+
+  /**
+   * Handle a specific phase
+   * @returns PhaseHandleResult with handled=true if this manager handled the phase
+   */
+  handlePhase?(instance: Instance, phase: GamePhase, ctx: PhaseContext): PhaseHandleResult;
+
+  /**
+   * Handle submission for this game mode
+   * @returns true if the submission was handled by this manager
+   */
+  handleSubmission?(
+    instance: Instance,
+    playerId: string,
+    pixels: string,
+    ctx: PhaseContext
+  ): boolean;
+
+  /**
+   * Cleanup game state when returning to lobby
+   */
+  cleanup?(instance: Instance): void;
 }
