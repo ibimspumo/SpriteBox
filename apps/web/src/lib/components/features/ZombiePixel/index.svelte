@@ -79,6 +79,37 @@
 			</div>
 		{/if}
 
+		<!-- Item Spawn Announcement (big dramatic banner) -->
+		{#if $zombiePixel.lastItemSpawn}
+			<div
+				class="item-spawn-announcement"
+				class:speed-boost={$zombiePixel.lastItemSpawn.type === 'speed-boost'}
+				class:healing-touch={$zombiePixel.lastItemSpawn.type === 'healing-touch'}
+				role="alert"
+				aria-live="assertive"
+			>
+				<div class="spawn-icon-container">
+					<span class="spawn-icon" aria-hidden="true">
+						{#if $zombiePixel.lastItemSpawn.type === 'speed-boost'}
+							⚡
+						{:else}
+							❤️
+						{/if}
+					</span>
+				</div>
+				<div class="spawn-text">
+					<span class="spawn-title">{$t.zombiePixel.itemSpawned}</span>
+					<span class="spawn-subtitle">
+						{#if $zombiePixel.lastItemSpawn.type === 'speed-boost'}
+							{$t.zombiePixel.speedBoostName}
+						{:else}
+							{$t.zombiePixel.healingTouchName}
+						{/if}
+					</span>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Controls -->
 		<ZombieControls />
 	{:else if $zombiePixel.winner || $zombiePixel.zombiesWin}
@@ -236,6 +267,110 @@
 
 	.infection-text {
 		opacity: 0.9;
+	}
+
+	/* Item Spawn Announcement - Big dramatic banner */
+	.item-spawn-announcement {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		display: flex;
+		align-items: center;
+		gap: var(--space-4);
+		padding: var(--space-4) var(--space-6);
+		border-radius: var(--radius-xl);
+		z-index: 200;
+		animation: spawnAnnounce 3s ease-out forwards;
+		pointer-events: none;
+	}
+
+	.item-spawn-announcement.speed-boost {
+		background: linear-gradient(135deg, rgba(251, 191, 36, 0.95) 0%, rgba(245, 158, 11, 0.95) 100%);
+		border: 3px solid #fbbf24;
+		box-shadow:
+			0 0 60px rgba(251, 191, 36, 0.6),
+			0 0 120px rgba(251, 191, 36, 0.3),
+			inset 0 0 30px rgba(255, 255, 255, 0.2);
+	}
+
+	.item-spawn-announcement.healing-touch {
+		background: linear-gradient(135deg, rgba(239, 68, 68, 0.95) 0%, rgba(220, 38, 38, 0.95) 100%);
+		border: 3px solid #ef4444;
+		box-shadow:
+			0 0 60px rgba(239, 68, 68, 0.6),
+			0 0 120px rgba(239, 68, 68, 0.3),
+			inset 0 0 30px rgba(255, 255, 255, 0.2);
+	}
+
+	.spawn-icon-container {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 64px;
+		height: 64px;
+		background: rgba(0, 0, 0, 0.3);
+		border-radius: var(--radius-lg);
+		animation: iconPulse 0.5s ease-in-out infinite alternate;
+	}
+
+	.spawn-icon {
+		font-size: 2.5rem;
+		line-height: 1;
+		filter: drop-shadow(0 0 10px currentColor);
+	}
+
+	.spawn-text {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+
+	.spawn-title {
+		font-size: var(--font-size-xl);
+		font-weight: 800;
+		color: #fff;
+		text-transform: uppercase;
+		letter-spacing: 3px;
+		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+	}
+
+	.spawn-subtitle {
+		font-size: var(--font-size-md);
+		color: rgba(255, 255, 255, 0.9);
+		font-weight: 600;
+		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+	}
+
+	@keyframes spawnAnnounce {
+		0% {
+			opacity: 0;
+			transform: translate(-50%, -50%) scale(0.5);
+		}
+		15% {
+			opacity: 1;
+			transform: translate(-50%, -50%) scale(1.1);
+		}
+		25% {
+			transform: translate(-50%, -50%) scale(1);
+		}
+		75% {
+			opacity: 1;
+			transform: translate(-50%, -50%) scale(1);
+		}
+		100% {
+			opacity: 0;
+			transform: translate(-50%, -50%) scale(0.8);
+		}
+	}
+
+	@keyframes iconPulse {
+		from {
+			transform: scale(1);
+		}
+		to {
+			transform: scale(1.1);
+		}
 	}
 
 	@keyframes slideInLeft {

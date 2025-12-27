@@ -139,7 +139,7 @@ export const ZOMBIE_PIXEL_CONSTANTS = {
   MAX_PLAYERS: 100,
   MOVE_COOLDOWN_MS: 100,      // 10 moves per second
   TICK_RATE_MS: 50,           // 20 ticks per second
-  GAME_DURATION_MS: 60_000,   // 60 seconds
+  GAME_DURATION_MS: 30_000,   // 30 seconds base (extended by +1s per infection)
   ZOMBIES_PER_PLAYERS: 10,    // 1 zombie per 10 players (up to 10 zombies with 100 players)
   MIN_ZOMBIES: 1,
   BOT_SIGHT_RANGE: 10,        // Bots can "see" 10 tiles (for 32x32 grid)

@@ -15,6 +15,7 @@ SpriteBox supports multiple game modes, each with its own phase flow:
 | `pixel-guesser` | Pictionary mode: one draws, others guess | 2-20 |
 | `pixel-survivor` | Roguelike survival: draw to survive 30 days | 1 (solo) |
 | `zombie-pixel` | Infection game: zombies chase survivors | 1-100 (bots fill) |
+| `copycat-royale` | Battle royale elimination: recreate images, lowest accuracy eliminated | 3-100 |
 
 ## Game Phases (Pixel Battle)
 
@@ -599,7 +600,7 @@ Monsters can have special abilities:
 
 ## Zombie Pixel Mode
 
-Zombie Pixel is a real-time infection game on a 50x50 grid arena. One player starts as a zombie and must infect all survivors before time runs out.
+Zombie Pixel is a real-time infection game on a 32x32 grid arena. One player starts as a zombie and must infect all survivors before time runs out.
 
 ### Zombie Pixel Phase Flow
 
@@ -649,7 +650,7 @@ Zombie Pixel is a real-time infection game on a 50x50 grid arena. One player sta
 
 ### Game Mechanics
 
-- **Grid Size**: 50x50 cells
+- **Grid Size**: 32x32 cells
 - **Viewport**: 13x13 visible area centered on player
 - **Infection**: Zombie and survivor on same cell = infection
 - **Movement Rate**: Server-controlled tick rate (100ms)
@@ -661,3 +662,91 @@ Zombie Pixel is a real-time infection game on a 50x50 grid arena. One player sta
 - **Server authoritative**: All movement validated on server
 - **Bot system**: Server-side AI fills empty slots
 - **Rate limited**: Movement commands rate-limited to prevent spam
+
+## CopyCat Royale Mode
+
+CopyCat Royale is a battle royale elimination game combining memory-based pixel art with competitive elimination rounds. Players draw images, then compete to recreate them from memory with the lowest accuracy players being eliminated each round.
+
+### CopyCat Royale Phase Flow
+
+```text
+  LOBBY                    COUNTDOWN (5s)           INITIAL DRAW (30s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  3-100      │  Auto    │   Get       │          │  All Draw   │
+  │  Players    │ ───────► │   Ready     │ ───────► │  Freely     │
+  │  Join       │  start   │             │          │  (Pool)     │
+  └─────────────┘          └─────────────┘          └─────────────┘
+                                                           │
+       ┌───────────────────────────────────────────────────┘
+       │
+       ▼
+  SHOW REF (5s)            DRAW (25s)               RESULTS (8s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  Random     │          │  Recreate   │          │  Accuracy   │
+  │  Pool Image │ ───────► │  From       │ ───────► │  Ranked     │
+  │  Shown      │          │  Memory     │          │  Eliminate  │
+  └─────────────┘          └─────────────┘          └─────────────┘
+       ▲                                                   │
+       │                                                   │
+       └──── More players? ────────────────────────────────┘
+                                                           │
+                                                           ▼
+                                                    WINNER (15s)
+                                                    ┌─────────────┐
+                                                    │  Final      │
+                                                    │  Rankings   │
+                                                    │  Shown      │
+                                                    └─────────────┘
+```
+
+### CopyCat Royale Phases
+
+| Phase | Duration | Description |
+|-------|----------|-------------|
+| Lobby | Until 3+ players | Auto-start after timer |
+| Countdown | 5 seconds | Players prepare |
+| Initial Drawing | 30 seconds | All players draw freely (creates image pool) |
+| Show Reference | 5 seconds | Random pool image shown |
+| Drawing | 25 seconds | Recreate from memory |
+| Results | 8 seconds | Accuracy ranked, eliminations shown |
+| Winner | 15 seconds | Final rankings displayed |
+
+### How It Works
+
+1. **Initial Drawing**: All players draw freely, creating the image pool
+2. **Round Start**: A random image from the pool is displayed
+3. **Memorize**: Players have 5 seconds to memorize the image
+4. **Recreate**: Players draw from memory (reference hidden)
+5. **Scoring**: Accuracy calculated by pixel-by-pixel comparison
+6. **Elimination**: Lowest accuracy players eliminated each round
+7. **Repeat**: Continue until one player remains
+
+### Elimination Mechanics
+
+- Each round eliminates approximately 1/3 of remaining players
+- Elimination count adapts based on player count
+- Finale triggers when 3 or fewer players remain
+- Ties broken by submission time (faster = better)
+
+### Royale Accuracy Scoring
+
+```typescript
+accuracy = (matchingPixels / 64) × 100
+// Higher accuracy survives
+// Tie: faster submission time wins
+```
+
+### Final Rankings
+
+| Rank    | Description                                 |
+|---------|---------------------------------------------|
+| 1st     | Last player standing (winner)               |
+| 2nd-3rd | Eliminated in finale round                  |
+| Others  | Ranked by round eliminated (later = better) |
+
+### Technical Notes
+
+- **Image Pool**: Player drawings from initial round become references
+- **Fair Selection**: Images selected randomly, avoiding repeats
+- **Early Submit**: All players submitting ends phase early
+- **Spectator Mode**: Eliminated players can watch remaining rounds

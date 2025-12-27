@@ -39,7 +39,7 @@ import { generateId, generateDiscriminator, createFullName, log } from './utils.
 import { MIN_PLAYERS_TO_START, CANVAS, DOS, TIMERS } from './constants.js';
 import { gameModes } from './gameModes/index.js';
 import { PixelSchema, VoteSchema, FinaleVoteSchema, UsernameSchema, CopyCatRematchVoteSchema, PixelGuesserDrawSchema, PixelGuesserGuessSchema, ZombieMoveSchema, validate, validateMinPixels } from './validation.js';
-import { getVotingState, isWithinPhaseTime, getPhaseTimings, checkAndTriggerEarlyVotingEnd, checkAndTriggerEarlyFinaleEnd, handleCopyCatSubmission, handleCopyCatRematchVote, handlePixelGuesserDrawUpdate, handlePixelGuesserGuess } from './phases.js';
+import { getVotingState, isWithinPhaseTime, getPhaseTimings, checkAndTriggerEarlyVotingEnd, checkAndTriggerEarlyFinaleEnd, handleCopyCatSubmission, handleCopyCatRematchVote, handlePixelGuesserDrawUpdate, handlePixelGuesserGuess, handleRoyaleSubmission } from './phases.js';
 import { processVote, processFinaleVote } from './voting.js';
 import { checkRateLimit, checkConnectionRateLimit } from './rateLimit.js';
 import { checkMultiAccount, removeSocketFingerprint, isBrowserInInstance, trackBrowserInInstance, untrackBrowserFromInstance } from './fingerprint.js';
@@ -351,8 +351,19 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
   // Join public game
   socket.on('join-public', (data) => {
     if (socket.data.instanceId) {
-      socket.emit('error', { code: 'ALREADY_IN_GAME', message: 'Already in a game' });
-      return;
+      // Check if we can auto-leave (in results phase)
+      const currentInstance = findInstance(socket.data.instanceId);
+      if (currentInstance && currentInstance.phase === 'results') {
+        // Auto-leave from results phase
+        removePlayerFromInstance(currentInstance, player.id);
+        untrackBrowserFromInstance(socket.data.browserId, currentInstance.id);
+        socket.leave(currentInstance.id);
+        socket.data.instanceId = null;
+        log('Socket', `${player.user.fullName} auto-left from results phase to rejoin`);
+      } else {
+        socket.emit('error', { code: 'ALREADY_IN_GAME', message: 'Already in a game' });
+        return;
+      }
     }
 
     // Check if player is already in queue
@@ -508,8 +519,19 @@ function registerLobbyHandlers(socket: TypedSocket, io: TypedServer, player: Pla
   // Join private room (with optional password)
   socket.on('join-room', async (data) => {
     if (socket.data.instanceId) {
-      socket.emit('error', { code: 'ALREADY_IN_GAME', message: 'Already in a game' });
-      return;
+      // Check if we can auto-leave (in results phase)
+      const currentInstance = findInstance(socket.data.instanceId);
+      if (currentInstance && currentInstance.phase === 'results') {
+        // Auto-leave from results phase
+        removePlayerFromInstance(currentInstance, player.id);
+        untrackBrowserFromInstance(socket.data.browserId, currentInstance.id);
+        socket.leave(currentInstance.id);
+        socket.data.instanceId = null;
+        log('Socket', `${player.user.fullName} auto-left from results phase to join room`);
+      } else {
+        socket.emit('error', { code: 'ALREADY_IN_GAME', message: 'Already in a game' });
+        return;
+      }
     }
 
     if (!data?.code || typeof data.code !== 'string') {
@@ -1233,6 +1255,52 @@ function registerGameHandlers(socket: TypedSocket, io: TypedServer, player: Play
 
     // Process movement
     handlePlayerMove(instance, player.id, validation.data.direction);
+  });
+
+  // CopyCat Royale: Submit drawing
+  socket.on('royale-submit', (data) => {
+    const instanceId = socket.data.instanceId;
+    if (!instanceId || instanceId === 'pending') {
+      socket.emit('error', { code: 'NOT_IN_GAME', message: 'You are not in a game' });
+      return;
+    }
+
+    const instance = findInstance(instanceId);
+    if (!instance || instance.gameMode !== 'copycat-royale') {
+      socket.emit('error', { code: 'INVALID_GAME_MODE', message: 'Not a CopyCat Royale game' });
+      return;
+    }
+
+    // Check phase
+    if (instance.phase !== 'royale-initial-drawing' && instance.phase !== 'royale-drawing') {
+      socket.emit('error', { code: 'WRONG_PHASE', message: 'Not in drawing phase' });
+      return;
+    }
+
+    // Rate limit
+    if (!checkRateLimit(socket, 'submit-drawing')) {
+      socket.emit('error', { code: 'RATE_LIMITED', message: 'Too many submissions' });
+      return;
+    }
+
+    // Validate pixels
+    const validation = validate(PixelSchema, data);
+    if (!validation.success) {
+      socket.emit('error', { code: 'INVALID_PIXELS', message: validation.error });
+      return;
+    }
+
+    // Handle submission
+    const result = handleRoyaleSubmission(instance, player.id, validation.data.pixels);
+    if (!result.success) {
+      socket.emit('error', { code: 'SUBMISSION_FAILED', message: result.error });
+      return;
+    }
+
+    socket.emit('submission-received', {
+      success: true,
+      submissionCount: instance.submissions.length,
+    });
   });
 
   // Session restoration (for reconnects)

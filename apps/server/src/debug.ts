@@ -219,6 +219,10 @@ class BotController {
         case 'finale':
           this.handleFinalePhase(bot, currentInstance, config);
           break;
+        case 'royale-initial-drawing':
+        case 'royale-drawing':
+          this.handleRoyaleDrawingPhase(bot, currentInstance, config);
+          break;
       }
     }, 500);
 
@@ -250,6 +254,33 @@ class BotController {
     const delay = randomBetween(config.drawTime.min, config.drawTime.max);
     const drawTimer = setTimeout(() => {
       if (bot.isActive && instance.phase === 'drawing') {
+        const pixels = this.generateRandomDrawing();
+        this.submitDrawing(bot, instance, pixels);
+      }
+    }, delay);
+
+    bot.timers.push(drawTimer);
+  }
+
+  /**
+   * Handle bot royale drawing phase (for CopyCat Royale mode)
+   */
+  private handleRoyaleDrawingPhase(bot: Bot, instance: Instance, config: BotConfig): void {
+    // Check if already submitted
+    if (instance.submissions.some(s => s.playerId === bot.playerId)) {
+      return;
+    }
+
+    // AFK chance (reduced for royale to ensure enough participants)
+    if (randomInt(0, 100) < config.afkChance * 50) {
+      log('Debug', `Bot ${bot.user.fullName} is AFK in royale, won't draw`);
+      return;
+    }
+
+    // Draw after delay
+    const delay = randomBetween(config.drawTime.min, config.drawTime.max);
+    const drawTimer = setTimeout(() => {
+      if (bot.isActive && (instance.phase === 'royale-initial-drawing' || instance.phase === 'royale-drawing')) {
         const pixels = this.generateRandomDrawing();
         this.submitDrawing(bot, instance, pixels);
       }

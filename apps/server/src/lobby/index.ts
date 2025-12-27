@@ -15,6 +15,7 @@ import { PrivateLobbyStrategy } from './strategies/PrivateLobbyStrategy.js';
 import { CopyCatLobbyStrategy } from './strategies/CopyCatLobbyStrategy.js';
 import { CopyCatSoloLobbyStrategy } from './strategies/CopyCatSoloLobbyStrategy.js';
 import { ZombiePixelLobbyStrategy } from './strategies/ZombiePixelLobbyStrategy.js';
+import { CopyCatRoyaleLobbyStrategy } from './strategies/CopyCatRoyaleLobbyStrategy.js';
 
 // Re-export types
 export type {
@@ -30,6 +31,7 @@ export { PrivateLobbyStrategy } from './strategies/PrivateLobbyStrategy.js';
 export { CopyCatLobbyStrategy } from './strategies/CopyCatLobbyStrategy.js';
 export { CopyCatSoloLobbyStrategy } from './strategies/CopyCatSoloLobbyStrategy.js';
 export { ZombiePixelLobbyStrategy } from './strategies/ZombiePixelLobbyStrategy.js';
+export { CopyCatRoyaleLobbyStrategy } from './strategies/CopyCatRoyaleLobbyStrategy.js';
 
 // Cache strategies by key (gameMode:instanceType)
 const lobbyStrategyCache = new Map<string, LobbyStrategy>();
@@ -83,6 +85,9 @@ export function getLobbyStrategyFor(
   } else if (gameModeId === 'zombie-pixel') {
     // ZombiePixel uses its own strategy for bot-filling behavior
     strategy = new ZombiePixelLobbyStrategy(config);
+  } else if (gameModeId === 'copycat-royale') {
+    // CopyCat Royale uses its own strategy for elimination-based lobby
+    strategy = new CopyCatRoyaleLobbyStrategy(config);
   } else if (instanceType === 'private') {
     strategy = new PrivateLobbyStrategy(config);
   } else {

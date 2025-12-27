@@ -44,6 +44,8 @@
         return '🎨';
       case 'zombie-pixel':
         return '🧟';
+      case 'copycat-royale':
+        return '👑';
       default:
         return '🎮';
     }
@@ -66,6 +68,8 @@
         return 'var(--color-accent)';
       case 'zombie-pixel':
         return '#22c55e';  // Zombie green
+      case 'copycat-royale':
+        return '#f59e0b';  // Gold/amber for royale
       default:
         return 'var(--color-accent)';
     }
@@ -111,11 +115,13 @@
             {$t.modeSelection.colordle.name}
           {:else if mode.i18nKey === 'gameModes.zombiePixel'}
             {$t.modeSelection.zombiepixel.name}
+          {:else if mode.i18nKey === 'gameModes.copyCatRoyale'}
+            {$t.modeSelection.copycatroyale.name}
           {:else}
             {mode.displayName}
           {/if}
         </h3>
-        {#if mode.i18nKey === 'gameModes.pixelSurvivor' || mode.i18nKey === 'gameModes.zombiePixel'}
+        {#if mode.i18nKey === 'gameModes.pixelSurvivor' || mode.i18nKey === 'gameModes.zombiePixel' || mode.i18nKey === 'gameModes.copyCatRoyale'}
           <Badge variant="warning" size="sm" text={$t.common.alpha} />
         {/if}
       </div>
@@ -134,6 +140,8 @@
           {$t.modeSelection.colordle.description}
         {:else if mode.i18nKey === 'gameModes.zombiePixel'}
           {$t.modeSelection.zombiepixel.description}
+        {:else if mode.i18nKey === 'gameModes.copyCatRoyale'}
+          {$t.modeSelection.copycatroyale.description}
         {:else}
           {mode.displayName}
         {/if}

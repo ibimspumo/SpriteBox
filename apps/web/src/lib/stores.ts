@@ -98,7 +98,13 @@ export type GamePhase =
   | 'survivor-gameover'
   | 'survivor-victory'
   // ZombiePixel mode (real-time infection)
-  | 'active';
+  | 'active'
+  // CopyCat Royale mode (battle royale)
+  | 'royale-initial-drawing'
+  | 'royale-show-reference'
+  | 'royale-drawing'
+  | 'royale-results'
+  | 'royale-winner';
 
 export interface GameState {
   phase: GamePhase;
@@ -261,6 +267,7 @@ export function resetLobbyState(): void {
   resetCopyCatState();
   resetPixelGuesserState();
   resetZombiePixelState();
+  resetCopyCatRoyaleState();
 }
 
 // === CopyCat Mode State ===
@@ -443,6 +450,16 @@ export interface ZombiePixelState {
     healedName: string;
     healerName: string;
   } | null;
+  // Item spawn event (for big announcement)
+  lastItemSpawn: {
+    id: string;
+    type: string;
+    x: number;
+    y: number;
+    icon: string;
+    color: string;
+    forRole: 'zombie' | 'survivor';
+  } | null;
 }
 
 const initialZombiePixelState: ZombiePixelState = {
@@ -464,10 +481,89 @@ const initialZombiePixelState: ZombiePixelState = {
   zombieSpeedBoostRemaining: 0,
   playersWithHealingTouch: [],
   lastHealing: null,
+  lastItemSpawn: null,
 };
 
 export const zombiePixel = writable<ZombiePixelState>(initialZombiePixelState);
 
 export function resetZombiePixelState(): void {
   zombiePixel.set(initialZombiePixelState);
+}
+
+// === CopyCat Royale Mode State ===
+export interface RoyalePlayerRoundResultClient {
+  playerId: string;
+  user: User;
+  pixels: string;
+  accuracy: number;
+  matchingPixels: number;
+  submitTime: number;
+  wasEliminated: boolean;
+  finalRank?: number;
+}
+
+export interface RoyaleFinalRankingClient {
+  playerId: string;
+  user: User;
+  finalRank: number;
+  eliminatedInRound: number | null;
+  averageAccuracy: number;
+  totalRoundsPlayed: number;
+}
+
+export interface CopyCatRoyaleState {
+  // Game progress
+  currentRound: number;
+  totalRounds: number;
+  remainingPlayers: number;
+
+  // Player status
+  isEliminated: boolean;
+  isSpectator: boolean;
+  myAccuracy: number | null;
+  myFinalRank: number | null;
+
+  // Current reference image
+  currentReference: string | null;
+  imageCreator: string | null;
+
+  // Round results
+  lastRoundResults: RoyalePlayerRoundResultClient[];
+  eliminatedThisRound: string[];
+  eliminationThreshold: number;
+
+  // Finale/Winner
+  finalists: User[];
+  winner: User | null;
+  winnerId: string | null;
+  winnerPixels: string | null;
+  winningAccuracy: number | null;
+  finalRankings: RoyaleFinalRankingClient[];
+}
+
+const initialCopyCatRoyaleState: CopyCatRoyaleState = {
+  currentRound: 0,
+  totalRounds: 0,
+  remainingPlayers: 0,
+  isEliminated: false,
+  isSpectator: false,
+  myAccuracy: null,
+  myFinalRank: null,
+  currentReference: null,
+  imageCreator: null,
+  lastRoundResults: [],
+  eliminatedThisRound: [],
+  eliminationThreshold: 0,
+  finalists: [],
+  winner: null,
+  winnerId: null,
+  winnerPixels: null,
+  winningAccuracy: null,
+  finalRankings: [],
+};
+
+export const copyCatRoyale = writable<CopyCatRoyaleState>(initialCopyCatRoyaleState);
+
+export function resetCopyCatRoyaleState(): void {
+  copyCatRoyale.set(initialCopyCatRoyaleState);
 }

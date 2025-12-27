@@ -49,8 +49,18 @@ export interface ServerToClientEvents {
   'zombie-roles-assigned': (data: ZombieRolesAssignedData) => void;
   'zombie-infection': (data: ZombieInfectionData) => void;
   'zombie-healed': (data: ZombieHealedData) => void;
+  'zombie-item-spawned': (data: ZombieItemSpawnedData) => void;
   'zombie-game-end': (data: ZombieGameEndData) => void;
   'zombie-lobby-update': (data: ZombieLobbyUpdateData) => void;
+  // CopyCat Royale mode events
+  'royale-initial-drawing': (data: RoyaleInitialDrawingData) => void;
+  'royale-show-reference': (data: RoyaleShowReferenceData) => void;
+  'royale-drawing': (data: RoyaleDrawingData) => void;
+  'royale-round-results': (data: RoyaleRoundResultsData) => void;
+  'royale-player-eliminated': (data: RoyalePlayerEliminatedData) => void;
+  'royale-finale': (data: RoyaleFinaleData) => void;
+  'royale-winner': (data: RoyaleWinnerData) => void;
+  'royale-you-eliminated': (data: RoyaleYouEliminatedData) => void;
 }
 
 // Persistent stats per game mode
@@ -195,6 +205,16 @@ export interface ZombieHealedData {
   healerName: string;
 }
 
+export interface ZombieItemSpawnedData {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  icon: string;
+  color: string;
+  visibility: 'zombies' | 'survivors' | 'all';
+}
+
 export interface ZombiePixelStatsData {
   totalInfections: number;
   gameDuration: number;
@@ -212,6 +232,90 @@ export interface ZombieGameEndData {
 export interface ZombieLobbyUpdateData {
   playerCount: number;
   readyCount: number;
+}
+
+// CopyCat Royale mode data types
+export interface RoyaleInitialDrawingData {
+  duration: number;
+  endsAt: number;
+}
+
+export interface RoyaleShowReferenceData {
+  referenceImage: string;
+  imageCreator: string;
+  round: number;
+  totalRounds: number;
+  remainingPlayers: number;
+  duration: number;
+  endsAt: number;
+}
+
+export interface RoyaleDrawingData {
+  round: number;
+  duration: number;
+  endsAt: number;
+}
+
+export interface RoyalePlayerRoundResult {
+  playerId: string;
+  user: User;
+  pixels: string;
+  accuracy: number;
+  matchingPixels: number;
+  submitTime: number;
+  wasEliminated: boolean;
+  finalRank?: number;
+}
+
+export interface RoyaleRoundResultsData {
+  round: number;
+  referenceImage: string;
+  results: RoyalePlayerRoundResult[];
+  eliminated: string[];
+  surviving: string[];
+  eliminationThreshold: number;
+  duration: number;
+  endsAt: number;
+}
+
+export interface RoyalePlayerEliminatedData {
+  playerId: string;
+  user: User;
+  round: number;
+  accuracy: number;
+  finalRank: number;
+}
+
+export interface RoyaleFinaleData {
+  finalists: User[];
+  round: number;
+}
+
+export interface RoyaleFinalRanking {
+  playerId: string;
+  user: User;
+  finalRank: number;
+  eliminatedInRound: number | null;
+  averageAccuracy: number;
+  totalRoundsPlayed: number;
+}
+
+export interface RoyaleWinnerData {
+  winner: User;
+  winnerId: string;
+  winnerPixels: string;
+  winningAccuracy: number;
+  totalRounds: number;
+  allResults: RoyaleFinalRanking[];
+  duration: number;
+  endsAt: number;
+}
+
+export interface RoyaleYouEliminatedData {
+  round: number;
+  accuracy: number;
+  finalRank: number;
+  totalPlayers: number;
 }
 
 export interface ClientToServerEvents {
@@ -238,6 +342,8 @@ export interface ClientToServerEvents {
   'pixelguesser-guess': (data: { guess: string }) => void;
   // ZombiePixel mode events
   'zombie-move': (data: { direction: 'up' | 'down' | 'left' | 'right' | 'up-left' | 'up-right' | 'down-left' | 'down-right' }) => void;
+  // CopyCat Royale mode events
+  'royale-submit': (data: { pixels: string }) => void;
 }
 
 export interface SessionRestoredData {

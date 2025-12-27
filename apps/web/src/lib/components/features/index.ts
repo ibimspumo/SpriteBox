@@ -28,3 +28,6 @@ export { ColordleGame } from './Colordle';
 
 // ZombiePixel mode components
 export { ZombiePixelGame, ZombieGrid, ZombieControls, ZombieHUD, ZombieResults } from './ZombiePixel';
+
+// CopyCatRoyale mode components
+export { CopyCatRoyaleGame } from './CopyCatRoyale';

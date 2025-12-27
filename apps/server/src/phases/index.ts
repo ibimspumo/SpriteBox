@@ -15,6 +15,7 @@ import { CopyCatPhaseManager } from './strategies/CopyCatPhaseManager.js';
 import { PixelGuesserPhaseManager } from './strategies/PixelGuesserPhaseManager.js';
 import { PixelSurvivorPhaseManager } from './strategies/PixelSurvivorPhaseManager.js';
 import { ZombiePixelPhaseManager } from './strategies/ZombiePixelPhaseManager.js';
+import { CopyCatRoyalePhaseManager } from './strategies/CopyCatRoyalePhaseManager.js';
 
 // Re-export types
 export type { PhaseManager } from './types.js';
@@ -23,6 +24,7 @@ export { CopyCatPhaseManager } from './strategies/CopyCatPhaseManager.js';
 export { PixelGuesserPhaseManager } from './strategies/PixelGuesserPhaseManager.js';
 export { PixelSurvivorPhaseManager } from './strategies/PixelSurvivorPhaseManager.js';
 export { ZombiePixelPhaseManager } from './strategies/ZombiePixelPhaseManager.js';
+export { CopyCatRoyalePhaseManager } from './strategies/CopyCatRoyalePhaseManager.js';
 
 // Cache PhaseManagers by gameMode ID (they're stateless, so we can reuse them)
 const phaseManagerCache = new Map<string, PhaseManager>();
@@ -60,6 +62,9 @@ export function getPhaseManagerForMode(gameModeId: string): PhaseManager {
       break;
     case 'zombie-pixel':
       manager = new ZombiePixelPhaseManager(config);
+      break;
+    case 'copycat-royale':
+      manager = new CopyCatRoyalePhaseManager(config);
       break;
     default:
       manager = new StandardPhaseManager(config);

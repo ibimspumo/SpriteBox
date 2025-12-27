@@ -8,7 +8,7 @@
   import { game, selectedGameMode, lobby } from '$lib/stores';
   import { emitViewMode, emitLeaveMode } from '$lib/socket';
   import { leaveLobby } from '$lib/socketBridge';
-  import { Lobby, Drawing, Voting, Finale, Results, Memorize, CopyCatResult, CopyCatRematch, Guessing, Reveal, FinalResults, ZombiePixelGame } from '$lib/components/features';
+  import { Lobby, Drawing, Voting, Finale, Results, Memorize, CopyCatResult, CopyCatRematch, Guessing, Reveal, FinalResults, ZombiePixelGame, CopyCatRoyaleGame } from '$lib/components/features';
   import { Timer } from '$lib/components/utility';
   import { PromptDisplay } from '$lib/components/molecules';
 
@@ -95,6 +95,8 @@
         <FinalResults />
       {:else if $game.phase === 'active'}
         <ZombiePixelGame />
+      {:else if $game.phase === 'royale-initial-drawing' || $game.phase === 'royale-show-reference' || $game.phase === 'royale-drawing' || $game.phase === 'royale-results' || $game.phase === 'royale-winner'}
+        <CopyCatRoyaleGame />
       {/if}
     </div>
   </div>

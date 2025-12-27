@@ -15,6 +15,7 @@ SpriteBox unterstützt mehrere Spielmodi mit unterschiedlichem Ablauf:
 | `pixel-guesser` | Pictionary: Einer zeichnet, andere raten | 2-20 |
 | `pixel-survivor` | Roguelike: Zeichne um 30 Tage zu überleben | 1 (Solo) |
 | `zombie-pixel` | Infektionsspiel: Zombies jagen Überlebende | 1-100 (Bots füllen) |
+| `copycat-royale` | Battle Royale Elimination: Bilder nachzeichnen, schlechteste Genauigkeit fliegt | 3-100 |
 
 ## Phasen-Überblick (Pixel Battle)
 
@@ -493,7 +494,7 @@ Monster können Spezialfähigkeiten haben:
 
 ## Zombie Pixel Modus
 
-Zombie Pixel ist ein Echtzeit-Infektionsspiel auf einer 50x50 Gitter-Arena. Ein Spieler startet als Zombie und muss alle Überlebenden infizieren, bevor die Zeit abläuft.
+Zombie Pixel ist ein Echtzeit-Infektionsspiel auf einer 32x32 Gitter-Arena. Ein Spieler startet als Zombie und muss alle Überlebenden infizieren, bevor die Zeit abläuft.
 
 ### Zombie Pixel Phasenablauf
 
@@ -542,7 +543,7 @@ Zombie Pixel ist ein Echtzeit-Infektionsspiel auf einer 50x50 Gitter-Arena. Ein 
 
 ### Spielmechaniken
 
-- **Gittergröße**: 50x50 Zellen
+- **Gittergröße**: 32x32 Zellen
 - **Sichtfeld**: 13x13 sichtbarer Bereich zentriert auf Spieler
 - **Infektion**: Zombie und Überlebender auf gleicher Zelle = Infektion
 - **Bewegungsrate**: Server-kontrollierte Tick-Rate (100ms)
@@ -554,6 +555,94 @@ Zombie Pixel ist ein Echtzeit-Infektionsspiel auf einer 50x50 Gitter-Arena. Ein 
 - **Server-autoritativ**: Alle Bewegungen auf Server validiert
 - **Bot-System**: Server-seitige KI füllt leere Plätze
 - **Rate-limitiert**: Bewegungsbefehle rate-limitiert gegen Spam
+
+## CopyCat Royale Modus
+
+CopyCat Royale ist ein Battle-Royale-Eliminationsspiel, das memory-basierte Pixelkunst mit kompetitiven Eliminationsrunden kombiniert. Spieler zeichnen Bilder und treten dann an, diese aus dem Gedächtnis nachzuzeichnen - Spieler mit der schlechtesten Genauigkeit werden jede Runde eliminiert.
+
+### CopyCat Royale Phasenablauf
+
+```text
+  LOBBY                    COUNTDOWN (5s)           INITIAL DRAW (30s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  3-100      │  Auto    │   Bereit    │          │  Alle       │
+  │  Spieler    │ ───────► │   machen    │ ───────► │  zeichnen   │
+  │  beitreten  │  start   │             │          │  frei (Pool)│
+  └─────────────┘          └─────────────┘          └─────────────┘
+                                                           │
+       ┌───────────────────────────────────────────────────┘
+       │
+       ▼
+  ZEIGE REF (5s)           ZEICHNEN (25s)           ERGEBNISSE (8s)
+  ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+  │  Zufälliges │          │  Aus dem    │          │  Genauigkeit│
+  │  Pool-Bild  │ ───────► │  Gedächtnis │ ───────► │  gerankt    │
+  │  gezeigt    │          │  nachzeich. │          │  Eliminieren│
+  └─────────────┘          └─────────────┘          └─────────────┘
+       ▲                                                   │
+       │                                                   │
+       └──── Mehr Spieler? ────────────────────────────────┘
+                                                           │
+                                                           ▼
+                                                    GEWINNER (15s)
+                                                    ┌─────────────┐
+                                                    │  Finale     │
+                                                    │  Rangliste  │
+                                                    │  angezeigt  │
+                                                    └─────────────┘
+```
+
+### CopyCat Royale Phasen
+
+| Phase              | Dauer          | Beschreibung                                         |
+|--------------------|----------------|------------------------------------------------------|
+| Lobby              | Bis 3+ Spieler | Auto-Start nach Timer                                |
+| Countdown          | 5 Sekunden     | Spieler bereiten sich vor                            |
+| Initiales Zeichnen | 30 Sekunden    | Alle Spieler zeichnen frei (erstellt Bildersammlung) |
+| Referenz zeigen    | 5 Sekunden     | Zufälliges Bild aus Pool wird gezeigt                |
+| Zeichnen           | 25 Sekunden    | Aus dem Gedächtnis nachzeichnen                      |
+| Ergebnisse         | 8 Sekunden     | Genauigkeit gerankt, Eliminierungen gezeigt          |
+| Gewinner           | 15 Sekunden    | Finale Rangliste angezeigt                           |
+
+### Royale Spielablauf
+
+1. **Initiales Zeichnen**: Alle Spieler zeichnen frei und erstellen den Bilderpool
+2. **Rundenstart**: Ein zufälliges Bild aus dem Pool wird angezeigt
+3. **Merken**: Spieler haben 5 Sekunden das Bild zu merken
+4. **Nachzeichnen**: Spieler zeichnen aus dem Gedächtnis (Referenz versteckt)
+5. **Bewertung**: Genauigkeit berechnet durch Pixel-für-Pixel-Vergleich
+6. **Elimination**: Spieler mit schlechtester Genauigkeit werden eliminiert
+7. **Wiederholen**: Weiter bis ein Spieler übrig bleibt
+
+### Eliminationsmechaniken
+
+- Jede Runde eliminiert etwa 1/3 der verbleibenden Spieler
+- Eliminationsanzahl passt sich der Spielerzahl an
+- Finale wird bei 3 oder weniger Spielern ausgelöst
+- Gleichstände werden durch Einreichungszeit entschieden (schneller = besser)
+
+### Royale Genauigkeitsbewertung
+
+```typescript
+genauigkeit = (übereinstimmendePixel / 64) × 100
+// Höhere Genauigkeit überlebt
+// Bei Gleichstand: schnellere Einreichungszeit gewinnt
+```
+
+### Finale Rangliste
+
+| Rang    | Beschreibung                                          |
+|---------|-------------------------------------------------------|
+| 1.      | Letzter verbleibender Spieler (Gewinner)              |
+| 2.-3.   | In Finalrunde eliminiert                              |
+| Andere  | Nach Eliminationsrunde gerankt (später = besser)      |
+
+### Technische Hinweise
+
+- **Bilderpool**: Spielerzeichnungen aus Initialrunde werden zu Referenzen
+- **Faire Auswahl**: Bilder zufällig ausgewählt, ohne Wiederholungen
+- **Frühe Einreichung**: Alle Spieler einreichen beendet Phase vorzeitig
+- **Zuschauermodus**: Eliminierte Spieler können verbleibende Runden beobachten
 
 ## Nächste Schritte
 

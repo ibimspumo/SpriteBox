@@ -50,6 +50,26 @@ import {
   cleanupZombiePixelState,
   checkGameTimeout,
 } from './gameModes/zombiePixel/index.js';
+import {
+  initializeCopyCatRoyaleState,
+  addToImagePool,
+  getRandomPoolImage,
+  recordRoyaleSubmission,
+  calculateRoundResults,
+  isGameOver,
+  isInFinale,
+  getWinner,
+  getSurvivingPlayerIds,
+  getFinalRankings as getRoyaleFinalRankings,
+  advanceRound,
+  allActivePlayersSubmitted,
+  getEstimatedTotalRounds,
+  getCurrentReferenceImage,
+  cleanupCopyCatRoyaleState,
+  isCopyCatRoyaleMode,
+  getPlayerLastSubmission,
+  getActivePlayerCount,
+} from './copycatRoyale.js';
 
 // IO instance (set by index.ts)
 let io: Server | null = null;
@@ -206,6 +226,15 @@ export function startGame(instance: Instance): void {
     return;
   }
 
+  // CopyCat Royale mode has different initialization
+  if (isCopyCatRoyaleMode(instance)) {
+    // Initialize CopyCat Royale state (elimination bracket, player status)
+    initializeCopyCatRoyaleState(instance);
+    // Start countdown
+    transitionTo(instance, 'countdown');
+    return;
+  }
+
   // Standard mode: Generate prompt indices for client-side localization
   instance.promptIndices = generatePromptIndices();
   // Also generate the English text for server logging
@@ -267,6 +296,25 @@ export function transitionTo(instance: Instance, phase: GamePhase): void {
     case 'active':
       handleZombieActive(instance);
       break;
+    // CopyCat Royale mode phases
+    case 'royale-initial-drawing':
+      handleRoyaleInitialDrawing(instance);
+      break;
+    case 'royale-show-reference':
+      handleRoyaleShowReference(instance);
+      break;
+    case 'royale-drawing':
+      handleRoyaleDrawing(instance);
+      break;
+    case 'royale-results':
+      handleRoyaleResults(instance);
+      break;
+    case 'royale-elimination':
+      handleRoyaleElimination(instance);
+      break;
+    case 'royale-winner':
+      handleRoyaleWinner(instance);
+      break;
   }
 }
 
@@ -310,6 +358,9 @@ function handleCountdown(instance: Instance): void {
     } else if (instance.gameMode === 'zombie-pixel') {
       // ZombiePixel: go to active phase
       transitionTo(instance, 'active');
+    } else if (isCopyCatRoyaleMode(instance)) {
+      // CopyCat Royale: go to initial drawing phase
+      transitionTo(instance, 'royale-initial-drawing');
     } else {
       transitionTo(instance, 'drawing');
     }
@@ -1332,4 +1383,388 @@ function handleZombieResults(instance: Instance): void {
   instance.phaseTimer = setTimeout(() => {
     resetForNextRound(instance);
   }, duration);
+}
+
+// === CopyCat Royale Mode Phases ===
+
+/**
+ * Initial drawing phase for CopyCat Royale (30 seconds)
+ * All players draw freely - their drawings become the image pool
+ */
+function handleRoyaleInitialDrawing(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('royale-initial-drawing') ?? 30_000;
+
+  // Reset submissions
+  instance.submissions = [];
+
+  // Set phase timing for anti-cheat
+  setPhaseTimings(instance.id, duration);
+
+  // Set draw start time
+  if (instance.copyCatRoyale) {
+    instance.copyCatRoyale.drawStartTime = Date.now();
+  }
+
+  const endsAt = Date.now() + duration;
+
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'royale-initial-drawing',
+    duration,
+    endsAt,
+  });
+
+  emitToInstance(instance, 'royale-initial-drawing', {
+    duration,
+    endsAt,
+  });
+
+  log('Phase', `CopyCat Royale initial drawing started for instance ${instance.id}`);
+
+  instance.phaseTimer = setTimeout(() => {
+    endRoyaleInitialDrawing(instance);
+  }, duration);
+}
+
+/**
+ * Ends the initial drawing phase and collects images
+ */
+function endRoyaleInitialDrawing(instance: Instance): void {
+  if (!instance.copyCatRoyale) {
+    log('Phase', 'No CopyCat Royale state, skipping to lobby');
+    transitionTo(instance, 'lobby');
+    return;
+  }
+
+  // Collect all submitted images into the pool
+  for (const submission of instance.submissions) {
+    const player = instance.players.get(submission.playerId);
+    if (player) {
+      addToImagePool(instance, submission.playerId, submission.pixels, player.user.displayName);
+    }
+  }
+
+  log('Phase', `CopyCat Royale initial drawing ended: ${instance.copyCatRoyale.imagePool.length} images collected`);
+
+  // Advance to round 1 and show first reference
+  advanceRound(instance);
+  transitionTo(instance, 'royale-show-reference');
+}
+
+/**
+ * Show reference phase for CopyCat Royale (5 seconds)
+ * Display the image to memorize
+ */
+function handleRoyaleShowReference(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('royale-show-reference') ?? 5_000;
+
+  if (!instance.copyCatRoyale) {
+    log('Phase', 'No CopyCat Royale state in show reference');
+    transitionTo(instance, 'lobby');
+    return;
+  }
+
+  // Get a random image from the pool
+  const referenceImage = getRandomPoolImage(instance);
+  if (!referenceImage) {
+    log('Phase', 'No reference image available, ending game');
+    transitionTo(instance, 'royale-winner');
+    return;
+  }
+
+  const endsAt = Date.now() + duration;
+  const remainingPlayers = getActivePlayerCount(instance);
+  const totalRounds = getEstimatedTotalRounds(instance);
+
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'royale-show-reference',
+    round: instance.copyCatRoyale.currentRound,
+    totalRounds,
+    duration,
+    endsAt,
+  });
+
+  emitToInstance(instance, 'royale-show-reference', {
+    referenceImage: referenceImage.pixels,
+    imageCreator: referenceImage.creatorName,
+    round: instance.copyCatRoyale.currentRound,
+    totalRounds,
+    remainingPlayers,
+    duration,
+    endsAt,
+  });
+
+  log('Phase', `CopyCat Royale show reference: round ${instance.copyCatRoyale.currentRound}, image from ${referenceImage.creatorName}`);
+
+  instance.phaseTimer = setTimeout(() => {
+    transitionTo(instance, 'royale-drawing');
+  }, duration);
+}
+
+/**
+ * Drawing phase for CopyCat Royale (25 seconds)
+ * Players recreate the image from memory (no reference visible)
+ */
+function handleRoyaleDrawing(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('royale-drawing') ?? 25_000;
+
+  if (!instance.copyCatRoyale) {
+    log('Phase', 'No CopyCat Royale state in drawing');
+    transitionTo(instance, 'lobby');
+    return;
+  }
+
+  // Reset submissions for this round
+  instance.submissions = [];
+
+  // Set phase timing for anti-cheat
+  setPhaseTimings(instance.id, duration);
+
+  // Set draw start time
+  instance.copyCatRoyale.drawStartTime = Date.now();
+
+  const endsAt = Date.now() + duration;
+
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'royale-drawing',
+    round: instance.copyCatRoyale.currentRound,
+    duration,
+    endsAt,
+  });
+
+  emitToInstance(instance, 'royale-drawing', {
+    round: instance.copyCatRoyale.currentRound,
+    duration,
+    endsAt,
+  });
+
+  log('Phase', `CopyCat Royale drawing phase: round ${instance.copyCatRoyale.currentRound}`);
+
+  instance.phaseTimer = setTimeout(() => {
+    transitionTo(instance, 'royale-results');
+  }, duration);
+}
+
+/**
+ * Results phase for CopyCat Royale (8 seconds)
+ * Show results, accuracies, and who gets eliminated
+ */
+function handleRoyaleResults(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('royale-results') ?? 8_000;
+
+  if (!instance.copyCatRoyale) {
+    log('Phase', 'No CopyCat Royale state in results');
+    transitionTo(instance, 'lobby');
+    return;
+  }
+
+  // Calculate results and eliminations
+  const roundResult = calculateRoundResults(instance);
+  if (!roundResult) {
+    log('Phase', 'Failed to calculate round results');
+    transitionTo(instance, 'royale-winner');
+    return;
+  }
+
+  const referenceImage = getCurrentReferenceImage(instance);
+  const surviving = getSurvivingPlayerIds(instance);
+
+  // Calculate elimination threshold (lowest surviving accuracy)
+  const survivingResults = roundResult.results.filter((r) => !r.wasEliminated);
+  const threshold = survivingResults.length > 0
+    ? Math.min(...survivingResults.map((r) => r.accuracy))
+    : 0;
+
+  const endsAt = Date.now() + duration;
+
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'royale-results',
+    round: instance.copyCatRoyale.currentRound,
+    duration,
+    endsAt,
+  });
+
+  emitToInstance(instance, 'royale-round-results', {
+    round: instance.copyCatRoyale.currentRound,
+    referenceImage: referenceImage?.pixels ?? '',
+    results: roundResult.results,
+    eliminated: roundResult.eliminated,
+    surviving,
+    eliminationThreshold: threshold,
+    duration,
+    endsAt,
+  });
+
+  // Send personal elimination notifications
+  for (const result of roundResult.results) {
+    if (result.wasEliminated) {
+      const player = instance.players.get(result.playerId);
+      if (player && io) {
+        const totalPlayers = instance.copyCatRoyale.playerStatus.size;
+        io.to(player.socketId).emit('royale-you-eliminated', {
+          round: instance.copyCatRoyale.currentRound,
+          accuracy: result.accuracy,
+          finalRank: result.finalRank ?? totalPlayers,
+          totalPlayers,
+        });
+
+        // Move eliminated player to spectators
+        instance.spectators.set(result.playerId, player);
+        instance.players.delete(result.playerId);
+      }
+    }
+  }
+
+  log('Phase', `CopyCat Royale results: round ${instance.copyCatRoyale.currentRound}, ${roundResult.eliminated.length} eliminated`);
+
+  instance.phaseTimer = setTimeout(() => {
+    transitionTo(instance, 'royale-elimination');
+  }, duration);
+}
+
+/**
+ * Elimination phase for CopyCat Royale (instant)
+ * Determines what happens next
+ */
+function handleRoyaleElimination(instance: Instance): void {
+  if (!instance.copyCatRoyale) {
+    transitionTo(instance, 'lobby');
+    return;
+  }
+
+  // Check if game is over
+  if (isGameOver(instance)) {
+    transitionTo(instance, 'royale-winner');
+    return;
+  }
+
+  // Check if we're entering finale (3 or fewer players)
+  if (isInFinale(instance)) {
+    instance.copyCatRoyale.isFinale = true;
+    const finalists: { playerId: string; user: import('./types.js').User }[] = [];
+    for (const [playerId, status] of instance.copyCatRoyale.playerStatus) {
+      if (!status.isEliminated) {
+        const player = instance.players.get(playerId);
+        if (player) {
+          finalists.push({ playerId, user: player.user });
+        }
+      }
+    }
+    emitToInstance(instance, 'royale-finale', {
+      finalists: finalists.map((f) => f.user),
+      round: instance.copyCatRoyale.currentRound + 1,
+    });
+  }
+
+  // Advance to next round
+  advanceRound(instance);
+
+  // Continue to next round
+  transitionTo(instance, 'royale-show-reference');
+}
+
+/**
+ * Winner phase for CopyCat Royale (15 seconds)
+ * Show the winner and final rankings
+ */
+function handleRoyaleWinner(instance: Instance): void {
+  const manager = getPhaseManager(instance);
+  const duration = manager.getTimerDuration('royale-winner') ?? 15_000;
+
+  const winner = getWinner(instance);
+  const rankings = getRoyaleFinalRankings(instance);
+  const totalRounds = instance.copyCatRoyale?.currentRound ?? 0;
+
+  const endsAt = Date.now() + duration;
+
+  // Get winner's last drawing
+  const winnerPixels = winner ? getPlayerLastSubmission(instance, winner.playerId) : null;
+  const winnerResult = rankings.find((r) => r.finalRank === 1);
+
+  emitToInstance(instance, 'phase-changed', {
+    phase: 'royale-winner',
+    duration,
+    endsAt,
+  });
+
+  emitToInstance(instance, 'royale-winner', {
+    winner: winner?.user ?? { displayName: 'Unknown', discriminator: '0000', fullName: 'Unknown#0000' },
+    winnerId: winner?.playerId ?? '',
+    winnerPixels: winnerPixels ?? '',
+    winningAccuracy: winnerResult?.averageAccuracy ?? 0,
+    totalRounds,
+    allResults: rankings,
+    duration,
+    endsAt,
+  });
+
+  log('Phase', `CopyCat Royale winner: ${winner?.user.displayName ?? 'none'}`);
+
+  // Clean up state
+  cleanupCopyCatRoyaleState(instance);
+
+  // Return spectators to players for next game
+  for (const [id, spectator] of instance.spectators) {
+    instance.players.set(id, spectator);
+  }
+  instance.spectators.clear();
+
+  instance.phaseTimer = setTimeout(() => {
+    resetForNextRound(instance);
+  }, duration);
+}
+
+/**
+ * Handle a CopyCat Royale submission
+ * Called from socket handler
+ */
+export function handleRoyaleSubmission(
+  instance: Instance,
+  playerId: string,
+  pixels: string
+): { success: boolean; error?: string; allSubmitted?: boolean } {
+  if (!isCopyCatRoyaleMode(instance)) {
+    return { success: false, error: 'Not a CopyCat Royale game' };
+  }
+
+  if (!instance.copyCatRoyale) {
+    return { success: false, error: 'CopyCat Royale state not initialized' };
+  }
+
+  // Check phase
+  if (instance.phase !== 'royale-initial-drawing' && instance.phase !== 'royale-drawing') {
+    return { success: false, error: 'Not in drawing phase' };
+  }
+
+  // Record submission
+  const submission = recordRoyaleSubmission(instance, playerId, pixels);
+  if (!submission) {
+    return { success: false, error: 'Failed to record submission' };
+  }
+
+  // Add to standard submissions for compatibility
+  instance.submissions.push({
+    playerId,
+    pixels,
+    timestamp: submission.submitTime,
+  });
+
+  // Check if all active players have submitted
+  const allSubmitted = allActivePlayersSubmitted(instance);
+
+  if (allSubmitted) {
+    log('Phase', 'All CopyCat Royale players submitted, ending phase early');
+    clearTimeout(instance.phaseTimer);
+
+    if (instance.phase === 'royale-initial-drawing') {
+      endRoyaleInitialDrawing(instance);
+    } else {
+      transitionTo(instance, 'royale-results');
+    }
+  }
+
+  return { success: true, allSubmitted };
 }

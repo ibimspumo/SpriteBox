@@ -11,6 +11,7 @@ export const MODE_SLUGS: Record<string, string> = {
   'copycat-solo': 'copy-cat-solo',
   survivor: 'pixel-survivor',
   zombie: 'zombie-pixel',
+  'copycat-royale': 'copycat-royale',
 } as const;
 
 /**
@@ -23,6 +24,7 @@ export const SLUG_FROM_MODE: Record<string, string> = {
   'copy-cat-solo': 'copycat-solo',
   'pixel-survivor': 'survivor',
   'zombie-pixel': 'zombie',
+  'copycat-royale': 'copycat-royale',
 } as const;
 
 /**

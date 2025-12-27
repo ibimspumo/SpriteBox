@@ -48,6 +48,7 @@ export { copyCatSoloMode } from './modes/copyCatSolo.js';
 export { pixelGuesserMode } from './modes/pixelGuesser.js';
 export { zombiePixelMode } from './modes/zombiePixel.js';
 export { pixelSurvivorMode } from './modes/pixelSurvivor.js';
+export { copyCatRoyaleMode } from './modes/copyCatRoyale.js';
 
 // Re-export helpers
 export {
@@ -76,6 +77,7 @@ import { copyCatSoloMode } from './modes/copyCatSolo.js';
 import { pixelGuesserMode } from './modes/pixelGuesser.js';
 import { zombiePixelMode } from './modes/zombiePixel.js';
 import { pixelSurvivorMode } from './modes/pixelSurvivor.js';
+import { copyCatRoyaleMode } from './modes/copyCatRoyale.js';
 import { log } from '../utils.js';
 
 /**
@@ -98,8 +100,11 @@ export function initializeGameModes(): void {
   // Register Zombie Pixel mode (real-time infection)
   gameModes.register(zombiePixelMode);
 
-  // Register Pixel Survivor mode (single-player roguelike) - last position
+  // Register Pixel Survivor mode (single-player roguelike)
   gameModes.register(pixelSurvivorMode);
+
+  // Register CopyCat Royale mode (battle royale elimination)
+  gameModes.register(copyCatRoyaleMode);
 
   // Set pixel-battle as the default
   gameModes.setDefault('pixel-battle');

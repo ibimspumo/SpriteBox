@@ -414,6 +414,105 @@
 
 		// Draw minimap (unaffected by shake)
 		drawMinimap(ctx, camX, camY);
+
+		// Draw off-screen item indicators (arrows at edge)
+		drawOffScreenItemIndicators(ctx, camX, camY);
+	}
+
+	function drawOffScreenItemIndicators(
+		ctx: CanvasRenderingContext2D,
+		camX: number,
+		camY: number
+	): void {
+		const padding = 20; // Distance from edge
+		const arrowSize = 16;
+		const centerX = canvasSize / 2;
+		const centerY = canvasSize / 2;
+
+		for (const item of items) {
+			// Filter items by visibility (same logic as in render)
+			const isZombie = yourRole === 'zombie';
+			const canSee =
+				(item.type === 'speed-boost' && isZombie) || (item.type === 'healing-touch' && !isZombie);
+
+			if (!canSee) continue;
+
+			// Calculate screen position
+			const screenX = (item.x - camX) * cellSize + cellSize / 2;
+			const screenY = (item.y - camY) * cellSize + cellSize / 2;
+
+			// Check if item is outside viewport
+			const isOffScreen =
+				screenX < 0 || screenX > canvasSize || screenY < 0 || screenY > canvasSize;
+
+			if (!isOffScreen) continue;
+
+			// Calculate direction to item
+			const dx = screenX - centerX;
+			const dy = screenY - centerY;
+			const angle = Math.atan2(dy, dx);
+
+			// Calculate position on edge of screen
+			let edgeX = centerX;
+			let edgeY = centerY;
+
+			// Find intersection with screen edge
+			const halfWidth = canvasSize / 2 - padding;
+			const halfHeight = canvasSize / 2 - padding;
+
+			const tanAngle = Math.tan(angle);
+			const cotAngle = 1 / tanAngle;
+
+			// Check horizontal edges
+			if (Math.abs(dx) > Math.abs(dy)) {
+				edgeX = dx > 0 ? canvasSize - padding : padding;
+				edgeY = centerY + (edgeX - centerX) * tanAngle;
+			} else {
+				edgeY = dy > 0 ? canvasSize - padding : padding;
+				edgeX = centerX + (edgeY - centerY) * cotAngle;
+			}
+
+			// Clamp to screen bounds
+			edgeX = Math.max(padding, Math.min(canvasSize - padding, edgeX));
+			edgeY = Math.max(padding, Math.min(canvasSize - padding, edgeY));
+
+			// Draw pulsing arrow
+			const pulse = 0.7 + Math.sin(glowPhase * 3 + item.x + item.y) * 0.3;
+
+			ctx.save();
+			ctx.translate(edgeX, edgeY);
+			ctx.rotate(angle);
+
+			// Glow effect
+			ctx.shadowColor = item.color;
+			ctx.shadowBlur = 10 + Math.sin(glowPhase * 2) * 5;
+			ctx.globalAlpha = pulse;
+
+			// Draw arrow shape
+			ctx.fillStyle = item.color;
+			ctx.beginPath();
+			ctx.moveTo(arrowSize, 0);
+			ctx.lineTo(-arrowSize * 0.5, -arrowSize * 0.6);
+			ctx.lineTo(-arrowSize * 0.3, 0);
+			ctx.lineTo(-arrowSize * 0.5, arrowSize * 0.6);
+			ctx.closePath();
+			ctx.fill();
+
+			// Draw distance indicator (small dots)
+			const distance = Math.sqrt(dx * dx + dy * dy);
+			const normalizedDist = Math.min(distance / (canvasSize * 2), 1);
+			const dotCount = Math.max(1, Math.floor((1 - normalizedDist) * 3) + 1);
+
+			ctx.globalAlpha = pulse * 0.6;
+			for (let i = 0; i < dotCount; i++) {
+				const dotX = -arrowSize - 8 - i * 6;
+				ctx.beginPath();
+				ctx.arc(dotX, 0, 2, 0, Math.PI * 2);
+				ctx.fill();
+			}
+
+			ctx.restore();
+		}
 	}
 
 	function drawMinimap(ctx: CanvasRenderingContext2D, camX: number, camY: number): void {

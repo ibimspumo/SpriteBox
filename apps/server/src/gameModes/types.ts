@@ -28,6 +28,12 @@ export interface GameModeTimers {
   levelUp?: number | null;
   // ZombiePixel mode timers
   active?: number | null;
+  // CopyCat Royale mode timers
+  royaleInitialDrawing?: number | null;
+  royaleShowReference?: number | null;
+  royaleDrawing?: number | null;
+  royaleResults?: number | null;
+  royaleWinner?: number | null;
 }
 
 /**

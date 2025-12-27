@@ -44,7 +44,14 @@ export type GamePhase =
   | 'survivor-gameover'
   | 'survivor-victory'
   // ZombiePixel mode phases (real-time infection)
-  | 'active';
+  | 'active'
+  // CopyCat Royale mode phases (battle royale)
+  | 'royale-initial-drawing'
+  | 'royale-show-reference'
+  | 'royale-drawing'
+  | 'royale-results'
+  | 'royale-elimination'
+  | 'royale-winner';
 
 export interface Instance {
   id: string;
@@ -71,6 +78,8 @@ export interface Instance {
   pixelGuesser?: PixelGuesserState;
   // ZombiePixel mode fields
   zombiePixel?: import('./gameModes/zombiePixel/types.js').ZombiePixelState;
+  // CopyCat Royale mode fields
+  copyCatRoyale?: CopyCatRoyaleState;
 }
 
 // === CopyCat Mode Types ===
@@ -122,6 +131,75 @@ export interface PixelGuesserScoreEntry {
   wasArtist: boolean;
   guessedCorrectly: boolean;
   guessTime?: number;             // Time in ms to guess (if correct)
+}
+
+// === CopyCat Royale Mode Types ===
+export interface CopyCatRoyaleState {
+  imagePool: RoyalePoolImage[];                // All images in the pool
+  usedImageIds: Set<string>;                   // Images already used as reference
+  currentReferenceImage: RoyalePoolImage | null;
+  eliminationBracket: EliminationBracket[];    // Pre-calculated bracket
+  currentRound: number;                        // 0 = initial drawing, 1+ = copy rounds
+  roundResults: Map<number, RoyaleRoundResult>;
+  playerStatus: Map<string, RoyalePlayerStatus>;
+  isFinale: boolean;
+  drawStartTime?: number;
+}
+
+export interface RoyalePoolImage {
+  id: string;
+  pixels: string;                              // 64-char hex string
+  creatorId: string;
+  creatorName: string;
+}
+
+export interface EliminationBracket {
+  round: number;
+  playersStart: number;
+  playersEnd: number;
+  eliminateCount: number;
+}
+
+export interface RoyalePlayerStatus {
+  isEliminated: boolean;
+  eliminatedInRound: number | null;
+  totalAccuracy: number;                       // Sum of all accuracies
+  roundsPlayed: number;
+  submissions: Map<number, RoyalePlayerSubmission>;
+}
+
+export interface RoyalePlayerSubmission {
+  pixels: string;
+  accuracy: number;
+  matchingPixels: number;
+  submitTime: number;
+}
+
+export interface RoyaleRoundResult {
+  round: number;
+  referenceImage: RoyalePoolImage;
+  results: RoyalePlayerRoundResult[];
+  eliminated: string[];                        // Player IDs eliminated this round
+}
+
+export interface RoyalePlayerRoundResult {
+  playerId: string;
+  user: User;
+  pixels: string;
+  accuracy: number;
+  matchingPixels: number;
+  submitTime: number;
+  wasEliminated: boolean;
+  finalRank?: number;                          // Final placement (for eliminated players)
+}
+
+export interface RoyaleFinalRanking {
+  playerId: string;
+  user: User;
+  finalRank: number;
+  eliminatedInRound: number | null;            // null if winner
+  averageAccuracy: number;
+  totalRoundsPlayed: number;
 }
 
 // === Submission ===
@@ -447,6 +525,62 @@ export interface ServerToClientEvents {
     botCount: number;
     totalPlayers: number;
   }) => void;
+  // CopyCat Royale mode events
+  'royale-initial-drawing': (data: {
+    duration: number;
+    endsAt: number;
+  }) => void;
+  'royale-show-reference': (data: {
+    referenceImage: string;
+    imageCreator: string;
+    round: number;
+    totalRounds: number;
+    remainingPlayers: number;
+    duration: number;
+    endsAt: number;
+  }) => void;
+  'royale-drawing': (data: {
+    round: number;
+    duration: number;
+    endsAt: number;
+  }) => void;
+  'royale-round-results': (data: {
+    round: number;
+    referenceImage: string;
+    results: RoyalePlayerRoundResult[];
+    eliminated: string[];
+    surviving: string[];
+    eliminationThreshold: number;
+    duration: number;
+    endsAt: number;
+  }) => void;
+  'royale-player-eliminated': (data: {
+    playerId: string;
+    user: User;
+    round: number;
+    accuracy: number;
+    finalRank: number;
+  }) => void;
+  'royale-finale': (data: {
+    finalists: User[];
+    round: number;
+  }) => void;
+  'royale-winner': (data: {
+    winner: User;
+    winnerId: string;
+    winnerPixels: string;
+    winningAccuracy: number;
+    totalRounds: number;
+    allResults: RoyaleFinalRanking[];
+    duration: number;
+    endsAt: number;
+  }) => void;
+  'royale-you-eliminated': (data: {
+    round: number;
+    accuracy: number;
+    finalRank: number;
+    totalPlayers: number;
+  }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -474,6 +608,8 @@ export interface ClientToServerEvents {
   'pixelguesser-guess': (data: { guess: string }) => void;
   // ZombiePixel mode events
   'zombie-move': (data: { direction: 'up' | 'down' | 'left' | 'right' }) => void;
+  // CopyCat Royale mode events - uses 'submit-drawing' for submissions
+  'royale-submit': (data: { pixels: string }) => void;
 }
 
 // === Helper types ===

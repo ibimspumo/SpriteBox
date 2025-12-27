@@ -359,6 +359,10 @@ export interface Translations {
 			name: string;
 			description: string;
 		};
+		copycatroyale: {
+			name: string;
+			description: string;
+		};
 	};
 
 	// Stats
@@ -416,6 +420,46 @@ export interface Translations {
 		healingActive: string;
 		healed: string;
 		botBadge: string;
+		// Item spawn announcements
+		itemSpawned: string;
+		itemSpawnedNearby: string;
+		speedBoostName: string;
+		healingTouchName: string;
+	};
+
+	// CopyCat Royale mode (battle royale elimination)
+	copyCatRoyale: {
+		// Initial drawing phase
+		createYourArt: string;
+		createDesc: string;
+		// Memorize phase
+		memorize: string;
+		memorizeDesc: string;
+		createdBy: string;
+		// Drawing phase
+		drawFromMemory: string;
+		round: string;
+		remaining: string;
+		// Results
+		roundResults: string;
+		accuracy: string;
+		eliminated: string;
+		survived: string;
+		youWereEliminated: string;
+		yourRank: string;
+		threshold: string;
+		// Finale
+		finale: string;
+		finalistAnnounce: string;
+		// Winner
+		winner: string;
+		winnerAnnounce: string;
+		finalRankings: string;
+		winnerAccuracy: string;
+		totalRounds: string;
+		averageAccuracy: string;
+		eliminatedIn: string;
+		waitingForLobby: string;
 	};
 
 	// Pixel Survivor mode (simplified - character creation only)

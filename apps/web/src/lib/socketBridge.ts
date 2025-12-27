@@ -43,6 +43,7 @@ import {
   pixelGuesser,
   resetPixelGuesserState,
   zombiePixel,
+  copyCatRoyale,
   type GamePhase,
 } from './stores';
 import { recordGameResult, addGameToHistory } from './stats';
@@ -910,6 +911,39 @@ function setupEventHandlers(socket: AppSocket): void {
     }, 3000);
   });
 
+  socket.on('zombie-item-spawned', (data) => {
+    // Determine which role this item is for
+    const forRole = data.visibility === 'zombies' ? 'zombie' : 'survivor';
+    const currentRole = get(zombiePixel).yourRole;
+
+    // Only show announcement if the item is for our role
+    if (
+      (forRole === 'zombie' && currentRole === 'zombie') ||
+      (forRole === 'survivor' && currentRole === 'survivor')
+    ) {
+      zombiePixel.update((state) => ({
+        ...state,
+        lastItemSpawn: {
+          id: data.id,
+          type: data.type,
+          x: data.x,
+          y: data.y,
+          icon: data.icon,
+          color: data.color,
+          forRole,
+        },
+      }));
+
+      // Clear announcement after 3 seconds
+      setTimeout(() => {
+        zombiePixel.update((state) => ({
+          ...state,
+          lastItemSpawn: null,
+        }));
+      }, 3000);
+    }
+  });
+
   socket.on('zombie-game-end', (data) => {
     zombiePixel.update((state) => ({
       ...state,
@@ -926,6 +960,110 @@ function setupEventHandlers(socket: AppSocket): void {
   }) => {
     // Update lobby info if needed
     console.log('[Socket] Zombie lobby update:', data);
+  });
+
+  // === CopyCat Royale Mode Events ===
+  socket.on('royale-initial-drawing', (data) => {
+    game.update((g) => ({
+      ...g,
+      phase: 'royale-initial-drawing' as GamePhase,
+    }));
+    startTimer(data.duration, data.endsAt);
+    hasSubmitted.set(false);
+  });
+
+  socket.on('royale-show-reference', (data) => {
+    game.update((g) => ({
+      ...g,
+      phase: 'royale-show-reference' as GamePhase,
+    }));
+    copyCatRoyale.update((state) => ({
+      ...state,
+      currentRound: data.round,
+      totalRounds: data.totalRounds,
+      remainingPlayers: data.remainingPlayers,
+      currentReference: data.referenceImage,
+      imageCreator: data.imageCreator,
+    }));
+    startTimer(data.duration, data.endsAt);
+  });
+
+  socket.on('royale-drawing', (data) => {
+    game.update((g) => ({
+      ...g,
+      phase: 'royale-drawing' as GamePhase,
+    }));
+    copyCatRoyale.update((state) => ({
+      ...state,
+      currentRound: data.round,
+    }));
+    startTimer(data.duration, data.endsAt);
+    hasSubmitted.set(false);
+  });
+
+  socket.on('royale-round-results', (data) => {
+    game.update((g) => ({
+      ...g,
+      phase: 'royale-results' as GamePhase,
+    }));
+    copyCatRoyale.update((state) => ({
+      ...state,
+      currentRound: data.round,
+      currentReference: data.referenceImage,
+      lastRoundResults: data.results,
+      eliminatedThisRound: data.eliminated,
+      eliminationThreshold: data.eliminationThreshold,
+      remainingPlayers: data.surviving.length,
+    }));
+    startTimer(data.duration, data.endsAt);
+  });
+
+  socket.on('royale-player-eliminated', (data) => {
+    // Update the player as eliminated in results if visible
+    copyCatRoyale.update((state) => ({
+      ...state,
+      lastRoundResults: state.lastRoundResults.map((r) =>
+        r.playerId === data.playerId
+          ? { ...r, wasEliminated: true, finalRank: data.finalRank }
+          : r
+      ),
+    }));
+  });
+
+  socket.on('royale-finale', (data) => {
+    copyCatRoyale.update((state) => ({
+      ...state,
+      currentRound: data.round,
+      finalists: data.finalists,
+    }));
+  });
+
+  socket.on('royale-winner', (data) => {
+    game.update((g) => ({
+      ...g,
+      phase: 'royale-winner' as GamePhase,
+    }));
+    copyCatRoyale.update((state) => ({
+      ...state,
+      totalRounds: data.totalRounds,
+      winner: data.winner,
+      winnerId: data.winnerId,
+      winnerPixels: data.winnerPixels,
+      winningAccuracy: data.winningAccuracy,
+      finalRankings: data.allResults,
+    }));
+    startTimer(data.duration, data.endsAt);
+  });
+
+  socket.on('royale-you-eliminated', (data) => {
+    copyCatRoyale.update((state) => ({
+      ...state,
+      isEliminated: true,
+      myAccuracy: data.accuracy,
+      myFinalRank: data.finalRank,
+    }));
+    // Play attack sound for elimination feedback
+    playSound('attack');
   });
 }
 
@@ -1008,4 +1146,10 @@ export function pixelGuesserDraw(pixels: string): void {
 
 export function pixelGuesserGuess(guess: string): void {
   getSocket()?.emit('pixelguesser-guess', { guess });
+}
+
+// === CopyCat Royale Action Functions ===
+export function royaleSubmit(pixels: string): void {
+  getSocket()?.emit('royale-submit', { pixels });
+  hasSubmitted.set(true);
 }

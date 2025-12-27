@@ -327,7 +327,11 @@ export const en: Translations = {
 		},
 		zombiepixel: {
 			name: 'Zombie Pixel',
-			description: 'Survive the zombie invasion on a 50x50 grid!',
+			description: 'Survive the zombie invasion on a 32x32 grid!',
+		},
+		copycatroyale: {
+			name: 'CopyCat Royale',
+			description: 'Battle royale with memory! Worst copies get eliminated.',
 		},
 	},
 
@@ -384,6 +388,45 @@ export const en: Translations = {
 		healingActive: 'HEALING',
 		healed: '{name} healed!',
 		botBadge: 'Bot',
+		// Item spawn announcements
+		itemSpawned: 'POWER-UP SPAWNED!',
+		itemSpawnedNearby: 'A power-up appeared on the map!',
+		speedBoostName: 'Speed Boost',
+		healingTouchName: 'Healing Touch',
+	},
+
+	copyCatRoyale: {
+		// Initial drawing phase
+		createYourArt: 'Create Your Art',
+		createDesc: 'Draw something unique! Your art may become a challenge for others.',
+		// Memorize phase
+		memorize: 'Memorize',
+		memorizeDesc: 'Study this image carefully!',
+		createdBy: 'Created by {name}',
+		// Drawing phase
+		drawFromMemory: 'Draw from Memory',
+		round: 'Round {current}/{total}',
+		remaining: '{count} players remaining',
+		// Results
+		roundResults: 'Round Results',
+		accuracy: '{value}% accuracy',
+		eliminated: 'ELIMINATED',
+		survived: 'Survived',
+		youWereEliminated: 'You were eliminated!',
+		yourRank: 'Final Rank: #{rank}',
+		threshold: 'Elimination threshold: {value}%',
+		// Finale
+		finale: 'FINALE',
+		finalistAnnounce: '{count} finalists remain!',
+		// Winner
+		winner: 'WINNER',
+		winnerAnnounce: '{name} wins!',
+		finalRankings: 'Final Rankings',
+		winnerAccuracy: 'Winning accuracy: {value}%',
+		totalRounds: 'Total rounds: {count}',
+		averageAccuracy: 'Avg: {value}%',
+		eliminatedIn: 'Eliminated in round {round}',
+		waitingForLobby: 'Returning to lobby...',
 	},
 
 	pixelSurvivor: {
