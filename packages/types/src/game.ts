@@ -68,9 +68,9 @@ export interface Instance {
   promptIndices?: PromptIndices;  // For client-side localization
   createdAt: number;
   lastActivity: number;
-  lobbyTimer?: NodeJS.Timeout;
+  lobbyTimer?: ReturnType<typeof setTimeout>;
   lobbyTimerEndsAt?: number;  // When the lobby timer ends (for late joiners)
-  phaseTimer?: NodeJS.Timeout;
+  phaseTimer?: ReturnType<typeof setTimeout>;
   // CopyCat mode fields
   copyCat?: CopyCatState;
   // PixelGuesser mode fields
