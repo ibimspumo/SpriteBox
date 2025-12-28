@@ -363,6 +363,10 @@ export interface Translations {
 			name: string;
 			description: string;
 		};
+		idlepixel: {
+			name: string;
+			description: string;
+		};
 	};
 
 	// Stats
@@ -782,6 +786,170 @@ export interface Translations {
 					biteDesc: string;
 					howl: string;
 					howlDesc: string;
+				};
+			};
+		};
+	};
+
+	// Idle Pixel game mode
+	idlePixel: {
+		// General UI
+		title: string;
+		subtitle: string;
+		currency: string;
+		perSecond: string;
+		level: string;
+		cost: string;
+		max: string;
+		loading: string;
+		// Menu
+		menu: {
+			startGame: string;
+			hint1: string;
+			hint2: string;
+		};
+		// Tabs
+		tabs: {
+			grid: string;
+		};
+		// Stats
+		stats: {
+			pixels: string;
+			empty: string;
+			best: string;
+			pixelsShort: string;
+		};
+		// Buy section
+		buy: {
+			buyPixel: string;
+			noSpace: string;
+		};
+		// Categories
+		categories: {
+			production: string;
+			economy: string;
+			grid: string;
+			clicker: string;
+		};
+		// Upgrades
+		upgrades: {
+			title: string;
+			// Production upgrades
+			prodMultiplier: {
+				name: string;
+				description: string;
+			};
+			// Economy upgrades
+			cheaperPixels: {
+				name: string;
+				description: string;
+			};
+			betterPixels: {
+				name: string;
+				description: string;
+			};
+			// Clicker upgrades
+			energyCapacity: {
+				name: string;
+				description: string;
+			};
+			goldenFrequency: {
+				name: string;
+				description: string;
+			};
+			// Merge unlock upgrades
+			mergeUnlock8: {
+				name: string;
+				description: string;
+			};
+			mergeUnlock9: {
+				name: string;
+				description: string;
+			};
+			mergeUnlock10: {
+				name: string;
+				description: string;
+			};
+			// Error messages
+			errors: {
+				notFound: string;
+				maxReached: string;
+				requiresUpgrade: string;
+				notEnough: string;
+			};
+		};
+		// Save indicator
+		save: {
+			saved: string;
+			justNow: string;
+		};
+		// Offline progress
+		offline: {
+			welcomeBack: string;
+			timeAway: string;
+			earned: string;
+			efficiencyNote: string;
+			continue: string;
+		};
+		// Clicker UI
+		clicker: {
+			energyBar: {
+				title: string;
+				harvest: string;
+				full: string;
+			};
+			goldenPixel: {
+				collect: string;
+				bonus: string;
+				missed: string;
+			};
+		};
+		// Achievement system
+		achievement: {
+			newRecord: string;
+			levelReached: string;
+		};
+		// Prestige system
+		prestige: {
+			title: string;
+			button: string;
+			nextAt: string;
+			prismaPixels: string;
+			confirm: string;
+			cancel: string;
+			confirmTitle: string;
+			confirmText: string;
+			confirmGain: string;
+			confirmWarning: string;
+			shopTitle: string;
+			maxed: string;
+			noPrestigeYet: string;
+			prestigeCount: string;
+			// Prestige upgrades
+			upgrades: {
+				production: {
+					name: string;
+					description: string;
+				};
+				startCurrency: {
+					name: string;
+					description: string;
+				};
+				unlockSlots: {
+					name: string;
+					description: string;
+				};
+				goldenBonus: {
+					name: string;
+					description: string;
+				};
+				basePixel: {
+					name: string;
+					description: string;
+				};
+				mergeUnlock: {
+					name: string;
+					description: string;
 				};
 			};
 		};

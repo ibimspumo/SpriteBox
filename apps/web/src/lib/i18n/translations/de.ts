@@ -333,6 +333,10 @@ export const de: Translations = {
 			name: 'CopyCat Royale',
 			description: 'Battle Royale mit Gedächtnis! Die schlechtesten Kopien fliegen raus.',
 		},
+		idlepixel: {
+			name: 'Idle Pixel',
+			description: 'Entspanntes Idle-Spiel. Pixel verschmelzen, Upgrades freischalten, Prestige!',
+		},
 	},
 
 	stats: {
@@ -750,6 +754,167 @@ export const de: Translations = {
 			defeatTitle: 'Besiegt...',
 			roundsReached: 'Runden erreicht',
 			returnToMenu: 'Zurück zum Menü',
+		},
+	},
+
+	// Idle Pixel game mode
+	idlePixel: {
+		// General UI
+		title: 'IDLE PIXEL',
+		subtitle: 'VERSCHMELZEN • SAMMELN • ENTWICKELN',
+		currency: 'Pixel',
+		perSecond: '/Sek',
+		level: 'Lv',
+		cost: 'Kosten',
+		max: 'MAX',
+		loading: 'LADE...',
+		// Menu
+		menu: {
+			startGame: 'SPIEL STARTEN',
+			hint1: 'Kaufe Pixel • Sieh zu wie sie verschmelzen',
+			hint2: 'Höhere Stufen = Mehr Produktion',
+		},
+		// Tabs
+		tabs: {
+			grid: 'RASTER',
+		},
+		// Stats
+		stats: {
+			pixels: 'PIXEL',
+			empty: 'LEER',
+			best: 'BESTE',
+			pixelsShort: 'PX',
+		},
+		// Buy section
+		buy: {
+			buyPixel: 'PIXEL KAUFEN',
+			noSpace: 'KEIN PLATZ',
+		},
+		// Categories
+		categories: {
+			production: 'Produktion',
+			economy: 'Wirtschaft',
+			grid: 'Raster',
+			clicker: 'Klicker',
+		},
+		// Upgrades
+		upgrades: {
+			title: 'UPGRADES',
+			// Production upgrades
+			prodMultiplier: {
+				name: 'Produktionsboost',
+				description: '+{value}% Produktion pro Level',
+			},
+			// Economy upgrades
+			cheaperPixels: {
+				name: 'Rabatt-Pixel',
+				description: '-{value}% Pixelkosten pro Level',
+			},
+			betterPixels: {
+				name: 'Bessere Pixel',
+				description: 'Neue Pixel starten auf höherer Stufe',
+			},
+			// Clicker upgrades
+			energyCapacity: {
+				name: 'Energietank',
+				description: '+{value}% Energiekapazität pro Level',
+			},
+			goldenFrequency: {
+				name: 'Glücksstern',
+				description: '-{value}% Wartezeit für goldene Pixel',
+			},
+			// Merge unlock upgrades
+			mergeUnlock8: {
+				name: 'Erweiterte Fusion I',
+				description: 'Auto-Merge für Level 8 Pixel freischalten',
+			},
+			mergeUnlock9: {
+				name: 'Erweiterte Fusion II',
+				description: 'Auto-Merge für Level 9 Pixel freischalten',
+			},
+			mergeUnlock10: {
+				name: 'Erweiterte Fusion III',
+				description: 'Auto-Merge für Level 10 Pixel freischalten',
+			},
+			// Error messages
+			errors: {
+				notFound: 'Upgrade nicht gefunden',
+				maxReached: 'Maximalstufe erreicht',
+				requiresUpgrade: 'Benötigt erst ein anderes Upgrade',
+				notEnough: 'Nicht genug Pixel',
+			},
+		},
+		save: {
+			saved: 'Gespeichert',
+			justNow: 'jetzt',
+		},
+		offline: {
+			welcomeBack: 'WILLKOMMEN ZURÜCK!',
+			timeAway: 'Zeit abwesend',
+			earned: 'VERDIENT',
+			efficiencyNote: '({value}% Offline-Produktionsrate)',
+			continue: 'WEITER',
+		},
+		clicker: {
+			energyBar: {
+				title: 'ENERGIE',
+				harvest: 'ERNTEN',
+				full: 'VOLL!',
+			},
+			goldenPixel: {
+				collect: 'Goldenen Pixel sammeln',
+				bonus: 'BONUS',
+				missed: 'Verpasst!',
+			},
+		},
+		// Achievement system
+		achievement: {
+			newRecord: 'NEUER REKORD!',
+			levelReached: 'Level {level} erreicht!',
+		},
+		// Prestige system
+		prestige: {
+			title: 'PRESTIGE',
+			button: 'PRESTIGE',
+			nextAt: 'Nächstes Prisma bei',
+			prismaPixels: 'Prisma-Pixel',
+			confirm: 'Bestätigen',
+			cancel: 'Abbrechen',
+			confirmTitle: 'Prestige-Reset',
+			confirmText: 'Fortschritt zurücksetzen für Prisma-Pixel?',
+			confirmGain: 'Du erhältst',
+			confirmWarning: 'Alle Pixel, Upgrades und Währung werden zurückgesetzt.',
+			shopTitle: 'PRISMA-SHOP',
+			maxed: 'MAX',
+			noPrestigeYet: 'Verdiene mehr für Prestige!',
+			prestigeCount: 'Prestige',
+			// Prestige upgrades
+			upgrades: {
+				production: {
+					name: 'Prisma-Kraft',
+					description: '{value}× Produktion pro Level',
+				},
+				startCurrency: {
+					name: 'Vorsprung',
+					description: '+{value} Start-Pixel pro Level',
+				},
+				unlockSlots: {
+					name: 'Raster-Boost',
+					description: '+{value} freigeschaltete Slots pro Level',
+				},
+				goldenBonus: {
+					name: 'Goldene Hand',
+					description: '+{value}% Goldener-Pixel-Bonus pro Level',
+				},
+				basePixel: {
+					name: 'Besserer Start',
+					description: 'Starte mit höherstufigen Pixeln',
+				},
+				mergeUnlock: {
+					name: 'Prisma-Fusion',
+					description: '+1 max Auto-Merge-Level pro Upgrade',
+				},
+			},
 		},
 	},
 };

@@ -16,6 +16,13 @@
       players: { min: 1, max: 1 },
       allowPrivate: false,
     },
+    {
+      id: 'idle-pixel',
+      displayName: 'Idle Pixel',
+      i18nKey: 'gameModes.idlePixel',
+      players: { min: 1, max: 1 },
+      allowPrivate: false,
+    },
   ];
 
   // Filter out dev-only modes (like pixel-survivor) in production
@@ -39,6 +46,10 @@
     // Check if it's a solo mode with direct route
     if (modeId === 'colordle') {
       goto('/play/colordle');
+      return;
+    }
+    if (modeId === 'idle-pixel') {
+      goto('/play/idle');
       return;
     }
 

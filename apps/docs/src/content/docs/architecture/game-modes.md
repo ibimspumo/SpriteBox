@@ -19,6 +19,7 @@ SpriteBox supports multiple game modes, each with unique phases, rules, and UI c
 | **Zombie Pixel** | `zombie-pixel` | 🧟 | Alpha | Real-time infection game |
 | **CopyCat Royale** | `copycat-royale` | 👑 | Alpha | Battle royale elimination |
 | **Colordle** | `colordle` | 🎨 | Stable | Daily puzzle game |
+| **Idle Pixel** | `idle-pixel` | 💎 | Alpha | Single-player idle game |
 
 ## Mode Metadata Registry
 
@@ -318,3 +319,13 @@ Single-player roguelike:
 - **Combat System**: Turn-based with dice rolls
 - **Progression**: XP, levels, stat upgrades
 - **Monsters**: Generated with procedural patterns
+
+### Idle Pixel
+
+Single-player idle/incremental game:
+
+- **Local State**: Uses `localStorage` for save data
+- **Grid System**: 8x8 merge grid for combining pixels
+- **Upgrade System**: Production, economy, clicker, and grid upgrades
+- **Prestige System**: Reset for Prisma Pixels meta-currency
+- **Offline Progress**: Earns resources while away (50% efficiency)

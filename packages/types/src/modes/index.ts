@@ -5,3 +5,4 @@ export * from './copycat.js';
 export * from './pixelGuesser.js';
 export * from './copycatRoyale.js';
 export * from './zombiePixel.js';
+export * from './idle-pixel/index.js';

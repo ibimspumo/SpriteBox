@@ -133,3 +133,70 @@ export type {
   ZombieGameEndData,
   ZombieLobbyUpdateData,
 } from './modes/zombiePixel.js';
+
+// IdlePixel
+export type {
+  IdlePixel,
+  GridSlot,
+  ClickerState,
+  IdlePixelStats,
+  IdlePixelGameState,
+  UpgradeCategory,
+  UpgradeEffectType,
+  UpgradeDefinition,
+  PurchasedUpgrade,
+  CalculatedUpgradeEffect,
+  GridPosition,
+  GridConfig,
+  SlotPurchaseOption,
+  PurchasedPrestigeUpgrade,
+  PrestigeState,
+  PrestigeUpgradeDefinition,
+  IdlePixelSaveData,
+  IdlePixelSchemaType,
+  GridSlotSchemaType,
+  ClickerStateSchemaType,
+  IdlePixelStatsSchemaType,
+  IdlePixelGameStateSchemaType,
+  IdlePixelSaveDataSchemaType,
+} from './modes/idle-pixel/index.js';
+
+export {
+  // Core
+  IDLE_PIXEL_COLORS,
+  MAX_COLOR_LEVEL,
+  getProductionForLevel,
+  // Upgrades
+  calculateUpgradeCost,
+  calculateUpgradeEffect,
+  // Grid
+  GridUtils,
+  GRID_START_POSITIONS,
+  GRID_SIZE,
+  GRID_TOTAL_SLOTS,
+  calculateSlotCost,
+  // Prestige
+  calculatePrestigeGain,
+  currencyForPrisma,
+  createInitialPrestigeState,
+  // Storage
+  IDLE_PIXEL_STORAGE_KEY,
+  IDLE_PIXEL_SAVE_VERSION,
+  MAX_OFFLINE_SECONDS,
+  AUTO_SAVE_INTERVAL,
+  OFFLINE_PRODUCTION_MULTIPLIER,
+  // Balance
+  BALANCE,
+  // Validation Schemas
+  IdlePixelSchema,
+  GridSlotSchema,
+  ClickerStateSchema,
+  IdlePixelStatsSchema,
+  PurchasedUpgradeSchema,
+  PurchasedPrestigeUpgradeSchema,
+  PrestigeStateSchema,
+  IdlePixelGameStateSchema,
+  IdlePixelSaveDataSchema,
+} from './modes/idle-pixel/index.js';
+
+export type { BalanceConfig } from './modes/idle-pixel/index.js';

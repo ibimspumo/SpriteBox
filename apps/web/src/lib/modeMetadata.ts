@@ -12,7 +12,8 @@ export type GameModeId =
 	| 'pixel-survivor'
 	| 'zombie-pixel'
 	| 'copycat-royale'
-	| 'colordle';
+	| 'colordle'
+	| 'idle-pixel';
 
 /**
  * Keys for modeSelection translations
@@ -25,7 +26,8 @@ export type ModeSelectionKey =
 	| 'survivor'
 	| 'zombiepixel'
 	| 'copycatroyale'
-	| 'colordle';
+	| 'colordle'
+	| 'idlepixel';
 
 /**
  * Metadata definition for a game mode
@@ -122,6 +124,15 @@ export const GAME_MODE_METADATA: Record<GameModeId, ModeMetadata> = {
 		legacyI18nKey: 'gameModes.colordle',
 		isAlpha: false,
 		slug: 'colordle',
+	},
+	'idle-pixel': {
+		id: 'idle-pixel',
+		icon: '⏳',
+		accentColor: 'var(--color-brand)',
+		selectionKey: 'idlepixel',
+		legacyI18nKey: 'gameModes.idlePixel',
+		isAlpha: true,
+		slug: 'idle',
 	},
 };
 
