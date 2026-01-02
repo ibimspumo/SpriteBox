@@ -25,11 +25,15 @@
     },
   ];
 
-  // Filter out dev-only modes (like pixel-survivor) in production
+  // Filter out dev-only modes in production
   const visibleGameModes = $derived(
     [...$availableGameModes, ...soloModes].filter(mode => {
-      // pixel-survivor is dev-only
+      // Dev-only modes
       if (mode.id === 'pixel-survivor') return dev;
+      if (mode.id === 'zombie-pixel') return dev;
+      if (mode.id === 'copycat-royale') return dev;
+      if (mode.id === 'colordle') return dev;
+      if (mode.id === 'idle-pixel') return dev;
       return true;
     })
   );
